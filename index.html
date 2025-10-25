@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="vi">
+<!-- THAY ĐỔI: Thêm class="" để JS có thể toggle 'dark' -->
+<html lang="vi" class="">
 
 <head>
   <meta charset="UTF-8">
@@ -10,6 +11,8 @@
   <script src="https://animatedicons.co/scripts/embed-animated-icons.js"></script>
   <!-- 2. Tải Supabase Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- MỚI: Tải thư viện XLSX (SheetJS) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <!-- 3. Tải Font (Inter) -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -76,13 +79,17 @@
       background-color: #dbeafe;
       /* blue-100 */
     }
+    /* THÊM MỚI: Dark mode cho hàng được chọn */
+    .dark .selectable-row.selected {
+      background-color: #1e3a8a; /* blue-900 */
+    }
 
     .selectable-row {
       cursor: pointer;
     }
 
     /* Input cho chỉnh sửa nội tuyến */
-    .inline-input {
+    .inline-input, .inline-input-text {
       width: 100%;
       padding: 4px 8px;
       border: 1px solid #9ca3af;
@@ -92,6 +99,28 @@
       /* blue-50 */
     }
 
+    /* THÊM MỚI: Style cho input chỉ đọc */
+    .inline-input[readonly] {
+        background-color: #f3f4f6; /* gray-100 */
+        cursor: not-allowed;
+    }
+    .dark .inline-input[readonly] {
+        background-color: #374151; /* gray-700 */
+    }
+
+    .inline-input-text {
+        background-color: #f3f4f6; /* gray-100 */
+    }
+    /* THÊM MỚI: Dark mode cho inline input */
+    .dark .inline-input {
+      background-color: #1f2937; /* gray-800 */
+      border-color: #4b5563; /* gray-600 */
+      color: #e5e7eb; /* gray-200 */
+    }
+    .dark .inline-input-text {
+        background-color: #374151; /* gray-700 */
+    }
+
     .inline-input:focus {
       outline: none;
       border-color: #2563eb;
@@ -99,6 +128,21 @@
       box-shadow: 0 0 0 2px #dbeafe;
       /* blue-100 */
     }
+    /* THÊM MỚI: Dark mode cho inline input focus */
+    .dark .inline-input:focus {
+      border-color: #3b82f6; /* blue-500 */
+      box-shadow: 0 0 0 2px #1e3a8a; /* blue-900 */
+    }
+    
+    /* Input có nền xám */
+    .inline-input.bg-gray-input, .inline-input-text.bg-gray-input {
+        background-color: #f3f4f6; /* gray-100 */
+        cursor: not-allowed;
+    }
+    .dark .inline-input.bg-gray-input, .dark .inline-input-text.bg-gray-input {
+        background-color: #374151; /* gray-700 */
+    }
+
 
     /* MỚI: Tùy chỉnh select cho bộ lọc */
     .filter-select {
@@ -115,6 +159,13 @@
       padding-right: 2.5rem;
       /* Thêm padding phải để text không đè lên icon */
     }
+    /* THÊM MỚI: Dark mode cho filter select */
+    .dark .filter-select {
+      background-color: #374151; /* gray-700 */
+      border-color: #4b5563; /* gray-600 */
+      color: #e5e7eb; /* gray-200 */
+      background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="%23d1d5db" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>');
+    }
 
     /* MỚI: CSS cho bộ lọc custom */
     .custom-filter-toggle {
@@ -129,18 +180,36 @@
       align-items: center;
       box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
     }
+    /* THÊM MỚI: Dark mode */
+    .dark .custom-filter-toggle {
+      background-color: #374151; /* gray-700 */
+      border-color: #4b5563; /* gray-600 */
+    }
     .custom-filter-toggle:focus {
       outline: none;
       border-color: #2563eb; /* blue-600 */
       box-shadow: 0 0 0 2px #dbeafe; /* blue-100 */
     }
+    /* THÊM MỚI: Dark mode */
+    .dark .custom-filter-toggle:focus {
+      border-color: #3b82f6; /* blue-500 */
+      box-shadow: 0 0 0 2px #1e3a8a; /* blue-900 */
+    }
     .custom-filter-text {
       color: #374151; /* gray-700 */
+    }
+    /* THÊM MỚI: Dark mode */
+    .dark .custom-filter-text {
+      color: #e5e7eb; /* gray-200 */
     }
     .custom-filter-arrow {
       width: 1.25rem; /* w-5 */
       height: 1.25rem; /* h-5 */
       color: #6b7280; /* gray-500 */
+    }
+    /* THÊM MỚI: Dark mode */
+    .dark .custom-filter-arrow {
+      color: #9ca3af; /* gray-400 */
     }
     .custom-filter-panel {
       position: absolute;
@@ -153,6 +222,11 @@
       box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
       padding: 0.5rem; /* p-2 */
     }
+    /* THÊM MỚI: Dark mode */
+    .dark .custom-filter-panel {
+      background-color: #1f2937; /* gray-800 */
+      border-color: #4b5563; /* gray-600 */
+    }
     .custom-filter-search {
       width: 100%;
       padding: 0.5rem 0.75rem; /* px-3 py-2 */
@@ -161,9 +235,19 @@
       margin-bottom: 0.5rem; /* mb-2 */
       font-size: 0.875rem; /* text-sm */
     }
+    /* THÊM MỚI: Dark mode */
+    .dark .custom-filter-search {
+      background-color: #374151; /* gray-700 */
+      border-color: #4b5563; /* gray-600 */
+      color: #e5e7eb; /* gray-200 */
+    }
     .custom-filter-search:focus {
       outline: none;
       border-color: #2563eb; /* blue-600 */
+    }
+    /* THÊM MỚI: Dark mode */
+    .dark .custom-filter-search:focus {
+      border-color: #3b82f6; /* blue-500 */
     }
     .custom-filter-list {
       max-height: 200px;
@@ -180,6 +264,10 @@
     .custom-filter-item:hover {
       background-color: #f3f4f6; /* gray-100 */
     }
+    /* THÊM MỚI: Dark mode */
+    .dark .custom-filter-item:hover {
+      background-color: #374151; /* gray-700 */
+    }
     .custom-filter-item input {
       margin-right: 0.5rem; /* mr-2 */
       cursor: pointer;
@@ -191,30 +279,75 @@
       white-space: normal;
       word-break: break-word;
     }
+    /* THÊM MỚI: Dark mode */
+    .dark .custom-filter-item label {
+      color: #e5e7eb; /* gray-200 */
+    }
+
+    /* THÊM MỚI: CSS cho Toast Notification */
+    .toast {
+      padding: 1rem 1.5rem;
+      border-radius: 0.5rem; /* rounded-lg */
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
+      color: white;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem; /* gap-3 */
+      opacity: 0;
+      transform: translateX(100%);
+      transition: all 0.3s ease-in-out;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    .toast.hide {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+    .toast-success { background-color: #16a34a; } /* green-600 */
+    .toast-warning { background-color: #f59e0b; } /* amber-500 */
+    .toast-error   { background-color: #dc2626; } /* red-600 */
   </style>
 </head>
 
-<body class="bg-gray-100">
+<!-- THAY ĐỔI: Thêm class dark:bg-gray-900 -->
+<body class="bg-gray-100 dark:bg-gray-900">
 
   <div class="flex flex-col h-screen">
     <!-- ===== Header Navigation (ĐÃ CẬP NHẬT) ===== -->
-    <header class="bg-white shadow-sm">
+    <!-- THAY ĐỔI: Thêm class dark:bg-gray-800 dark:border-gray-700 -->
+    <header class="bg-white shadow-sm dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
       <!-- Container mới để căn chỉnh các mục -->
       <div class="flex justify-between items-center h-16 px-6">
         <!-- Tabs (LEFT/CENTER) -->
         <nav>
           <ul class="flex">
-            <li><a href="#" onclick="showView('sanpham')" class="nav-link active" data-view="sanpham">Sản Phẩm</a></li>
-            <li><a href="#" onclick="showView('tonkho')" class="nav-link" data-view="tonkho">Tồn Kho</a></li>
-            <li><a href="#" onclick="showView('donhang')" class="nav-link" data-view="donhang">Đơn Hàng</a></li>
-            <li><a href="#" onclick="showView('chitiet')" class="nav-link" data-view="chitiet">Chi Tiết</a></li>
+            <!-- THAY ĐỔI: Thêm class dark:text-gray-400 dark:hover:text-blue-400 dark:active:text-blue-400 dark:active:border-blue-400 -->
+            <li><a href="#" onclick="showView('sanpham')" class="nav-link active dark:text-gray-300 dark:hover:text-blue-400 dark:active:text-blue-400 dark:active:border-blue-400" data-view="sanpham">Sản Phẩm</a></li>
+            <li><a href="#" onclick="showView('tonkho')" class="nav-link dark:text-gray-400 dark:hover:text-blue-400 dark:active:text-blue-400 dark:active:border-blue-400" data-view="tonkho">Tồn Kho</a></li>
+            <li><a href="#" onclick="showView('donhang')" class="nav-link dark:text-gray-400 dark:hover:text-blue-400 dark:active:text-blue-400 dark:active:border-blue-400" data-view="donhang">Đơn Hàng</a></li>
+            <li><a href="#" onclick="showView('chitiet')" class="nav-link dark:text-gray-400 dark:hover:text-blue-400 dark:active:text-blue-400 dark:active:border-blue-400" data-view="chitiet">Chi Tiết</a></li>
           </ul>
         </nav>
 
         <!-- Sync and Font Size (RIGHT) -->
         <div class="flex items-center gap-4">
+            <!-- MỚI: Cụm Trạng thái đồng bộ -->
+            <div class="text-right text-xs">
+                <!-- THAY ĐỔI: Thêm class dark:text-green-400 -->
+                <div class="flex items-center justify-end gap-1.5 font-medium text-green-600 dark:text-green-400">
+                    <span class="h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
+                    <span>Real-time</span>
+                </div>
+                <!-- THAY ĐỔI: Thêm class dark:text-gray-500 -->
+                <div id="last-sync-time" class="text-gray-500 dark:text-gray-400 mt-0.5"></div>
+            </div>
+
             <!-- 1. Nút Đồng bộ (Sync) với icon động -->
-            <button id="toolbar-sync" class="p-2 rounded-full hover:bg-gray-100 transition flex items-center justify-center relative w-10 h-10 disabled:opacity-50 disabled:cursor-not-allowed">
+            <!-- THAY ĐỔI: Thêm class dark:hover:bg-gray-700 -->
+            <button id="toolbar-sync" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition flex items-center justify-center relative w-10 h-10 disabled:opacity-50 disabled:cursor-not-allowed">
                 <!-- Icon động Sync -->
                 <animated-icons src="https://animatedicons.co/get-icon?name=Sync&style=minimalistic&token=e9dea012-465e-4473-9939-5de89e4a2b52" 
                     trigger="click" 
@@ -225,44 +358,66 @@
             </button>
 
             <!-- 2. Cỡ chữ (Font Size) với icon động và Select -->
-            <div class="flex items-center gap-2">
-                <!-- Icon Cài đặt -->
-                <animated-icons src="https://animatedicons.co/get-icon?name=setting&style=minimalistic&token=dca75500-0e08-4c4f-b3f9-78b4fe6c03df" 
-                    trigger="hover" 
-                    attributes='{"variationThumbColour":"#536DFE","variationName":"Two Tone","variationNumber":2,"numberOfGroups":2,"backgroundIsGroup":false,"strokeWidth":1,"defaultColours":{"group-1":"#000000","group-2":"#536DFE","background":"#FFFFFF"}}' 
-                    height="24" width="24"
-                    class="cursor-pointer"
-                ></animated-icons>
-                <!-- Select box -->
-                <select id="font-size-select" class="filter-select text-sm py-1 border border-gray-300 rounded-md shadow-sm">
-                    <option value="10">10</option>
-                    <option value="20">20</option>
-                    <option value="30">30</option>
-                    <option value="40">40</option>
-                    <option value="50">50</option>
-                    <option value="60">60</option>
-                    <option value="70">70</option>
-                    <option value="80">80</option>
-                    <option value="90">90</option>
-                    <option value="100" selected>100</option>
-                </select>
+            <!-- THAY ĐỔI: Chuyển thành Popover Cài đặt -->
+            <div id="settings-menu" class="relative">
+                <!-- Icon Cài đặt (Button) -->
+                <!-- THAY ĐỔI: Thêm id, chuyển icon thành button -->
+                <button id="settings-toggle-button" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition flex items-center justify-center w-10 h-10">
+                    <animated-icons src="https://animatedicons.co/get-icon?name=setting&style=minimalistic&token=dca75500-0e08-4c4f-b3f9-78b4fe6c03df" 
+                        trigger="hover" 
+                        attributes='{"variationThumbColour":"#536DFE","variationName":"Two Tone","variationNumber":2,"numberOfGroups":2,"backgroundIsGroup":false,"strokeWidth":1,"defaultColours":{"group-1":"#000000","group-2":"#536DFE","background":"#FFFFFF"}}' 
+                        height="24" width="24"
+                        class="pointer-events-none"
+                    ></animated-icons>
+                </button>
+                
+                <!-- Popover Panel (MỚI) -->
+                <div id="settings-popover" class="hidden absolute top-full right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 p-4">
+                    <!-- 1. Cỡ chữ -->
+                    <div class="flex items-center justify-between mb-4">
+                        <label for="font-size-select" class="text-sm font-medium text-gray-700 dark:text-gray-300">Cỡ chữ (Scale)</label>
+                        <!-- Select box (ĐÃ DI CHUYỂN VÀO ĐÂY) -->
+                        <select id="font-size-select" class="filter-select text-sm py-1 border border-gray-300 rounded-md shadow-sm w-24">
+                            <option value="80">80%</option>
+                            <option value="90">90%</option>
+                            <option value="100" selected>100%</option>
+                            <option value="110">110%</option>
+                            <option value="120">120%</option>
+                        </select>
+                    </div>
+
+                    <!-- 2. Chế độ Sáng/Tối -->
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Chế độ tối</span>
+                        <!-- Nút bật/tắt (Toggle Switch) -->
+                        <button id="dark-mode-toggle" type="button" class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-gray-200 dark:bg-gray-600 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" role="switch" aria-checked="false">
+                            <span class="sr-only">Sử dụng chế độ tối</span>
+                            <!-- Nút tròn bên trong -->
+                            <span id="dark-mode-toggle-knob" class="translate-x-0 dark:translate-x-5 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
       </div>
     </header>
 
     <!-- ===== Shared Toolbar (ĐÃ CẬP NHẬT) ===== -->
-    <div class="flex items-center gap-2 px-8 pb-6 border-b border-gray-200 bg-gray-100 pt-8">
+    <!-- THAY ĐỔI: Thêm class dark:bg-gray-900 dark:border-gray-700 -->
+    <div class="flex items-center gap-2 px-8 pb-6 border-b border-gray-200 bg-gray-100 pt-8 dark:bg-gray-900 dark:border-gray-700">
       <!-- Nhóm Lọc (BÊN TRÁI) -->
+      <!-- THAY ĐỔI: Thêm class dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:placeholder-gray-400 dark:focus:ring-blue-500 dark:focus:border-blue-500 -->
       <input type="text" id="toolbar-search" placeholder="Tìm kiếm nhanh..."
-          class="w-1/4 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+          class="w-1/4 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:placeholder-gray-400 dark:focus:ring-blue-500 dark:focus:border-blue-500">
+        <!-- THAY ĐỔI: Thêm class dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500 -->
         <button id="toolbar-clear-filter"
-          class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition">
+          class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500">
           Xóa bộ lọc
         </button>
         <!-- NÚT HIỆN BỘ LỌC -->
+        <!-- THAY ĐỔI: Thêm class dark:text-blue-400 dark:hover:text-blue-300 dark:bg-gray-800 dark:hover:bg-gray-700 dark:border-gray-700 -->
         <button id="toolbar-toggle-filter"
-          class="text-sm font-medium text-blue-600 hover:text-blue-800 transition-all duration-150 flex items-center gap-1 px-3 py-2 bg-gray-50 rounded-lg hover:bg-gray-100 border border-gray-200">
+          class="text-sm font-medium text-blue-600 hover:text-blue-800 transition-all duration-150 flex items-center gap-1 px-3 py-2 bg-gray-50 rounded-lg hover:bg-gray-100 border border-gray-200 dark:text-blue-400 dark:hover:text-blue-300 dark:bg-gray-800 dark:hover:bg-gray-700 dark:border-gray-700">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd"
               d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L13 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 019 17v-5.586L4.293 6.707A1 1 0 014 6V3z"
@@ -325,8 +480,10 @@
       </div>
 
       <!-- ===== Bảng Lọc Chi Tiết (ĐÃ THAY ĐỔI) ===== -->
-      <div id="filter-panel" class="hidden px-8 pb-6 -mt-6 bg-gray-100"> <!-- Thêm -mt-6 để kéo lên gần toolbar VÀ bg-gray-100 -->
-        <div class="p-4 bg-white rounded-lg shadow-md border border-gray-200">
+      <!-- THAY ĐỔI: Thêm class dark:bg-gray-900 -->
+      <div id="filter-panel" class="hidden px-8 pb-6 -mt-6 bg-gray-100 dark:bg-gray-900"> <!-- Thêm -mt-6 để kéo lên gần toolbar VÀ bg-gray-100 -->
+        <!-- THAY ĐỔI: Thêm class dark:bg-gray-800 dark:border-gray-700 -->
+        <div class="p-4 bg-white rounded-lg shadow-md border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
 
           <!-- Bộ lọc cho SẢN PHẨM (ĐÃ THAY ĐỔI INPUTS THÀNH SELECTS) -->
           <div id="filter-sanpham" class="filter-view-options hidden">
@@ -335,7 +492,8 @@
               
               <!-- Custom Filter: Mã VT -->
               <div class="custom-filter" data-filter-column="ma_vt">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Mã VT</label>
+                <!-- THAY ĐỔI: Thêm class dark:text-gray-300 -->
+                <label class="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Mã VT</label>
                 <div class="relative">
                   <button type="button" class="custom-filter-toggle">
                     <span class="custom-filter-text truncate">Tất cả Mã VT</span>
@@ -358,7 +516,8 @@
 
               <!-- Custom Filter: Tên VT -->
               <div class="custom-filter" data-filter-column="ten_vt">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Tên VT</label>
+                <!-- THAY ĐỔI: Thêm class dark:text-gray-300 -->
+                <label class="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Tên VT</label>
                 <div class="relative">
                   <button type="button" class="custom-filter-toggle">
                     <span class="custom-filter-text truncate">Tất cả Tên VT</span>
@@ -381,7 +540,8 @@
 
               <!-- Custom Filter: Ngành -->
               <div class="custom-filter" data-filter-column="nganh">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Ngành</label>
+                <!-- THAY ĐỔI: Thêm class dark:text-gray-300 -->
+                <label class="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Ngành</label>
                 <div class="relative">
                   <button type="button" class="custom-filter-toggle">
                     <span class="custom-filter-text truncate">Tất cả Ngành</span>
@@ -404,7 +564,8 @@
 
               <!-- Custom Filter: Phụ trách -->
               <div class="custom-filter" data-filter-column="phu_trach">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Phụ trách</label>
+                <!-- THAY ĐỔI: Thêm class dark:text-gray-300 -->
+                <label class="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Phụ trách</label>
                 <div class="relative">
                   <button type="button" class="custom-filter-toggle">
                     <span class="custom-filter-text truncate">Tất cả Phụ trách</span>
@@ -428,14 +589,47 @@
             </div>
           </div>
 
-          <!-- Bộ lọc cho TỒN KHO (ví dụ) -->
+          <!-- MỚI: Bộ lọc cho TỒN KHO -->
           <div id="filter-tonkho" class="filter-view-options hidden">
-            <p class="text-gray-500 text-sm">Bộ lọc cho Tồn kho chưa được thiết lập.</p>
+              <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+                  <!-- Filter: Mã VT -->
+                  <div class="custom-filter" data-filter-column="ma_vt">
+                      <label class="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Mã VT</label>
+                      <div class="relative"><button type="button" class="custom-filter-toggle"><span class="custom-filter-text truncate">Tất cả Mã VT</span><svg class="custom-filter-arrow h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg></button><div class="custom-filter-panel hidden"><div class="flex gap-2 mb-2"><input type="text" class="custom-filter-search w-2/3" placeholder="Tìm kiếm..."><button class="custom-filter-apply w-1/3 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md shadow-sm hover:bg-blue-700 transition">Áp dụng</button></div><div class="custom-filter-list"></div></div></div>
+                  </div>
+                  <!-- Filter: Lot -->
+                  <div class="custom-filter" data-filter-column="lot">
+                      <label class="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">LOT</label>
+                      <div class="relative"><button type="button" class="custom-filter-toggle"><span class="custom-filter-text truncate">Tất cả LOT</span><svg class="custom-filter-arrow h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg></button><div class="custom-filter-panel hidden"><div class="flex gap-2 mb-2"><input type="text" class="custom-filter-search w-2/3" placeholder="Tìm kiếm..."><button class="custom-filter-apply w-1/3 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md shadow-sm hover:bg-blue-700 transition">Áp dụng</button></div><div class="custom-filter-list"></div></div></div>
+                  </div>
+                  <!-- Filter: Tồn Cuối -->
+                  <div class="custom-filter" data-filter-column="ton_cuoi">
+                      <label class="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Tồn Cuối</label>
+                      <div class="relative"><button type="button" class="custom-filter-toggle"><span class="custom-filter-text truncate">Tất cả</span><svg class="custom-filter-arrow h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg></button><div class="custom-filter-panel hidden"><div class="flex gap-2 mb-2"><button class="custom-filter-apply w-full px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md shadow-sm hover:bg-blue-700 transition">Áp dụng</button></div><div class="custom-filter-list"></div></div></div>
+                  </div>
+                  <!-- Filter: Tình Trạng -->
+                  <div class="custom-filter" data-filter-column="tinh_trang">
+                      <label class="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Tình Trạng</label>
+                      <div class="relative"><button type="button" class="custom-filter-toggle"><span class="custom-filter-text truncate">Tất cả Tình Trạng</span><svg class="custom-filter-arrow h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg></button><div class="custom-filter-panel hidden"><div class="flex gap-2 mb-2"><input type="text" class="custom-filter-search w-2/3" placeholder="Tìm kiếm..."><button class="custom-filter-apply w-1/3 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md shadow-sm hover:bg-blue-700 transition">Áp dụng</button></div><div class="custom-filter-list"></div></div></div>
+                  </div>
+                  <!-- Filter: Ngành -->
+                  <div class="custom-filter" data-filter-column="nganh">
+                      <label class="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Ngành</label>
+                      <div class="relative"><button type="button" class="custom-filter-toggle"><span class="custom-filter-text truncate">Tất cả Ngành</span><svg class="custom-filter-arrow h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg></button><div class="custom-filter-panel hidden"><div class="flex gap-2 mb-2"><input type="text" class="custom-filter-search w-2/3" placeholder="Tìm kiếm..."><button class="custom-filter-apply w-1/3 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md shadow-sm hover:bg-blue-700 transition">Áp dụng</button></div><div class="custom-filter-list"></div></div></div>
+                  </div>
+                  <!-- Filter: Phụ Trách -->
+                  <div class="custom-filter" data-filter-column="phu_trach">
+                      <label class="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Phụ Trách</label>
+                      <div class="relative"><button type="button" class="custom-filter-toggle"><span class="custom-filter-text truncate">Tất cả Phụ Trách</span><svg class="custom-filter-arrow h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg></button><div class="custom-filter-panel hidden"><div class="flex gap-2 mb-2"><input type="text" class="custom-filter-search w-2/3" placeholder="Tìm kiếm..."><button class="custom-filter-apply w-1/3 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md shadow-sm hover:bg-blue-700 transition">Áp dụng</button></div><div class="custom-filter-list"></div></div></div>
+                  </div>
+              </div>
           </div>
+
 
           <!-- Bộ lọc cho ĐƠN HÀNG (ví dụ) -->
           <div id="filter-donhang" class="filter-view-options hidden">
-            <p class="text-gray-500 text-sm">Bộ lọc cho Đơn hàng chưa được thiết lập.</p>
+            <!-- THAY ĐỔI: Thêm class dark:text-gray-400 -->
+            <p class="text-gray-500 text-sm dark:text-gray-400">Bộ lọc cho Đơn hàng chưa được thiết lập.</p>
           </div>
 
           <!-- Bộ lọc cho CHI TIẾT (sẽ luôn ẩn) -->
@@ -451,8 +645,10 @@
 
       <!-- ===== View: Sản Phẩm (MẪU ĐẦY ĐỦ) ===== -->
       <div id="view-sanpham" class="view active h-full">
-        <div class="bg-white shadow rounded-lg overflow-x-auto overflow-y-auto h-full">
-          <table class="min-w-full divide-y divide-gray-200">
+        <!-- THAY ĐỔI: Thêm class dark:bg-gray-800 -->
+        <div class="bg-white shadow rounded-lg overflow-x-auto overflow-y-auto h-full dark:bg-gray-800">
+          <!-- THAY ĐỔI: Xóa divide-y -->
+          <table class="min-w-full">
             <thead class="bg-gray-50">
               <tr>
                 <th class="th w-10"><input type="checkbox" class="select-all-checkbox" data-view="sanpham"></th>
@@ -463,7 +659,9 @@
                 <th class="th" style="width: 13%;">Phụ trách</th>
               </tr>
             </thead>
-            <tbody id="sanpham-table-body" class="bg-white divide-y divide-gray-200">
+            <!-- THAY ĐỔI: Xóa divide-y -->
+            <!-- THAY ĐỔI: Thêm class dark:divide-gray-700 -->
+            <tbody id="sanpham-table-body" class="bg-white dark:bg-gray-800 dark:divide-gray-700">
               <!-- Dữ liệu sẽ được load bằng JS -->
             </tbody>
           </table>
@@ -472,27 +670,30 @@
 
       <!-- ===== View: Tồn Kho ===== -->
       <div id="view-tonkho" class="view h-full">
-        <div class="bg-white shadow rounded-lg overflow-x-auto overflow-y-auto h-full">
-          <table class="min-w-full divide-y divide-gray-200">
+        <!-- THAY ĐỔI: Thêm class dark:bg-gray-800 -->
+        <div class="bg-white shadow rounded-lg overflow-x-auto overflow-y-auto h-full dark:bg-gray-800">
+          <!-- THAY ĐỔI: Xóa divide-y -->
+          <table class="min-w-full">
             <thead class="bg-gray-50">
               <tr>
                 <th class="th w-10"><input type="checkbox" class="select-all-checkbox" data-view="tonkho"></th>
-                <th class="th">Mã vạch</th>
-                <th class="th">Mã VT</th>
-                <th class="th">Tên VT</th>
-                <th class="th">Lot</th>
-                <th class="th">Date</th>
-                <th class="th">Tồn đầu</th>
-                <th class="th">Nhập</th>
-                <th class="th">Xuất</th>
-                <th class="th">Tồn cuối</th>
-                <th class="th">Tình trạng</th>
-                <th class="th">Tray</th>
-                <th class="th">Ngành</th>
-                <th class="th">Phụ trách</th>
+                <th class="th" style="width: 12%;">Mã vạch</th>
+                <th class="th" style="width: 5%;">Mã VT</th>
+                <th class="th" style="width: 25%; white-space: normal; word-break: break-word;">Tên VT</th>
+                <th class="th" style="width: 5%;">Lot</th>
+                <th class="th" style="width: 8%;">Date</th>
+                <th class="th" style="width: 5%;">Tồn đầu</th>
+                <th class="th" style="width: 4%;">Nhập</th>
+                <th class="th" style="width: 4%;">Xuất</th>
+                <th class="th" style="width: 5%;">Tồn cuối</th>
+                <th class="th" style="width: 8%;">Tình trạng</th>
+                <th class="th" style="width: 4%;">Tray</th>
+                <th class="th" style="width: 7%;">Ngành</th>
+                <th class="th" style="width: 8%;">Phụ trách</th>
               </tr>
             </thead>
-            <tbody id="tonkho-table-body">
+            <!-- THAY ĐỔI: Thêm class dark:bg-gray-800 dark:divide-gray-700 -->
+            <tbody id="tonkho-table-body" class="dark:bg-gray-800 dark:divide-gray-700">
               <!-- Dữ liệu sẽ được load bằng JS -->
             </tbody>
           </table>
@@ -501,8 +702,10 @@
 
       <!-- ===== View: Đơn Hàng ===== -->
       <div id="view-donhang" class="view h-full">
-        <div class="bg-white shadow rounded-lg overflow-x-auto overflow-y-auto h-full">
-          <table class="min-w-full divide-y divide-gray-200">
+        <!-- THAY ĐỔI: Thêm class dark:bg-gray-800 -->
+        <div class="bg-white shadow rounded-lg overflow-x-auto overflow-y-auto h-full dark:bg-gray-800">
+          <!-- THAY ĐỔI: Xóa divide-y -->
+          <table class="min-w-full">
             <thead class="bg-gray-50">
               <tr>
                 <th class="th w-10"><input type="checkbox" class="select-all-checkbox" data-view="donhang"></th>
@@ -520,7 +723,8 @@
                 <th class="th">Image</th>
               </tr>
             </thead>
-            <tbody id="donhang-table-body">
+            <!-- THAY ĐỔI: Thêm class dark:bg-gray-800 dark:divide-gray-700 -->
+            <tbody id="donhang-table-body" class="dark:bg-gray-800 dark:divide-gray-700">
               <!-- Dữ liệu sẽ được load bằng JS -->
             </tbody>
           </table>
@@ -529,14 +733,18 @@
 
       <!-- ===== View: Chi Tiết ===== -->
       <div id="view-chitiet" class="view h-full">
-        <div class="bg-white shadow rounded-lg overflow-x-auto overflow-y-auto h-full">
-          <table class="min-w-full divide-y divide-gray-200">
+        <!-- THAY ĐỔI: Thêm class dark:bg-gray-800 -->
+        <div class="bg-white shadow rounded-lg overflow-x-auto overflow-y-auto h-full dark:bg-gray-800">
+          <!-- THAY ĐỔI: Xóa divide-y -->
+          <table class="min-w-full">
             <thead class="bg-gray-50">
               <tr>
                 <th class="th w-10"><input type="checkbox" class="select-all-checkbox" data-view="chitiet"></th>
                 <th class="th">ID</th>
+                <th class="th">Thời gian</th>
                 <th class="th">Mã kho</th>
                 <th class="th">Mã NX</th>
+                <th class="th">Mã vạch</th>
                 <th class="th">Mã VT</th>
                 <th class="th">Tên VT</th>
                 <th class="th">Lot</th>
@@ -550,7 +758,8 @@
                 <th class="th">Phụ trách</th>
               </tr>
             </thead>
-            <tbody id="chitiet-table-body">
+            <!-- THAY ĐỔI: Thêm class dark:bg-gray-800 dark:divide-gray-700 -->
+            <tbody id="chitiet-table-body" class="dark:bg-gray-800 dark:divide-gray-700">
               <!-- Dữ liệu sẽ được load bằng JS -->
             </tbody>
           </table>
@@ -577,6 +786,25 @@
           letter-spacing: 0.05em;
           vertical-align: top;
           /* Căn lề cho input nội tuyến */
+          
+          /* MỚI: Thêm border giống Excel */
+          border-bottom: 1px solid #d1d5db; /* gray-300 */
+          border-right: 1px solid #d1d5db; /* gray-300 */
+        }
+        /* THÊM MỚI: Dark mode cho .th */
+        .dark .th {
+          background-color: #374151; /* gray-700 */
+          color: #e5e7eb; /* gray-200 */
+          border-color: #4b5563; /* gray-600 */
+        }
+        
+        /* MỚI: Thêm border trái cho ô đầu tiên */
+        .th:first-child, .td:first-child {
+            border-left: 1px solid #d1d5db; /* gray-300 */
+        }
+        /* THÊM MỚI: Dark mode */
+        .dark .th:first-child, .dark .td:first-child {
+            border-left-color: #4b5563; /* gray-600 */
         }
 
         .td {
@@ -584,6 +812,14 @@
           vertical-align: top;
           /* MỚI: Cho phép ngắt dòng nếu nội dung quá dài */
           word-break: break-word;
+          
+          /* MỚI: Thêm border giống Excel */
+          border-bottom: 1px solid #d1d5db; /* gray-300 */
+          border-right: 1px solid #d1d5db; /* gray-300 */
+        }
+        /* THÊM MỚI: Dark mode cho .td */
+        .dark .td {
+          border-color: #4b5563; /* gray-600 */
         }
 
         .td-center {
@@ -592,40 +828,69 @@
           color: #6b7280;
           /* gray-500 */
         }
+        /* THÊM MỚI: Dark mode */
+        .dark .td-center {
+          color: #9ca3af; /* gray-400 */
+        }
+        
+        /* MỚI: CSS cho màu chữ cột */
+        .text-nhap { color: #16a34a; } /* green-600 */
+        .dark .text-nhap { color: #22c55e; } /* green-500 */
+        .text-xuat { color: #dc2626; } /* red-600 */
+        .dark .text-xuat { color: #ef4444; } /* red-500 */
+        
+        .status-het-date { color: #dc2626; font-weight: 500; } /* red-600 */
+        .dark .status-het-date { color: #ef4444; } /* red-500 */
+        .status-can-date { color: #f59e0b; font-weight: 500; } /* amber-500 */
+        .dark .status-can-date { color: #fcd34d; } /* amber-300 */
+        .status-binh-thuong { color: #16a34a; font-weight: 500; } /* green-600 */
+        .dark .status-binh-thuong { color: #22c55e; } /* green-500 */
+        .status-hang-hu { color: #1f2937; font-weight: 700; } /* gray-800 */
+        .dark .status-hang-hu { color: #f9fafb; font-weight: 700; } /* gray-50 */
 
         /* CSS cho modal */
         .modal-content {
           max-height: 70vh;
           overflow-y: auto;
         }
+        /* THÊM MỚI: Dark mode */
+        .dark .modal-content {
+          background-color: #1f2937; /* gray-800 */
+        }
       </style>
 
     </main>
 
     <!-- ===== MỚI: Pagination Bar (ĐÃ CẬP NHẬT) ===== -->
-    <footer class="bg-white border-t border-gray-200 p-3 flex items-center justify-between z-20 shadow-inner">
+    <!-- THAY ĐỔI: Thêm class dark:bg-gray-800 dark:border-gray-700 -->
+    <footer class="bg-white border-t border-gray-200 p-3 flex items-center justify-between z-20 shadow-inner dark:bg-gray-800 dark:border-gray-700">
         <div class="flex items-center gap-2">
-            <!-- MỚI: Hiển thị thời gian đồng bộ gần nhất -->
-            <span id="last-sync-time" class="text-xs text-gray-500 mr-4">Chưa đồng bộ.</span>
-            <span class="text-sm text-gray-700">Hiển thị:</span>
+            <!-- (ĐÃ XÓA) Hiển thị trạng thái real-time -->
+            <!-- THAY ĐỔI: Thêm class dark:text-gray-300 -->
+            <span class="text-sm text-gray-700 dark:text-gray-300">Hiển thị:</span>
             <select id="pagination-limit" class="filter-select text-sm py-1">
                 <option value="50">50</option>
                 <option value="100">100</option>
                 <option value="200">200</option>
                 <option value="500">500</option>
             </select>
-            <span id="pagination-info" class="text-sm text-gray-700 ml-4">
+            <!-- THAY ĐỔI: Thêm class dark:text-gray-300 -->
+            <span id="pagination-info" class="text-sm text-gray-700 ml-4 dark:text-gray-300">
                 Hiển thị 0-0 của 0
             </span>
         </div>
         <div class="flex items-center gap-2">
-            <button id="pagination-prev" class="px-3 py-1 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition disabled:opacity-50 disabled:cursor-not-allowed">
+            <!-- THAY ĐỔI: Thêm class dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500 -->
+            <button id="pagination-prev" class="px-3 py-1 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500">
                 &lt; Trước
             </button>
-            <span class="text-sm text-gray-700">
-                Trang <input type="number" id="pagination-page" value="1" min="1" class="w-16 text-center border border-gray-300 rounded-md py-1"> / <span id="pagination-total-pages">1</span>
+            <!-- THAY ĐỔI: Thêm class dark:text-gray-300 -->
+            <span class="text-sm text-gray-700 dark:text-gray-300">
+                <!-- THAY ĐỔI: Thêm class dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 -->
+                Trang <input type="number" id="pagination-page" value="1" min="1" class="w-16 text-center border border-gray-300 rounded-md py-1 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"> / <span id="pagination-total-pages">1</span>
             </span>
-            <button id="pagination-next" class="px-3 py-1 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition disabled:opacity-50 disabled:cursor-not-allowed">
+            <!-- THAY ĐỔI: Thêm class dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500 -->
+            <button id="pagination-next" class="px-3 py-1 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500">
                 Tiếp &gt;
             </button>
         </div>
@@ -636,9 +901,12 @@
   <!-- ===== Modal Xác nhận Xóa ===== -->
   <div id="confirm-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
     <!-- ... (Nội dung modal xác nhận không đổi) ... -->
-    <div class="relative top-20 mx-auto p-5 border w-full max-w-sm shadow-lg rounded-md bg-white">
-      <h3 class="text-lg font-medium text-gray-900 mb-4">Xác nhận hành động</h3>
-      <p id="confirm-message" class="text-sm text-gray-600 mb-6">Bạn có chắc chắn muốn xóa mục này?</p>
+    <!-- THAY ĐỔI: Thêm class dark:bg-gray-800 -->
+    <div class="relative top-20 mx-auto p-5 border w-full max-w-sm shadow-lg rounded-md bg-white dark:bg-gray-800">
+      <!-- THAY ĐỔI: Thêm class dark:text-gray-100 -->
+      <h3 class="text-lg font-medium text-gray-900 mb-4 dark:text-gray-100">Xác nhận hành động</h3>
+      <!-- THAY ĐỔI: Thêm class dark:text-gray-300 -->
+      <p id="confirm-message" class="text-sm text-gray-600 mb-6 dark:text-gray-300">Bạn có chắc chắn muốn xóa mục này?</p>
       <div class="flex justify-end gap-3">
         <button id="confirm-cancel" class="btn-cancel">Hủy</button>
         <button id="confirm-ok"
@@ -647,7 +915,6 @@
     </div>
   </div>
 
-Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
   <!-- CSS cho Form (dùng chung) -->
   <style>
     /* ... (CSS cho form-input và button không cần nữa, 
@@ -662,12 +929,21 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
       .btn-cancel {
         @apply px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition;
       }
+      /* THÊM MỚI: Dark mode */
+      .dark .btn-cancel {
+         @apply bg-gray-600 text-gray-200 hover:bg-gray-500;
+      }
 
       .btn-save {
         @apply px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition;
       }
     }
   </style>
+
+  <!-- THÊM MỚI: Toast Notification Container -->
+  <div id="toast-container" class="fixed bottom-4 right-4 z-[100] flex flex-col gap-3">
+    <!-- Toasts sẽ được thêm vào đây bằng JS -->
+  </div>
 
 
   <!-- ===== JavaScript Logic ===== -->
@@ -681,9 +957,11 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
     let currentView = 'sanpham';
     let selectedItem = { view: null, id: null };
     let debounceTimer;
-    // Trạng thái chỉnh sửa nội tuyến
-    let currentEditState = { view: null, id: null, mode: null }; // mode: 'add' or 'edit'
+    // MỚI: Trạng thái chỉnh sửa nội tuyến cho từng view
+    let currentEditState = {};
     let sanphamFiltersPopulated = false; // MỚI: Cờ để chỉ tải bộ lọc 1 lần
+    let tonkhoFiltersPopulated = false; // MỚI: Cờ cho bộ lọc Tồn Kho
+    let sanphamDataForLookup = []; // MỚI: Cache sản phẩm cho Tồn Kho
 
     // MỚI: Biến lưu trữ dữ liệu gốc và trạng thái bộ lọc custom
     let sanphamDataCache = []; // Lưu trữ tất cả sản phẩm
@@ -693,6 +971,16 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
       nganh: new Set(),
       phu_trach: new Set()
     };
+    // MỚI: State cho bộ lọc Tồn Kho
+    let tonkhoFilterState = {
+      ma_vt: new Set(),
+      lot: new Set(),
+      ton_cuoi: new Set(),
+      tinh_trang: new Set(),
+      nganh: new Set(),
+      phu_trach: new Set()
+    };
+
 
     // MỚI: Biến phân trang
     let pagination = {
@@ -753,7 +1041,15 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
     };
 
     const lastSyncTimeSpan = document.getElementById('last-sync-time'); // MỚI
-    const fontSizeSelect = document.getElementById('font-size-select'); // MỚI
+    
+    // THÊM MỚI: DOM cho Cài đặt Popover và Toast
+    const settingsMenu = document.getElementById('settings-menu');
+    const settingsToggleButton = document.getElementById('settings-toggle-button');
+    const settingsPopover = document.getElementById('settings-popover');
+    const fontSizeSelect = document.getElementById('font-size-select'); // Đã di chuyển
+    const darkModeToggle = document.getElementById('dark-mode-toggle');
+    const darkModeToggleKnob = document.getElementById('dark-mode-toggle-knob');
+    const toastContainer = document.getElementById('toast-container');
 
 
     // ===== 4. Logic Chuyển View (Navigation) =====
@@ -761,7 +1057,12 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
      * Hiển thị một view (tab) cụ thể
      */
     function showView(viewId) {
-      if (currentEditState.mode) return; // Không chuyển view khi đang edit
+      if (currentView === viewId) return; // Không làm gì nếu đã ở view hiện tại
+
+      // MỚI: Chụp lại trạng thái của view sắp rời đi
+      if (currentEditState[currentView]) {
+        captureEditState(currentView);
+      }
       
       currentView = viewId;
       views.forEach(view => view.classList.remove('active'));
@@ -773,29 +1074,39 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
       // MỚI: Reset phân trang khi chuyển view
       pagination.page = 1;
       
-      hideInlineEditControls(); // Luôn reset trạng thái edit
+      // MỚI: Cập nhật trạng thái nút Lưu/Hủy dựa trên view mới
+      if (currentEditState[currentView]) {
+        showInlineEditControls();
+      } else {
+        hideInlineEditControls();
+      }
 
-      // MỚI: Xử lý hiển thị bộ lọc
-      filterPanel.classList.add('hidden'); // 1. Luôn ẩn bảng lọc khi chuyển view
-      toolbarToggleFilterText.textContent = 'Hiện bộ lọc'; // 2. Reset text nút
+      // Xử lý hiển thị nút Tải Excel
+      if (viewId === 'donhang') {
+        toolbar.excel.style.display = 'none';
+      } else {
+        toolbar.excel.style.display = 'flex';
+      }
 
-      // 3. Ẩn tất cả các tùy chọn lọc
+      // Xử lý hiển thị bộ lọc
+      filterPanel.classList.add('hidden'); 
+      toolbarToggleFilterText.textContent = 'Hiện bộ lọc'; 
+
       document.querySelectorAll('.filter-view-options').forEach(f => f.classList.add('hidden'));
-
       const filterOptions = document.getElementById(`filter-${viewId}`);
 
-      // 4. Hiển thị nút "Hiện bộ lọc" VÀ tùy chọn lọc nếu nó tồn tại VÀ không phải view 'chitiet'
       if (filterOptions && viewId !== 'chitiet') {
-        filterOptions.classList.remove('hidden'); // Hiển thị tùy chọn (ví dụ: filter-sanpham)
-        toolbarToggleFilter.style.display = 'flex'; // Hiển thị nút "Hiện bộ lọc"
+        filterOptions.classList.remove('hidden'); 
+        toolbarToggleFilter.style.display = 'flex'; 
 
-        // MỚI: Tải dữ liệu cho dropdowns nếu chưa tải
         if (viewId === 'sanpham' && !sanphamFiltersPopulated) {
           populateSanphamFilters();
         }
-
+        if (viewId === 'tonkho' && !tonkhoFiltersPopulated) {
+          populateTonkhoFilters();
+        }
       } else {
-        toolbarToggleFilter.style.display = 'none'; // Ẩn nút "Hiện bộ lọc" (cho view 'chitiet' hoặc view chưa có)
+        toolbarToggleFilter.style.display = 'none'; 
       }
 
       loadDataForCurrentView();
@@ -804,12 +1115,22 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
     /**
      * Tải dữ liệu dựa trên view hiện tại
      */
-    function loadDataForCurrentView() {
+    async function loadDataForCurrentView() {
+      // MỚI: Xóa selection khi tải lại dữ liệu, trừ khi đang edit
+      if (!currentEditState[currentView]) {
+         clearSelection();
+      }
+
       switch (currentView) {
-        case 'sanpham': loadSanpham(); break;
-        case 'tonkho': loadTonkho(); break;
-        case 'donhang': loadDonhang(); break;
-        case 'chitiet': loadChitiet(); break;
+        case 'sanpham': await loadSanpham(); break;
+        case 'tonkho': await loadTonkho(); break;
+        case 'donhang': await loadDonhang(); break;
+        case 'chitiet': await loadChitiet(); break;
+      }
+      
+      // MỚI: Sau khi tải dữ liệu gốc, phục hồi trạng thái edit
+      if (currentEditState[currentView]) {
+        await restoreEditState(currentView);
       }
     }
 
@@ -817,52 +1138,79 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
      * Xử lý sự kiện cho các nút toolbar (Đã refactor)
      */
     function handleToolbarAdd() {
-      if (currentEditState.mode === 'edit') return; // Đang *sửa* thì không thêm
-
-      if (currentEditState.mode !== 'add') {
-        // Lần click đầu tiên
+        // Khởi tạo state cho view hiện tại nếu chưa có
+        if (!currentEditState[currentView]) {
+            currentEditState[currentView] = { mode: 'add', data: {} };
+        }
+        // Luôn đảm bảo mode là 'add'
+        currentEditState[currentView].mode = 'add';
+        
         showInlineEditControls();
-        currentEditState.view = currentView;
-        currentEditState.mode = 'add';
-      }
+        showToast('Đang ở chế độ thêm mới. Nhấn "Lưu" hoặc "Hủy" để thoát.', 'warning', 5000);
+        
+        const newId = `new-${crypto.randomUUID()}`;
+        // Thêm dữ liệu rỗng vào state
+        currentEditState[currentView].data[newId] = { tempId: newId };
+        
+        let newRow;
+        switch (currentView) {
+            case 'sanpham':
+                newRow = createNewSanphamRow(newId);
+                break;
+            case 'tonkho':
+                newRow = createNewTonkhoRow(newId);
+                break;
+            case 'donhang':
+                // Thêm dữ liệu mặc định vào state
+                currentEditState[currentView].data[newId].thoi_gian = new Date().toISOString().slice(0, 10);
+                newRow = createNewDonhangRow(newId, currentEditState[currentView].data[newId]);
+                break;
+        }
 
-      // Các lần click tiếp theo
-      switch (currentView) {
-        case 'sanpham': createNewSanphamRow(); break;
-        case 'tonkho': createNewTonkhoRow(); break;
-        case 'donhang': createNewDonhangRow(); break;
-        // case 'chitiet': (Bị ẩn)
-      }
+        // Focus vào ô đầu tiên
+        if (newRow) {
+            const firstInput = newRow.querySelector('input:not([readonly]), button.inline-custom-select-toggle');
+            if (firstInput) {
+                if (firstInput.tagName === 'BUTTON') firstInput.click();
+                else firstInput.focus();
+            }
+        }
     }
 
+
     function handleToolbarEdit() {
-      if (!selectedItem.id || currentEditState.mode) return;
+      if (!selectedItem.id) return;
       const { view, id } = selectedItem;
+      
+      // Khởi tạo state cho view nếu chưa có
+      if (!currentEditState[view]) {
+        currentEditState[view] = { mode: 'edit', data: {} };
+      }
+      currentEditState[view].mode = 'edit';
+      
+      showToast('Đang ở chế độ chỉnh sửa. Nhấn "Lưu" hoặc "Hủy" để thoát.', 'warning', 5000);
+      
       switch (view) {
         case 'sanpham': editSanpham(id); break;
         case 'tonkho': editTonkho(id); break;
         case 'donhang': editDonhang(id); break;
-        // case 'chitiet': (Bị ẩn)
       }
     }
 
     function handleToolbarDelete() {
-      if (!selectedItem.id || currentEditState.mode) return;
-      // ... (logic xóa không đổi) ...
+      if (!selectedItem.id) return;
       const { view, id } = selectedItem;
       switch (view) {
         case 'sanpham': deleteSanpham(id); break;
         case 'tonkho': deleteTonkho(id); break;
         case 'donhang': deleteDonhang(id); break;
-        case 'chitiet': deleteChitiet(id); break; // Nút Xóa ở Chi tiết cũng bị ẩn, nhưng để logic ở đây
+        case 'chitiet': deleteChitiet(id); break; 
       }
     }
 
     function handleToolbarSearch() {
-      if (currentEditState.mode) return; // Không tìm kiếm khi đang edit
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
-        // MỚI: Reset phân trang
         pagination.page = 1;
         paginationControls.pageInput.value = 1;
         loadDataForCurrentView();
@@ -870,41 +1218,32 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
     }
 
     function handleToolbarClearFilter() {
-      if (currentEditState.mode) return;
-      toolbar.search.value = '';
-      
-      // MỚI: Reset cả các select filter
-      document.querySelectorAll('.filter-select').forEach(select => {
-        select.value = '';
-      });
+        toolbar.search.value = '';
+        
+        if (currentView === 'sanpham') {
+            sanphamFilterState = { ma_vt: new Set(), ten_vt: new Set(), nganh: new Set(), phu_trach: new Set() };
+            document.querySelectorAll('#filter-sanpham .custom-filter').forEach(filter => {
+                const column = filter.dataset.filterColumn;
+                updateCustomFilterText(column, filter);
+                filter.querySelectorAll('.custom-filter-list input[type="checkbox"]').forEach(cb => cb.checked = false);
+                filter.querySelector('.custom-filter-search').value = '';
+                filter.querySelectorAll('.custom-filter-item').forEach(item => item.style.display = 'flex');
+            });
+        } else if (currentView === 'tonkho') {
+            tonkhoFilterState = { ma_vt: new Set(), lot: new Set(), ton_cuoi: new Set(), tinh_trang: new Set(), nganh: new Set(), phu_trach: new Set() };
+            document.querySelectorAll('#filter-tonkho .custom-filter').forEach(filter => {
+                const column = filter.dataset.filterColumn;
+                updateCustomFilterText(column, filter);
+                filter.querySelectorAll('.custom-filter-list input[type="checkbox"]').forEach(cb => cb.checked = false);
+                const search = filter.querySelector('.custom-filter-search');
+                if (search) search.value = ''; // Tồn cuối không có search
+                filter.querySelectorAll('.custom-filter-item').forEach(item => item.style.display = 'flex');
+            });
+        }
 
-      // MỚI: Reset bộ lọc custom
-      sanphamFilterState = {
-        ma_vt: new Set(),
-        ten_vt: new Set(),
-        nganh: new Set(),
-        phu_trach: new Set()
-      };
-      // MỚI: Cập nhật UI bộ lọc custom
-      document.querySelectorAll('#filter-sanpham .custom-filter').forEach(filter => {
-        updateCustomFilterText(filter.dataset.filterColumn, filter);
-        // Bỏ check tất cả checkbox
-        filter.querySelectorAll('.custom-filter-list input[type="checkbox"]').forEach(cb => {
-          cb.checked = false;
-        });
-        // Reset ô tìm kiếm
-        filter.querySelector('.custom-filter-search').value = '';
-        // Hiển thị lại tất cả các item
-        filter.querySelectorAll('.custom-filter-item').forEach(item => {
-          item.style.display = 'flex';
-        });
-      });
-
-      // MỚI: Reset phân trang
-      pagination.page = 1;
-      paginationControls.pageInput.value = 1;
-
-      loadDataForCurrentView();
+        pagination.page = 1;
+        paginationControls.pageInput.value = 1;
+        loadDataForCurrentView();
     }
 
     // ===== 5. Logic Chọn Hàng (Row Selection) (ĐÃ THAY ĐỔI) =====
@@ -913,18 +1252,14 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
      * Gắn listener cho các checkbox
      */
     function attachCheckboxListeners(view) {
-      // Listener cho từng checkbox hàng
       document.querySelectorAll(`#${view}-table-body .row-checkbox`).forEach(cb => {
         cb.addEventListener('click', (e) => handleCheckboxClick(e, view));
       });
-
-      // Listener cho checkbox "chọn tất cả"
       const selectAll = document.querySelector(`.select-all-checkbox[data-view="${view}"]`);
       if (selectAll) {
         selectAll.addEventListener('click', (e) => {
           document.querySelectorAll(`#${view}-table-body .row-checkbox`).forEach(cb => {
             cb.checked = e.target.checked;
-            // Tạm thời không kích hoạt multi-select, chỉ dùng để clear
             if (!e.target.checked) clearSelection();
           });
         });
@@ -935,19 +1270,18 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
      * MỚI: Xử lý khi click vào TR (toàn bộ hàng)
      */
     function toggleRowSelection(view, id, event) {
-      if (currentEditState.mode) return; // Không chọn khi đang edit
+      if (currentEditState[view]) return; // Không chọn khi đang edit ở view đó
 
-      // Bỏ qua nếu click vào checkbox, input, link hoặc button
-      if (event.target.closest('input, a, button')) return;
+      if (event.target.closest('input, a, button, select')) return;
 
       const checkbox = document.querySelector(`.row-checkbox[data-view="${view}"][data-id="${id}"]`);
       if (checkbox) {
-        checkbox.click(); // Kích hoạt sự kiện click của checkbox
+        checkbox.click(); 
       }
     }
 
     function handleCheckboxClick(event, view) {
-      if (currentEditState.mode) {
+      if (currentEditState[view]) {
         event.target.checked = !event.target.checked; // Ngăn thay đổi khi đang edit
         return;
       }
@@ -956,16 +1290,13 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
       const id = cb.dataset.id;
 
       if (cb.checked) {
-        // Chọn hàng mới
         selectRow(view, id);
       } else {
-        // Bỏ chọn
         clearSelection();
       }
     }
 
     function selectRow(view, id) {
-      // 1. Xóa lựa chọn cũ (nếu có)
       if (selectedItem.id && selectedItem.id !== id) {
         const oldRow = document.getElementById(`${selectedItem.view}-row-${selectedItem.id}`);
         if (oldRow) oldRow.classList.remove('selected');
@@ -973,21 +1304,16 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
         if (oldCb) oldCb.checked = false;
       }
 
-      // 2. Đặt lựa chọn mới
       selectedItem.view = view;
       selectedItem.id = id;
 
       const newRow = document.getElementById(`${view}-row-${id}`);
-      if (newRow) {
-        newRow.classList.add('selected');
-      }
+      if (newRow) newRow.classList.add('selected');
+      
       const newCb = document.querySelector(`.row-checkbox[data-id="${id}"]`);
-      if (newCb) {
-        newCb.checked = true;
-      }
-
-      // 3. Kích hoạt nút (chỉ khi không ở chế độ edit)
-      if (!currentEditState.mode) {
+      if (newCb) newCb.checked = true;
+      
+      if (!currentEditState[view]) {
         toolbar.edit.disabled = false;
         toolbar.delete.disabled = false;
       }
@@ -996,9 +1322,8 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
     function clearSelection() {
       if (selectedItem.view && selectedItem.id) {
         const oldRow = document.getElementById(`${selectedItem.view}-row-${selectedItem.id}`);
-        if (oldRow) {
-          oldRow.classList.remove('selected');
-        }
+        if (oldRow) oldRow.classList.remove('selected');
+        
         const oldCb = document.querySelector(`.row-checkbox[data-id="${selectedItem.id}"]`);
         if (oldCb) oldCb.checked = false;
       }
@@ -1011,7 +1336,6 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
 
 
     // ===== 6. Logic Modal Xác Nhận (Custom Confirm) =====
-    // ... (Không thay đổi) ...
     function showConfirm(message, callback, isAlert = false) {
       confirmMessage.textContent = message;
       confirmCallback = callback;
@@ -1031,9 +1355,7 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
       confirmModal.classList.remove('hidden');
     }
     confirmOkButton.addEventListener('click', () => {
-      if (confirmCallback) {
-        confirmCallback();
-      }
+      if (confirmCallback) confirmCallback();
       confirmCallback = null;
       confirmModal.classList.add('hidden');
     });
@@ -1042,16 +1364,42 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
       confirmModal.classList.add('hidden');
     });
 
+    // ===== MỚI: 6.3. Logic Thông báo (Toast) =====
+    function showToast(message, type = 'success', duration = 3000) {
+      const toast = document.createElement('div');
+      toast.className = `toast toast-${type}`;
+      
+      let iconSvg = '';
+      switch(type) {
+        case 'success':
+          iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
+          break;
+        case 'warning':
+          iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>`;
+          break;
+        case 'error':
+          iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
+          break;
+      }
+
+      toast.innerHTML = `${iconSvg}<span>${message}</span>`;
+      toastContainer.appendChild(toast);
+
+      setTimeout(() => { toast.classList.add('show'); }, 10);
+
+      setTimeout(() => {
+        toast.classList.remove('show');
+        toast.classList.add('hide');
+        toast.addEventListener('transitionend', () => toast.remove());
+      }, duration);
+    }
+
     // ===== MỚI: 6.5. Cập nhật UI Phân trang =====
-    /**
-     * MỚI: Cập nhật UI phân trang
-     */
     function updatePaginationUI() {
       const { page, limit, totalItems } = pagination;
       
       pagination.totalPages = Math.max(1, Math.ceil(totalItems / limit));
       
-      // Nếu trang hiện tại lớn hơn tổng số trang (ví dụ: sau khi lọc), reset về trang cuối
       if (pagination.page > pagination.totalPages) {
         pagination.page = pagination.totalPages;
       }
@@ -1065,17 +1413,15 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
       
       paginationControls.prevButton.disabled = (pagination.page <= 1);
       paginationControls.nextButton.disabled = (pagination.page >= pagination.totalPages);
-      paginationControls.pageInput.max = pagination.totalPages; // Đặt max cho input
+      paginationControls.pageInput.max = pagination.totalPages;
     }
 
 
     // ===== 7. CRUD cho SẢN PHẨM (SANPHAM) =====
     async function loadSanpham() {
-      clearSelection();
       sanphamTableBody.innerHTML = `<tr><td colspan="5" class="td-center">Đang tải dữ liệu...</td></tr>`;
       const searchTerm = toolbar.search.value.toLowerCase();
 
-      // MỚI: Lấy giá trị từ bảng lọc (thay đổi ID)
       const filterMaVt = Array.from(sanphamFilterState.ma_vt);
       const filterTenVt = Array.from(sanphamFilterState.ten_vt);
       const filterNganh = Array.from(sanphamFilterState.nganh);
@@ -1083,41 +1429,25 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
 
       try {
         let query = supabase.from('SANPHAM').select('*');
-        let countQuery = supabase.from('SANPHAM').select('*', { count: 'exact', head: true }); // MỚI: Query đếm
+        let countQuery = supabase.from('SANPHAM').select('*', { count: 'exact', head: true }); 
 
-        // 1. Lọc "Tìm kiếm nhanh" (OR)
         if (searchTerm) {
           const searchFilter = `ma_vt.ilike.%${searchTerm}%,ten_vt.ilike.%${searchTerm}%,nganh.ilike.%${searchTerm}%,phu_trach.ilike.%${searchTerm}%`;
           query = query.or(searchFilter);
-          countQuery = countQuery.or(searchFilter); // MỚI
+          countQuery = countQuery.or(searchFilter);
         }
 
-        // 2. Lọc chi tiết (AND) - MỚI (dùng .eq() cho select)
-        if (filterMaVt.length > 0) { 
-          query = query.in('ma_vt', filterMaVt); 
-          countQuery = countQuery.in('ma_vt', filterMaVt); // MỚI
-        }
-        if (filterTenVt.length > 0) { 
-          query = query.in('ten_vt', filterTenVt); 
-          countQuery = countQuery.in('ten_vt', filterTenVt); // MỚI
-        }
-        if (filterNganh.length > 0) { 
-          query = query.in('nganh', filterNganh); 
-          countQuery = countQuery.in('nganh', filterNganh); // MỚI
-        }
-        if (filterPhuTrach.length > 0) { 
-          query = query.in('phu_trach', filterPhuTrach); 
-          countQuery = countQuery.in('phu_trach', filterPhuTrach); // MỚI
-        }
+        if (filterMaVt.length > 0) { query = query.in('ma_vt', filterMaVt); countQuery = countQuery.in('ma_vt', filterMaVt); }
+        if (filterTenVt.length > 0) { query = query.in('ten_vt', filterTenVt); countQuery = countQuery.in('ten_vt', filterTenVt); }
+        if (filterNganh.length > 0) { query = query.in('nganh', filterNganh); countQuery = countQuery.in('nganh', filterNganh); }
+        if (filterPhuTrach.length > 0) { query = query.in('phu_trach', filterPhuTrach); countQuery = countQuery.in('phu_trach', filterPhuTrach); }
 
-        // MỚI: 3. Lấy tổng số lượng
         const { count, error: countError } = await countQuery;
         if (countError) throw countError;
         
         pagination.totalItems = count || 0;
-        updatePaginationUI(); // Cập nhật UI phân trang
+        updatePaginationUI(); 
 
-        // MỚI: 4. Tính toán offset và áp dụng phân trang
         const from = (pagination.page - 1) * pagination.limit;
         const to = from + pagination.limit - 1;
         query = query.range(from, to);
@@ -1125,86 +1455,75 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
         let { data, error } = await query.order('ma_vt');
         if (error) throw error;
 
-        if (data.length === 0) {
+        if (data.length === 0 && !currentEditState.sanpham) {
           sanphamTableBody.innerHTML = `<tr><td colspan="5" class="td-center">Không tìm thấy dữ liệu.</td></tr>`;
           return;
         }
 
         sanphamTableBody.innerHTML = data.map(item => `
-          <tr id="sanpham-row-${item.ma_vt}" class="selectable-row hover:bg-gray-50" onclick="toggleRowSelection('sanpham', '${item.ma_vt}', event)">
-            <td class="px-6 py-4"><input type="checkbox" class="row-checkbox" data-view="sanpham" data-id="${item.ma_vt}"></td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.ma_vt}</td>
-            <!-- THAY ĐỔI: Xóa 'whitespace-nowrap' để cho phép xuống dòng -->
-            <td class="px-6 py-4 text-sm text-gray-600">${item.ten_vt}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${item.nganh || ''}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${item.phu_trach || ''}</td>
+          <tr id="sanpham-row-${item.ma_vt}" class="selectable-row hover:bg-gray-50 dark:hover:bg-gray-700" onclick="toggleRowSelection('sanpham', '${item.ma_vt}', event)">
+            <td class="td"><input type="checkbox" class="row-checkbox" data-view="sanpham" data-id="${item.ma_vt}"></td>
+            <td class="td whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">${item.ma_vt}</td>
+            <td class="td text-sm text-gray-600 dark:text-gray-300">${item.ten_vt}</td>
+            <td class="td whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">${item.nganh || ''}</td>
+            <td class="td whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">${item.phu_trach || ''}</td>
           </tr>
         `).join('');
         attachCheckboxListeners('sanpham');
       } catch (error) {
         console.error('Lỗi tải sản phẩm:', error);
+        showToast(`Lỗi tải sản phẩm: ${error.message}`, 'error');
         sanphamTableBody.innerHTML = `<tr><td colspan="5" class="td-center text-red-500">Lỗi: ${error.message}</td></tr>`;
       }
       
-      // MỚI: Cập nhật thời gian đồng bộ sau khi tải dữ liệu
       updateLastSyncTime();
     }
 
-    async function editSanpham(ma_vt) {
+    async function editSanpham(id) {
       try {
-        let { data, error } = await supabase.from('SANPHAM').select('*').eq('ma_vt', ma_vt).single();
+        const { data, error } = await supabase.from('SANPHAM').select('*').eq('ma_vt', id).single();
         if (error) throw error;
+        
+        currentEditState.sanpham.data[id] = data;
 
-        const row = document.getElementById(`sanpham-row-${ma_vt}`);
+        const row = document.getElementById(`sanpham-row-${id}`);
         row.innerHTML = createEditableRowContents('sanpham', data, true);
         row.setAttribute('data-editing', 'true');
-
-        currentEditState = { view: 'sanpham', id: ma_vt, mode: 'edit' };
         showInlineEditControls();
       } catch (error) {
         console.error('Lỗi lấy dữ liệu sửa:', error);
-        alert(`Lỗi: ${error.message}`);
+        showToast(`Lỗi lấy dữ liệu sửa: ${error.message}`, 'error');
       }
     }
 
-    function createNewSanphamRow() {
+    function createNewSanphamRow(newId) {
       const tableBody = document.getElementById('sanpham-table-body');
-      const newId = `new-${crypto.randomUUID()}`; // Unique ID
       const rowHtml = `<tr id="sanpham-row-${newId}" data-editing="true">${createEditableRowContents('sanpham', {}, false)}</tr>`;
       tableBody.insertAdjacentHTML('afterbegin', rowHtml);
-      const newRow = document.getElementById(`sanpham-row-${newId}`);
-      // Tự động focus vào ô đầu tiên
-      newRow.querySelector('input[name="ma_vt"]').focus();
-      return newRow; // Trả về row element
+      return document.getElementById(`sanpham-row-${newId}`);
     }
 
     async function saveSanpham(data, mode, id) {
-      // Chuẩn bị dữ liệu
       const cleanData = {
-        ma_vt: data.ma_vt, // ma_vt là PK, phải có
+        ma_vt: data.ma_vt, 
         ten_vt: data.ten_vt,
         nganh: data.nganh || null,
         phu_trach: data.phu_trach || null
       };
 
-      // === THÊM VALIDATION ===
-      // 1. Kiểm tra trống
       if (!cleanData.ten_vt) {
         showConfirm('Lỗi: Tên VT không được để trống.', () => {}, true);
-        return false; // Báo hiệu lưu thất bại
+        return false; 
       }
       if (!cleanData.nganh) {
         showConfirm('Lỗi: Ngành không được để trống.', () => {}, true);
-        return false; // Báo hiệu lưu thất bại
+        return false;
       }
       if (!cleanData.phu_trach) {
         showConfirm('Lỗi: Phụ trách không được để trống.', () => {}, true);
-        return false; // Báo hiệu lưu thất bại
+        return false;
       }
 
-      // 2. Kiểm tra trùng Mã VT
-      // Chỉ kiểm tra khi Thêm mới (mode === 'add')
-      // Hoặc khi Sửa (mode === 'edit') VÀ Mã VT đã thay đổi (data.ma_vt !== id)
       if (mode === 'add' || (mode === 'edit' && data.ma_vt !== id)) {
         if (!cleanData.ma_vt) {
             showConfirm('Lỗi: Mã VT không được để trống khi thêm mới hoặc thay đổi.', () => {}, true);
@@ -1215,36 +1534,31 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
           .from('SANPHAM')
           .select('ma_vt')
           .eq('ma_vt', cleanData.ma_vt)
-          .maybeSingle(); // Lấy một (hoặc null)
+          .maybeSingle(); 
 
-        if (checkError) throw checkError; // Ném lỗi nếu query hỏng
+        if (checkError) throw checkError; 
 
         if (existing) {
           showConfirm(`Lỗi: Mã VT '${cleanData.ma_vt}' đã tồn tại. Vui lòng chọn Mã VT khác.`, () => {}, true);
-          return false; // Báo hiệu lưu thất bại
+          return false;
         }
       }
-      // === KẾT THÚC VALIDATION ===
-
 
       let error;
       if (mode === 'edit') {
-        // Khi sửa, cho phép update PK (ma_vt)
-        // Cần update dữ liệu dựa trên id (Mã VT cũ)
         const { error: updateError } = await supabase.from('SANPHAM').update({
-          ma_vt: cleanData.ma_vt, // Cho phép sửa Mã VT
+          ma_vt: cleanData.ma_vt,
           ten_vt: cleanData.ten_vt,
           nganh: cleanData.nganh,
           phu_trach: cleanData.phu_trach
-        }).eq('ma_vt', id); // id là ma_vt CŨ
+        }).eq('ma_vt', id);
         error = updateError;
       } else {
-        // Khi thêm mới, insert (id là null)
         const { error: insertError } = await supabase.from('SANPHAM').insert([cleanData]);
         error = insertError;
       }
-      if (error) throw error; // Ném lỗi để handleToolbarSave bắt
-      return true; // MỚI: Báo hiệu lưu thành công
+      if (error) throw error; 
+      return true;
     }
 
     async function deleteSanpham(ma_vt) {
@@ -1252,155 +1566,253 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
         try {
           const { error } = await supabase.from('SANPHAM').delete().eq('ma_vt', ma_vt);
           if (error) throw error;
-          loadSanpham();
+          showToast(`Đã xóa sản phẩm '${ma_vt}'!`, 'success');
+          loadDataForCurrentView();
         } catch (error) {
           console.error('Lỗi xóa sản phẩm:', error);
-          alert(`Lỗi: ${error.message}`);
+          showToast(`Lỗi khi xóa: ${error.message}`, 'error');
         }
       });
     }
 
     // ===== 8. CRUD cho TỒN KHO (TONKHO) =====
-
-    /**
-     * MỚI: Helper định dạng ngày
-     */
     function formatDate(dateString) {
       if (!dateString) return '';
       try {
-        const date = new Date(dateString);
-        if (isNaN(date.getTime())) return ''; // Xử lý ngày không hợp lệ
+        const date = new Date(dateString.includes('/') ? dateString.split('/').reverse().join('-') : dateString);
+        if (isNaN(date.getTime())) return dateString; 
         const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0'); // Tháng bắt đầu từ 0
+        const month = String(date.getMonth() + 1).padStart(2, '0');
         const year = date.getFullYear();
         return `${day}/${month}/${year}`;
       } catch (e) {
-        return ''; // Trả về rỗng nếu có lỗi
+        return dateString;
       }
+    }
+
+    function getStatusClass(status) {
+        if (!status) return '';
+        if (status === 'Hết Date') return 'status-het-date';
+        if (status === 'Cận Date') return 'status-can-date';
+        if (status === 'Hàng Hư') return 'status-hang-hu';
+        if (status === 'Đang Sử Dụng') return 'status-binh-thuong';
+        return '';
     }
 
     async function loadTonkho() {
-      clearSelection();
-      tonkhoTableBody.innerHTML = `<tr><td colspan="14" class="td-center">Đang tải dữ liệu...</td></tr>`;
-      const searchTerm = toolbar.search.value.toLowerCase();
-      try {
-        let query = supabase.from('TONKHO').select('*');
-        let countQuery = supabase.from('TONKHO').select('*', { count: 'exact', head: true }); // MỚI
-        
-        if (searchTerm) {
-          const searchFilter = `ma_vach.ilike.%${searchTerm}%,ma_vt.ilike.%${searchTerm}%,ten_vt.ilike.%${searchTerm}%,lot.ilike.%${searchTerm}%,tinh_trang.ilike.%${searchTerm}%`;
-          query = query.or(searchFilter);
-          countQuery = countQuery.or(searchFilter); // MỚI
+        tonkhoTableBody.innerHTML = `<tr><td colspan="14" class="td-center">Đang tải dữ liệu...</td></tr>`;
+        const searchTerm = toolbar.search.value.toLowerCase();
+        try {
+            const { data: chiTietData, error: chiTietError } = await supabase.from('CHITIET').select('ma_vach, ma_kho, so_luong');
+            if (chiTietError) throw chiTietError;
+
+            const aggregatedDetails = {};
+            for (const detail of chiTietData) {
+                if (!detail.ma_vach) continue;
+                if (!aggregatedDetails[detail.ma_vach]) {
+                    aggregatedDetails[detail.ma_vach] = { nhap: 0, xuat: 0 };
+                }
+                const soLuong = Number(detail.so_luong) || 0;
+                if (detail.ma_kho && detail.ma_kho.toUpperCase().includes('IN')) {
+                    aggregatedDetails[detail.ma_vach].nhap += soLuong;
+                }
+                if (detail.ma_kho && detail.ma_kho.toUpperCase().includes('OUT')) {
+                    aggregatedDetails[detail.ma_vach].xuat += soLuong;
+                }
+            }
+            
+            await loadSanphamForLookup(); 
+            let query = supabase.from('TONKHO').select('*');
+            let countQuery = supabase.from('TONKHO').select('*', { count: 'exact', head: true });
+
+            if (searchTerm) {
+                const searchFilter = `ma_vach.ilike.%${searchTerm}%,ma_vt.ilike.%${searchTerm}%,lot.ilike.%${searchTerm}%,tinh_trang.ilike.%${searchTerm}%`;
+                query = query.or(searchFilter);
+                countQuery = countQuery.or(searchFilter);
+            }
+            
+            const { ma_vt, lot, tinh_trang, nganh, phu_trach } = tonkhoFilterState;
+            if (ma_vt.size > 0) { query = query.in('ma_vt', Array.from(ma_vt)); countQuery = countQuery.in('ma_vt', Array.from(ma_vt)); }
+            if (lot.size > 0) { query = query.in('lot', Array.from(lot)); countQuery = countQuery.in('lot', Array.from(lot)); }
+            if (tinh_trang.size > 0) { query = query.in('tinh_trang', Array.from(tinh_trang)); countQuery = countQuery.in('tinh_trang', Array.from(tinh_trang)); }
+            if (nganh.size > 0) { query = query.in('nganh', Array.from(nganh)); countQuery = countQuery.in('nganh', Array.from(nganh)); }
+            if (phu_trach.size > 0) { query = query.in('phu_trach', Array.from(phu_trach)); countQuery = countQuery.in('phu_trach', Array.from(phu_trach)); }
+
+            const { count, error: countError } = await countQuery;
+            if (countError) throw countError;
+            pagination.totalItems = count || 0;
+            updatePaginationUI();
+            
+            const from = (pagination.page - 1) * pagination.limit;
+            const to = from + pagination.limit - 1;
+            query = query.range(from, to);
+
+            let { data, error } = await query.order('ma_vach');
+            if (error) throw error;
+
+            if (data.length === 0 && !currentEditState.tonkho) {
+                tonkhoTableBody.innerHTML = `<tr><td colspan="14" class="td-center">Chưa có dữ liệu.</td></tr>`;
+                return;
+            }
+
+            const finalData = data.map(item => {
+                const ton_dau = Number(item.ton_dau) || 0;
+                const aggregates = aggregatedDetails[item.ma_vach] || { nhap: 0, xuat: 0 };
+                const nhap = aggregates.nhap;
+                const xuat = aggregates.xuat;
+                const ton_cuoi = ton_dau + nhap - xuat;
+                return { ...item, nhap, xuat, ton_cuoi };
+            }).filter(item => { 
+                const tonCuoiFilter = tonkhoFilterState.ton_cuoi;
+                if (tonCuoiFilter.size === 0 || tonCuoiFilter.has('Tất cả')) return true;
+                if (tonCuoiFilter.has('Còn hàng')) return item.ton_cuoi > 0;
+                if (tonCuoiFilter.has('Hết hàng')) return item.ton_cuoi <= 0;
+                return false;
+            });
+
+            if (finalData.length === 0 && !currentEditState.tonkho) {
+                tonkhoTableBody.innerHTML = `<tr><td colspan="14" class="td-center">Không có dữ liệu phù hợp với bộ lọc Tồn Cuối.</td></tr>`;
+                return;
+            }
+
+            tonkhoTableBody.innerHTML = finalData.map(item => {
+                const productInfo = sanphamDataForLookup.find(p => p.ma_vt === item.ma_vt) || {};
+                return `
+                <tr id="tonkho-row-${item.ma_vach}" class="selectable-row hover:bg-gray-50 dark:hover:bg-gray-700" onclick="toggleRowSelection('tonkho', '${item.ma_vach}', event)">
+                    <td class="td"><input type="checkbox" class="row-checkbox" data-view="tonkho" data-id="${item.ma_vach}"></td>
+                    <td class="td text-sm font-medium text-gray-900 dark:text-gray-100">${item.ma_vach}</td>
+                    <td class="td text-sm text-gray-600 dark:text-gray-300">${item.ma_vt || ''}</td>
+                    <td class="td text-sm text-gray-600 dark:text-gray-300">${productInfo.ten_vt || ''}</td>
+                    <td class="td text-sm text-gray-600 dark:text-gray-300">${item.lot || ''}</td>
+                    <td class="td text-sm text-gray-600 dark:text-gray-300">${formatDate(item.date)}</td>
+                    <td class="td text-sm text-gray-600 dark:text-gray-300">${item.ton_dau}</td>
+                    <td class="td text-sm text-nhap">${item.nhap}</td>
+                    <td class="td text-sm text-xuat">${item.xuat}</td>
+                    <td class="td text-sm font-bold text-gray-800 dark:text-gray-100">${item.ton_cuoi}</td>
+                    <td class="td text-sm ${getStatusClass(item.tinh_trang)}">${item.tinh_trang || ''}</td>
+                    <td class="td text-sm text-gray-600 dark:text-gray-300">${item.tray || ''}</td>
+                    <td class="td text-sm text-gray-600 dark:text-gray-300">${productInfo.nganh || ''}</td>
+                    <td class="td text-sm text-gray-600 dark:text-gray-300">${productInfo.phu_trach || ''}</td>
+                </tr>
+                `}).join('');
+            attachCheckboxListeners('tonkho');
+        } catch (error) {
+            console.error('Lỗi tải tồn kho:', error);
+            showToast(`Lỗi tải tồn kho: ${error.message}`, 'error');
+            tonkhoTableBody.innerHTML = `<tr><td colspan="14" class="td-center text-red-500">Lỗi: ${error.message}</td></tr>`;
         }
-
-        // MỚI: Lấy count
-        const { count, error: countError } = await countQuery;
-        if (countError) throw countError;
-        pagination.totalItems = count || 0;
-        updatePaginationUI();
-        
-        // MỚI: Áp dụng range
-        const from = (pagination.page - 1) * pagination.limit;
-        const to = from + pagination.limit - 1;
-        query = query.range(from, to);
-
-        let { data, error } = await query.order('ma_vach');
-        if (error) throw error;
-
-        if (data.length === 0) {
-          tonkhoTableBody.innerHTML = `<tr><td colspan="14" class="td-center">Chưa có dữ liệu.</td></tr>`;
-          return;
-        }
-
-        tonkhoTableBody.innerHTML = data.map(item => {
-          const ton_dau = Number(item.ton_dau) || 0;
-          const nhap = Number(item.nhap) || 0;
-          const xuat = Number(item.xuat) || 0;
-          const ton_cuoi = ton_dau + nhap - xuat;
-
-          return `
-          <tr id="tonkho-row-${item.ma_vach}" class="selectable-row hover:bg-gray-50" onclick="toggleRowSelection('tonkho', '${item.ma_vach}', event)">
-            <td class="px-6 py-4"><input type="checkbox" class="row-checkbox" data-view="tonkho" data-id="${item.ma_vach}"></td>
-            <td class="px-6 py-4 text-sm font-medium text-gray-900">${item.ma_vach}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${item.ma_vt || ''}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${item.ten_vt || ''}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${item.lot || ''}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${formatDate(item.date)}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${ton_dau}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${nhap}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${xuat}</td>
-            <td class="px-6 py-4 text-sm font-bold text-gray-800">${ton_cuoi}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${item.tinh_trang || ''}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${item.tray || ''}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${item.nganh || ''}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${item.phu_trach || ''}</td>
-          </tr>
-        `}).join('');
-        attachCheckboxListeners('tonkho');
-      } catch (error) {
-        console.error('Lỗi tải tồn kho:', error);
-        tonkhoTableBody.innerHTML = `<tr><td colspan="14" class="td-center text-red-500">Lỗi: ${error.message}</td></tr>`;
-      }
-      
-      // MỚI: Cập nhật thời gian đồng bộ sau khi tải dữ liệu
-      updateLastSyncTime();
+        updateLastSyncTime();
     }
 
+
     async function editTonkho(ma_vach) {
+      await loadSanphamForLookup();
       try {
-        let { data, error } = await supabase.from('TONKHO').select('*').eq('ma_vach', ma_vach).single();
+        const { data, error } = await supabase.from('TONKHO').select('*').eq('ma_vach', ma_vach).single();
         if (error) throw error;
+        
+        currentEditState.tonkho.data[ma_vach] = data;
 
         const row = document.getElementById(`tonkho-row-${ma_vach}`);
         row.innerHTML = createEditableRowContents('tonkho', data, true);
         row.setAttribute('data-editing', 'true');
-
-        currentEditState = { view: 'tonkho', id: ma_vach, mode: 'edit' };
         showInlineEditControls();
       } catch (error) {
         console.error('Lỗi lấy dữ liệu sửa:', error);
-        alert(`Lỗi: ${error.message}`);
+        showToast(`Lỗi lấy dữ liệu sửa: ${error.message}`, 'error');
       }
     }
 
-    function createNewTonkhoRow() {
+    async function createNewTonkhoRow(newId) {
+      await loadSanphamForLookup();
       const tableBody = document.getElementById('tonkho-table-body');
-      const newId = `new-${crypto.randomUUID()}`;
       const rowHtml = `<tr id="tonkho-row-${newId}" data-editing="true">${createEditableRowContents('tonkho', {}, false)}</tr>`;
       tableBody.insertAdjacentHTML('afterbegin', rowHtml);
-      const newRow = document.getElementById(`tonkho-row-${newId}`);
-      // Tự động focus vào ô đầu tiên
-      newRow.querySelector('input[name="ma_vach"]').focus();
-      return newRow; // Trả về row element
+      return document.getElementById(`tonkho-row-${newId}`);
     }
 
     async function saveTonkho(data, mode, id) {
-      const cleanData = {
-        ma_vach: data.ma_vach,
-        ma_vt: data.ma_vt || null,
-        ten_vt: data.ten_vt || null,
-        lot: data.lot || null,
-        date: data.date || null,
-        ton_dau: Number(data.ton_dau) || 0,
-        nhap: Number(data.nhap) || 0,
-        xuat: Number(data.xuat) || 0,
-        tinh_trang: data.tinh_trang || null,
-        tray: data.tray || null,
-        nganh: data.nganh || null,
-        phu_trach: data.phu_trach || null,
-      };
+        if (!data.ma_vt || !data.lot || !data.date || data.ton_dau === '' || data.ton_dau === null) {
+            showConfirm('Lỗi: Mã VT, LOT, Date, và Tồn Đầu là các trường bắt buộc.', () => {}, true);
+            return false;
+        }
 
-      let error;
-      if (mode === 'edit') {
-        delete cleanData.ma_vach; // Không update PK
-        const { error: updateError } = await supabase.from('TONKHO').update(cleanData).eq('ma_vach', id); // id là ma_vach
-        error = updateError;
-      } else {
-        // id là null
-        const { error: insertError } = await supabase.from('TONKHO').insert([cleanData]);
-        error = insertError;
-      }
-      if (error) throw error;
+        const dateValue = data.date;
+        if (!/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateValue)) {
+            showConfirm('Lỗi: Định dạng Date không hợp lệ. Vui lòng sử dụng dd/mm/yyyy.', () => {}, true);
+            return false;
+        }
+        const dateParts = dateValue.split('/');
+        const day = parseInt(dateParts[0], 10);
+        const month = parseInt(dateParts[1], 10);
+        const year = parseInt(dateParts[2], 10);
+        const parsedDate = new Date(year, month - 1, day);
+
+        if (parsedDate.getFullYear() !== year || parsedDate.getMonth() + 1 !== month || parsedDate.getDate() !== day) {
+            showConfirm('Lỗi: Ngày không hợp lệ. Vui lòng kiểm tra lại.', () => {}, true);
+            return false;
+        }
+
+        const selectedProduct = sanphamDataForLookup.find(p => p.ma_vt === data.ma_vt);
+        if (!selectedProduct) {
+            showConfirm(`Lỗi: Mã VT '${data.ma_vt}' không tồn tại trong danh sách Sản Phẩm.`, () => {}, true);
+            return false;
+        }
+        
+        const formattedDateForBarcode = `${String(day).padStart(2,'0')}.${String(month).padStart(2,'0')}.${year}`;
+        const generatedMaVach = `${data.ma_vt}${data.lot}${formattedDateForBarcode}`;
+        
+        let query = supabase.from('TONKHO').select('ma_vach').eq('ma_vach', generatedMaVach);
+        if (mode === 'edit') {
+            query = query.neq('ma_vach', id);
+        }
+        const { data: existing, error: checkError } = await query.maybeSingle();
+
+        if (checkError) {
+            throw new Error(`Lỗi kiểm tra Mã Vạch: ${checkError.message}`);
+        }
+        if (existing) {
+            showConfirm(`Lỗi: Mã Vạch '${generatedMaVach}' đã tồn tại. Vui lòng thay đổi Mã VT, LOT, hoặc Date.`, () => {}, true);
+            return false;
+        }
+
+        const isoDate = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        const cleanData = {
+            ma_vach: generatedMaVach,
+            ma_vt: data.ma_vt,
+            ten_vt: selectedProduct.ten_vt,
+            nganh: selectedProduct.nganh,
+            phu_trach: selectedProduct.phu_trach,
+            lot: data.lot,
+            date: isoDate,
+            ton_dau: Number(data.ton_dau) || 0,
+            tray: data.tray || null,
+        };
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const threeMonthsFromNow = new Date();
+        threeMonthsFromNow.setMonth(threeMonthsFromNow.getMonth() + 3);
+
+        if (parsedDate < today) {
+            cleanData.tinh_trang = "Hết Date";
+        } else if (parsedDate <= threeMonthsFromNow) {
+            cleanData.tinh_trang = "Cận Date";
+        } else {
+            cleanData.tinh_trang = data.tinh_trang || null;
+        }
+
+        let error;
+        if (mode === 'edit') {
+            const { error: updateError } = await supabase.from('TONKHO').update(cleanData).eq('ma_vach', id);
+            error = updateError;
+        } else {
+            const { error: insertError } = await supabase.from('TONKHO').insert([cleanData]);
+            error = insertError;
+        }
+
+        if (error) throw error;
+        return true;
     }
 
     async function deleteTonkho(ma_vach) {
@@ -1408,10 +1820,11 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
         try {
           const { error } = await supabase.from('TONKHO').delete().eq('ma_vach', ma_vach);
           if (error) throw error;
-          loadTonkho();
+          showToast(`Đã xóa tồn kho '${ma_vach}'!`, 'success');
+          loadDataForCurrentView();
         } catch (error) {
           console.error('Lỗi xóa tồn kho:', error);
-          alert(`Lỗi: ${error.message}`);
+          showToast(`Lỗi khi xóa: ${error.message}`, 'error');
         }
       });
     }
@@ -1420,26 +1833,23 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
     // ===== 9. CRUD cho ĐƠN HÀNG (DONHANG) =====
 
     async function loadDonhang() {
-      clearSelection();
       donhangTableBody.innerHTML = `<tr><td colspan="13" class="td-center">Đang tải dữ liệu...</td></tr>`;
       const searchTerm = toolbar.search.value.toLowerCase();
       try {
         let query = supabase.from('DONHANG').select('*');
-        let countQuery = supabase.from('DONHANG').select('*', { count: 'exact', head: true }); // MỚI
+        let countQuery = supabase.from('DONHANG').select('*', { count: 'exact', head: true }); 
         
         if (searchTerm) {
           const searchFilter = `ma_kho.ilike.%${searchTerm}%,ma_nx.ilike.%${searchTerm}%,user.ilike.%${searchTerm}%,nganh.ilike.%${searchTerm}%,muc_dich.ilike.%${searchTerm}%`;
           query = query.or(searchFilter);
-          countQuery = countQuery.or(searchFilter); // MỚI
+          countQuery = countQuery.or(searchFilter);
         }
 
-        // MỚI: Lấy count
         const { count, error: countError } = await countQuery;
         if (countError) throw countError;
         pagination.totalItems = count || 0;
         updatePaginationUI();
         
-        // MỚI: Áp dụng range
         const from = (pagination.page - 1) * pagination.limit;
         const to = from + pagination.limit - 1;
         query = query.range(from, to);
@@ -1447,35 +1857,35 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
         let { data, error } = await query.order('ma_nx');
         if (error) throw error;
 
-        if (data.length === 0) {
+        if (data.length === 0 && !currentEditState.donhang) {
           donhangTableBody.innerHTML = `<tr><td colspan="13" class="td-center">Chưa có dữ liệu.</td></tr>`;
           return;
         }
 
         donhangTableBody.innerHTML = data.map(item => `
-          <tr id="donhang-row-${item.ma_nx}" class="selectable-row hover:bg-gray-50" onclick="toggleRowSelection('donhang', '${item.ma_nx}', event)">
-            <td class="px-6 py-4"><input type="checkbox" class="row-checkbox" data-view="donhang" data-id="${item.ma_nx}"></td>
-            <td class="px-6 py-4 text-sm text-gray-600">${item.ma_kho || ''}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${item.thoi_gian ? new Date(item.thoi_gian).toLocaleDateString() : ''}</td>
-            <td class="px-6 py-4 text-sm font-medium text-gray-900">${item.ma_nx}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${item.user || ''}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${item.nganh || ''}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${item.muc_dich || ''}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${item.dia_chi || ''}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${item.ghi_chu || ''}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${item.order || ''}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${item.pkl || ''}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${item.done ? '✔️' : '❌'}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${item.image ? 'Có' : ''}</td>
+          <tr id="donhang-row-${item.ma_nx}" class="selectable-row hover:bg-gray-50 dark:hover:bg-gray-700" onclick="toggleRowSelection('donhang', '${item.ma_nx}', event)">
+            <td class="td"><input type="checkbox" class="row-checkbox" data-view="donhang" data-id="${item.ma_nx}"></td>
+            <td class="td text-sm text-gray-600 dark:text-gray-300">${item.ma_kho || ''}</td>
+            <td class="td text-sm text-gray-600 dark:text-gray-300">${item.thoi_gian ? new Date(item.thoi_gian).toLocaleDateString() : ''}</td>
+            <td class="td text-sm font-medium text-gray-900 dark:text-gray-100">${item.ma_nx}</td>
+            <td class="td text-sm text-gray-600 dark:text-gray-300">${item.user || ''}</td>
+            <td class="td text-sm text-gray-600 dark:text-gray-300">${item.nganh || ''}</td>
+            <td class="td text-sm text-gray-600 dark:text-gray-300">${item.muc_dich || ''}</td>
+            <td class="td text-sm text-gray-600 dark:text-gray-300">${item.dia_chi || ''}</td>
+            <td class="td text-sm text-gray-600 dark:text-gray-300">${item.ghi_chu || ''}</td>
+            <td class="td text-sm text-gray-600 dark:text-gray-300">${item.order || ''}</td>
+            <td class="td text-sm text-gray-600 dark:text-gray-300">${item.pkl || ''}</td>
+            <td class="td text-sm text-gray-600 dark:text-gray-300">${item.done ? '✔️' : '❌'}</td>
+            <td class="td text-sm text-gray-600 dark:text-gray-300">${item.image ? 'Có' : ''}</td>
           </tr>
         `).join('');
         attachCheckboxListeners('donhang');
       } catch (error) {
         console.error('Lỗi tải đơn hàng:', error);
+        showToast(`Lỗi tải đơn hàng: ${error.message}`, 'error');
         donhangTableBody.innerHTML = `<tr><td colspan="13" class="td-center text-red-500">Lỗi: ${error.message}</td></tr>`;
       }
       
-      // MỚI: Cập nhật thời gian đồng bộ sau khi tải dữ liệu
       updateLastSyncTime();
     }
 
@@ -1483,30 +1893,24 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
       try {
         let { data, error } = await supabase.from('DONHANG').select('*').eq('ma_nx', ma_nx).single();
         if (error) throw error;
+        
+        currentEditState.donhang.data[ma_nx] = data;
 
         const row = document.getElementById(`donhang-row-${ma_nx}`);
         row.innerHTML = createEditableRowContents('donhang', data, true);
         row.setAttribute('data-editing', 'true');
-
-        currentEditState = { view: 'donhang', id: ma_nx, mode: 'edit' };
         showInlineEditControls();
       } catch (error) {
         console.error('Lỗi lấy dữ liệu sửa:', error);
-        alert(`Lỗi: ${error.message}`);
+        showToast(`Lỗi lấy dữ liệu sửa: ${error.message}`, 'error');
       }
     }
 
-    function createNewDonhangRow() {
+    function createNewDonhangRow(newId, defaultData = {}) {
       const tableBody = document.getElementById('donhang-table-body');
-      // Đặt ngày mặc định là hôm nay
-      const defaultData = { thoi_gian: new Date().toISOString().slice(0, 10) }
-      const newId = `new-${crypto.randomUUID()}`;
       const rowHtml = `<tr id="donhang-row-${newId}" data-editing="true">${createEditableRowContents('donhang', defaultData, false)}</tr>`;
       tableBody.insertAdjacentHTML('afterbegin', rowHtml);
-      const newRow = document.getElementById(`donhang-row-${newId}`);
-      // Tự động focus vào ô đầu tiên
-      newRow.querySelector('input[name="ma_kho"]').focus();
-      return newRow; // Trả về row element
+      return document.getElementById(`donhang-row-${newId}`);
     }
 
     async function saveDonhang(data, mode, id) {
@@ -1522,20 +1926,20 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
         order: data.order || null,
         pkl: data.pkl || null,
         image: data.image || null,
-        done: data.done === 'on' || data.done === true, // Xử lý checkbox
+        done: data.done === 'on' || data.done === true,
       };
 
       let error;
       if (mode === 'edit') {
-        delete cleanData.ma_nx; // Không update PK
-        const { error: updateError } = await supabase.from('DONHANG').update(cleanData).eq('ma_nx', id); // id là ma_nx
+        delete cleanData.ma_nx; 
+        const { error: updateError } = await supabase.from('DONHANG').update(cleanData).eq('ma_nx', id);
         error = updateError;
       } else {
-        // id là null
         const { error: insertError } = await supabase.from('DONHANG').insert([cleanData]);
         error = insertError;
       }
       if (error) throw error;
+      return true;
     }
 
     async function deleteDonhang(ma_nx) {
@@ -1543,171 +1947,172 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
         try {
           const { error } = await supabase.from('DONHANG').delete().eq('ma_nx', ma_nx);
           if (error) throw error;
-          loadDonhang();
+          showToast(`Đã xóa đơn hàng '${ma_nx}'!`, 'success');
+          loadDataForCurrentView();
         } catch (error) {
           console.error('Lỗi xóa đơn hàng:', error);
-          alert(`Lỗi: ${error.message}`);
+          showToast(`Lỗi khi xóa: ${error.message}`, 'error');
         }
       });
     }
 
     // ===== 10. CRUD cho CHI TIẾT (CHITIET) =====
-    // (Chỉ load và delete, không có add/edit inline)
-
     async function loadChitiet() {
-      clearSelection();
-      chitietTableBody.innerHTML = `<tr><td colspan="15" class="td-center">Đang tải dữ liệu...</td></tr>`;
-      const searchTerm = toolbar.search.value.toLowerCase();
-      try {
-        let query = supabase.from('CHITIET').select('*');
-        let countQuery = supabase.from('CHITIET').select('*', { count: 'exact', head: true }); // MỚI
+        chitietTableBody.innerHTML = `<tr><td colspan="17" class="td-center">Đang tải dữ liệu...</td></tr>`;
+        const searchTerm = toolbar.search.value.toLowerCase();
+        try {
+            let query = supabase.from('CHITIET').select('*');
+            let countQuery = supabase.from('CHITIET').select('*', { count: 'exact', head: true });
 
-        if (searchTerm) {
-          const searchFilter = `ma_kho.ilike.%${searchTerm}%,ma_nx.ilike.%${searchTerm}%,ma_vt.ilike.%${searchTerm}%,ten_vt.ilike.%${searchTerm}%,user.ilike.%${searchTerm}%`;
-          query = query.or(searchFilter);
-          countQuery = countQuery.or(searchFilter); // MỚI
+            if (searchTerm) {
+                const searchFilter = `ma_kho.ilike.%${searchTerm}%,ma_nx.ilike.%${searchTerm}%,ma_vach.ilike.%${searchTerm}%,ma_vt.ilike.%${searchTerm}%,ten_vt.ilike.%${searchTerm}%,user.ilike.%${searchTerm}%`;
+                query = query.or(searchFilter);
+                countQuery = countQuery.or(searchFilter);
+            }
+            
+            const { count, error: countError } = await countQuery;
+            if (countError) throw countError;
+            pagination.totalItems = count || 0;
+            updatePaginationUI();
+            
+            const from = (pagination.page - 1) * pagination.limit;
+            const to = from + pagination.limit - 1;
+            query = query.range(from, to);
+
+            let { data, error } = await query.order('id');
+            if (error) throw error;
+
+            if (data.length === 0) {
+                chitietTableBody.innerHTML = `<tr><td colspan="17" class="td-center">Chưa có dữ liệu.</td></tr>`;
+                return;
+            }
+
+            chitietTableBody.innerHTML = data.map(item => `
+            <tr id="chitiet-row-${item.id}" class="selectable-row hover:bg-gray-50 dark:hover:bg-gray-700" onclick="toggleRowSelection('chitiet', '${item.id}', event)">
+                <td class="td"><input type="checkbox" class="row-checkbox" data-view="chitiet" data-id="${item.id}"></td>
+                <td class="td text-sm font-medium text-gray-900 dark:text-gray-100">${item.id}</td>
+                <td class="td text-sm text-gray-600 dark:text-gray-300">${item.thoi_gian ? new Date(item.thoi_gian).toLocaleString('vi-VN') : ''}</td>
+                <td class="td text-sm text-gray-600 dark:text-gray-300">${item.ma_kho || ''}</td>
+                <td class="td text-sm text-gray-600 dark:text-gray-300">${item.ma_nx || ''}</td>
+                <td class="td text-sm text-gray-600 dark:text-gray-300">${item.ma_vach || ''}</td>
+                <td class="td text-sm text-gray-600 dark:text-gray-300">${item.ma_vt || ''}</td>
+                <td class="td text-sm text-gray-600 dark:text-gray-300">${item.ten_vt || ''}</td>
+                <td class="td text-sm text-gray-600 dark:text-gray-300">${item.lot || ''}</td>
+                <td class="td text-sm text-gray-600 dark:text-gray-300">${item.date || ''}</td>
+                <td class="td text-sm text-gray-600 dark:text-gray-300">${item.yeu_cau || ''}</td>
+                <td class="td text-sm text-gray-600 dark:text-gray-300">${item.so_luong || 0}</td>
+                <td class="td text-sm text-gray-600 dark:text-gray-300">${item.loai || ''}</td>
+                <td class="td text-sm text-gray-600 dark:text-gray-300">${item.user || ''}</td>
+                <td class="td text-sm text-gray-600 dark:text-gray-300">${item.muc_dich || ''}</td>
+                <td class="td text-sm text-gray-600 dark:text-gray-300">${item.nganh || ''}</td>
+                <td class="td text-sm text-gray-600 dark:text-gray-300">${item.phu_trach || ''}</td>
+            </tr>
+            `).join('');
+            attachCheckboxListeners('chitiet');
+        } catch (error) {
+            console.error('Lỗi tải chi tiết:', error);
+            showToast(`Lỗi tải chi tiết: ${error.message}`, 'error');
+            chitietTableBody.innerHTML = `<tr><td colspan="17" class="td-center text-red-500">Lỗi: ${error.message}</td></tr>`;
         }
-        
-        // MỚI: Lấy count
-        const { count, error: countError } = await countQuery;
-        if (countError) throw countError;
-        pagination.totalItems = count || 0;
-        updatePaginationUI();
-        
-        // MỚI: Áp dụng range
-        const from = (pagination.page - 1) * pagination.limit;
-        const to = from + pagination.limit - 1;
-        query = query.range(from, to);
-
-        let { data, error } = await query.order('id');
-        if (error) throw error;
-
-        if (data.length === 0) {
-          chitietTableBody.innerHTML = `<tr><td colspan="15" class="td-center">Chưa có dữ liệu.</td></tr>`;
-          return;
-        }
-
-        chitietTableBody.innerHTML = data.map(item => `
-          <tr id="chitiet-row-${item.id}" class="selectable-row hover:bg-gray-50" onclick="toggleRowSelection('chitiet', '${item.id}', event)">
-            <td class="px-6 py-4"><input type="checkbox" class="row-checkbox" data-view="chitiet" data-id="${item.id}"></td>
-            <td class="px-6 py-4 text-sm font-medium text-gray-900">${item.id}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${item.ma_kho || ''}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${item.ma_nx || ''}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${item.ma_vt || ''}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${item.ten_vt || ''}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${item.lot || ''}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${item.date || ''}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${item.yeu_cau || ''}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${item.so_luong || 0}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${item.loai || ''}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${item.user || ''}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${item.muc_dich || ''}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${item.nganh || ''}</td>
-            <td class="px-6 py-4 text-sm text-gray-600">${item.phu_trach || ''}</td>
-          </tr>
-        `).join('');
-        attachCheckboxListeners('chitiet');
-      } catch (error) {
-        console.error('Lỗi tải chi tiết:', error);
-        chitietTableBody.innerHTML = `<tr><td colspan="15" class="td-center text-red-500">Lỗi: ${error.message}</td></tr>`;
-      }
-      
-      // MỚI: Cập nhật thời gian đồng bộ sau khi tải dữ liệu
-      updateLastSyncTime();
+        updateLastSyncTime();
     }
 
-    // (Không có editChitiet, createNewChitietRow, saveChitiet)
 
     async function deleteChitiet(id) {
-      // Nút xóa bị ẩn ở view này, nhưng logic vẫn tồn tại
       showConfirm(`Bạn có chắc muốn xóa chi tiết ID '${id}' không?`, async () => {
         try {
           const { error } = await supabase.from('CHITIET').delete().eq('id', id);
           if (error) throw error;
-          loadChitiet();
+          showToast(`Đã xóa chi tiết ID '${id}'!`, 'success');
+          loadDataForCurrentView();
         } catch (error) {
           console.error('Lỗi xóa chi tiết:', error);
-          alert(`Lỗi: ${error.message}`);
+          showToast(`Lỗi khi xóa: ${error.message}`, 'error');
         }
       });
     }
 
     // ===== MỚI: 10.5. Tải dữ liệu cho Bộ lọc =====
     
-    /**
-     * MỚI: Hàm helper lấy dữ liệu unique cho một cột
-     */
-    async function getUniqueColumnValues(columnName) {
-      // 1. Lấy các bộ lọc *khác*
-      const otherFilters = {};
-      Object.keys(sanphamFilterState).forEach(key => {
-        if (key !== columnName && sanphamFilterState[key].size > 0) {
-          otherFilters[key] = Array.from(sanphamFilterState[key]);
-        }
-      });
-      
-      let query = supabase.from('SANPHAM').select(columnName);
-
-      // 2. Áp dụng các bộ lọc khác
-      Object.keys(otherFilters).forEach(key => {
-        query = query.in(key, otherFilters[key]);
-      });
-
-      const { data, error } = await query;
-      if (error) throw error;
-      
-      // 3. Lấy giá trị unique và sắp xếp
-      return [...new Set(data.map(item => item[columnName]).filter(Boolean))].sort();
+    async function getUniqueColumnValues(tableName, columnName) {
+        let query = supabase.from(tableName).select(columnName);
+        const { data, error } = await query;
+        if (error) throw error;
+        return [...new Set(data.map(item => item[columnName]).filter(Boolean))].sort();
     }
-
 
     async function populateSanphamFilters() {
+      if (sanphamFiltersPopulated) return;
       console.log('Đang tải dữ liệu cho bộ lọc Sản phẩm...');
       try {
-        // Tải dữ liệu cho TẤT CẢ các cột cùng lúc
-        // Tải không phụ thuộc trước
         const [maVts, tenVts, nganhs, phuTrachs] = await Promise.all([
-          getUniqueColumnValues('ma_vt'),
-          getUniqueColumnValues('ten_vt'),
-          getUniqueColumnValues('nganh'),
-          getUniqueColumnValues('phu_trach')
+          getUniqueColumnValues('SANPHAM', 'ma_vt'),
+          getUniqueColumnValues('SANPHAM', 'ten_vt'),
+          getUniqueColumnValues('SANPHAM', 'nganh'),
+          getUniqueColumnValues('SANPHAM', 'phu_trach')
         ]);
-
-        // Lấy DOM của các bộ lọc
-        const filters = {
-          ma_vt: document.querySelector('.custom-filter[data-filter-column="ma_vt"]'),
-          ten_vt: document.querySelector('.custom-filter[data-filter-column="ten_vt"]'),
-          nganh: document.querySelector('.custom-filter[data-filter-column="nganh"]'),
-          phu_trach: document.querySelector('.custom-filter[data-filter-column="phu_trach"]')
-        };
-
-        // Populate từng bộ lọc
-        populateCustomFilterList(filters.ma_vt, maVts, 'ma_vt');
-        populateCustomFilterList(filters.ten_vt, tenVts, 'ten_vt');
-        populateCustomFilterList(filters.nganh, nganhs, 'nganh');
-        populateCustomFilterList(filters.phu_trach, phuTrachs, 'phu_trach');
-
-        // Đánh dấu là đã tải
+        const filters = document.querySelectorAll('#filter-sanpham .custom-filter');
+        filters.forEach(filter => {
+          const column = filter.dataset.filterColumn;
+          let items = [];
+          if (column === 'ma_vt') items = maVts;
+          if (column === 'ten_vt') items = tenVts;
+          if (column === 'nganh') items = nganhs;
+          if (column === 'phu_trach') items = phuTrachs;
+          populateCustomFilterList(filter, items, column, sanphamFilterState);
+        });
         sanphamFiltersPopulated = true;
-        console.log('Đã tải xong bộ lọc Sản phẩm.');
       } catch (error) {
-        console.error('Lỗi khi tải bộ lọc:', error.message);
+        console.error('Lỗi khi tải bộ lọc Sản phẩm:', error.message);
+        showToast(`Lỗi tải bộ lọc Sản Phẩm: ${error.message}`, 'error');
       }
     }
+    
+    async function populateTonkhoFilters() {
+        if (tonkhoFiltersPopulated) return;
+        console.log('Đang tải dữ liệu cho bộ lọc Tồn Kho...');
+        try {
+            const [maVts, lots, tinhTrangs, nganhs, phuTrachs] = await Promise.all([
+                getUniqueColumnValues('TONKHO', 'ma_vt'),
+                getUniqueColumnValues('TONKHO', 'lot'),
+                getUniqueColumnValues('TONKHO', 'tinh_trang'),
+                getUniqueColumnValues('TONKHO', 'nganh'),
+                getUniqueColumnValues('TONKHO', 'phu_trach')
+            ]);
+            const filters = document.querySelectorAll('#filter-tonkho .custom-filter');
+            filters.forEach(filter => {
+                const column = filter.dataset.filterColumn;
+                let items = [];
+                if (column === 'ma_vt') items = maVts;
+                if (column === 'lot') items = lots;
+                if (column === 'tinh_trang') items = tinhTrangs;
+                if (column === 'nganh') items = nganhs;
+                if (column === 'phu_trach') items = phuTrachs;
+                if (column === 'ton_cuoi') {
+                    populateCustomFilterList(filter, ['Còn hàng', 'Hết hàng'], column, tonkhoFilterState, false);
+                } else {
+                    populateCustomFilterList(filter, items, column, tonkhoFilterState);
+                }
+            });
+            tonkhoFiltersPopulated = true;
+        } catch (error) {
+            console.error('Lỗi khi tải bộ lọc Tồn Kho:', error.message);
+            showToast(`Lỗi tải bộ lọc Tồn Kho: ${error.message}`, 'error');
+        }
+    }
 
-    /**
-     * MỚI: Cập nhật danh sách cho một bộ lọc custom
-     */
-    function populateCustomFilterList(filterElement, items, column) {
+
+    function populateCustomFilterList(filterElement, items, column, state, includeSelectAll = true) {
       const listElement = filterElement.querySelector('.custom-filter-list');
-      const selectedValues = sanphamFilterState[column];
+      const selectedValues = state[column];
       
-      const html = `
+      const selectAllHTML = includeSelectAll ? `
         <div class="custom-filter-item">
           <input type="checkbox" class="custom-filter-select-all" data-column="${column}">
           <label class="font-bold">(Chọn tất cả)</label>
-        </div>
-        ${items.map(item => {
+        </div>` : '';
+
+      const itemsHTML = items.map(item => {
           const isChecked = selectedValues.has(item);
           return `
             <div class="custom-filter-item">
@@ -1715,92 +2120,159 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
               <label>${item}</label>
             </div>
           `;
-        }).join('')}
-      `;
-      listElement.innerHTML = html;
+        }).join('');
+      
+      listElement.innerHTML = selectAllHTML + itemsHTML;
     }
 
-    /**
-     * MỚI: Cập nhật text hiển thị của nút filter
-     */
     function updateCustomFilterText(column, filterElement) {
-      if (!filterElement) {
-         filterElement = document.querySelector(`.custom-filter[data-filter-column="${column}"]`);
-      }
-      if (!filterElement) return; // Thoát nếu không tìm thấy
-
-      const textElement = filterElement.querySelector('.custom-filter-text');
-      const selectedCount = sanphamFilterState[column].size;
-      
-      const defaultTexts = {
-        'ma_vt': 'Tất cả Mã VT',
-        'ten_vt': 'Tất cả Tên VT',
-        'nganh': 'Tất cả Ngành',
-        'phu_trach': 'Tất cả Phụ trách'
-      };
-
-      if (selectedCount === 0) {
-        textElement.textContent = defaultTexts[column] || `Tất cả ${column}`;
-      } else if (selectedCount === 1) {
-        textElement.textContent = sanphamFilterState[column].values().next().value;
-      } else {
-        textElement.textContent = `${selectedCount} mục đã chọn`;
-      }
-    }
-
-    /**
-     * MỚI: Hàm cập nhật các bộ lọc phụ thuộc
-     */
-    async function updateDependentFilters(changedColumn) {
-      console.log(`Cập nhật bộ lọc phụ thuộc, thay đổi từ: ${changedColumn}`);
-      
-      // Tải lại tất cả các bộ lọc *ngoại trừ* bộ lọc vừa thay đổi
-      const filterUpdates = [];
-      const filters = document.querySelectorAll('#filter-sanpham .custom-filter');
-
-      filters.forEach(filter => {
-        const column = filter.dataset.filterColumn;
-        if (column !== changedColumn) {
-          filterUpdates.push(
-            getUniqueColumnValues(column).then(items => {
-              populateCustomFilterList(filter, items, column);
-            })
-          );
+        if (!filterElement) {
+            filterElement = document.querySelector(`.custom-filter[data-filter-column="${column}"]`);
         }
-      });
+        if (!filterElement) return;
 
-      try {
-        await Promise.all(filterUpdates);
-        console.log('Cập nhật xong bộ lọc phụ thuộc.');
-      } catch (error) {
-        console.error('Lỗi cập nhật bộ lọc phụ thuộc:', error);
-      }
-    } 
+        const state = (currentView === 'sanpham') ? sanphamFilterState : tonkhoFilterState;
+        const textElement = filterElement.querySelector('.custom-filter-text');
+        const selectedCount = state[column].size;
+        
+        const defaultTexts = {
+            'ma_vt': 'Tất cả Mã VT', 'ten_vt': 'Tất cả Tên VT', 'nganh': 'Tất cả Ngành', 
+            'phu_trach': 'Tất cả Phụ trách', 'lot': 'Tất cả LOT', 'tinh_trang': 'Tất cả Tình Trạng',
+            'ton_cuoi': 'Tất cả'
+        };
+
+        if (selectedCount === 0) {
+            textElement.textContent = defaultTexts[column] || `Tất cả ${column}`;
+        } else if (selectedCount === 1) {
+            textElement.textContent = state[column].values().next().value;
+        } else {
+            textElement.textContent = `${selectedCount} mục đã chọn`;
+        }
+    }
 
 
     // ===== 11. HÀM HELPER MỚI CHO INLINE EDIT VÀ SYNC =====
+    async function loadSanphamForLookup() {
+        if (sanphamDataForLookup.length > 0) return;
+        try {
+            let allProducts = [];
+            let page = 0;
+            const pageSize = 1000;
+            while (true) {
+                const { data, error } = await supabase
+                    .from('SANPHAM')
+                    .select('ma_vt, ten_vt, nganh, phu_trach')
+                    .range(page * pageSize, (page + 1) * pageSize - 1);
+                
+                if (error) throw error;
+                
+                allProducts = allProducts.concat(data);
+                
+                if (data.length < pageSize) {
+                    break; 
+                }
+                page++;
+            }
+            sanphamDataForLookup = allProducts;
+            console.log(`Đã tải ${sanphamDataForLookup.length} sản phẩm cho lookup.`);
+        } catch (error) {
+            console.error('Lỗi tải toàn bộ sản phẩm cho lookup:', error);
+            showToast('Không thể tải toàn bộ dữ liệu sản phẩm.', 'error');
+            sanphamDataForLookup = [];
+        }
+    }
 
-    /**
-     * MỚI: Đồng bộ dữ liệu ngầm (Silent Sync)
-     */
+
+    function handleTonkhoInputChange(element) {
+        const row = element.closest('tr');
+        if (!row) return;
+
+        const maVtInput = row.querySelector('input[name="ma_vt"]');
+        const tenVtInput = row.querySelector('input[name="ten_vt"]');
+        const nganhInput = row.querySelector('input[name="nganh"]');
+        const phuTrachInput = row.querySelector('input[name="phu_trach"]');
+        const lotInput = row.querySelector('input[name="lot"]');
+        const dateInput = row.querySelector('input[name="date"]');
+        const maVachInput = row.querySelector('input[name="ma_vach"]');
+        const tinhTrangCell = row.querySelector('.tinh-trang-cell');
+        
+        if (element.name === 'ma_vt') {
+            const selectedProduct = sanphamDataForLookup.find(p => p.ma_vt === maVtInput.value);
+            if (selectedProduct) {
+                tenVtInput.value = selectedProduct.ten_vt || '';
+                nganhInput.value = selectedProduct.nganh || '';
+                phuTrachInput.value = selectedProduct.phu_trach || '';
+            } else {
+                tenVtInput.value = '';
+                nganhInput.value = '';
+                phuTrachInput.value = '';
+            }
+        }
+        
+        let selectedDate = null;
+        const dateValue = dateInput.value;
+        if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateValue)) {
+            const parts = dateValue.split('/');
+            selectedDate = new Date(parts[2], parts[1] - 1, parts[0]);
+            if (selectedDate.getFullYear() != parts[2] || selectedDate.getMonth() + 1 != parts[1] || selectedDate.getDate() != parts[0]) {
+                 selectedDate = null;
+            }
+        }
+
+        if (element.name === 'date' || element.name === 'ma_vt') { 
+            let tinhTrangInputHTML = '';
+            if (selectedDate) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const threeMonthsFromNow = new Date();
+                threeMonthsFromNow.setMonth(threeMonthsFromNow.getMonth() + 3);
+
+                if (selectedDate < today) {
+                    tinhTrangInputHTML = `<input type="text" name="tinh_trang" value="Hết Date" class="inline-input bg-gray-input" readonly>`;
+                } else if (selectedDate <= threeMonthsFromNow) {
+                    tinhTrangInputHTML = `<input type="text" name="tinh_trang" value="Cận Date" class="inline-input bg-gray-input" readonly>`;
+                } else {
+                    tinhTrangInputHTML = `
+                        <select name="tinh_trang" class="inline-input">
+                            <option value=""></option>
+                            <option value="Đang Sử Dụng">Đang Sử Dụng</option>
+                            <option value="Hàng Hư">Hàng Hư</option>
+                        </select>
+                    `;
+                }
+            } else {
+                tinhTrangInputHTML = `<input type="text" name="tinh_trang" value="" class="inline-input bg-gray-input" readonly placeholder="Chọn ngày">`;
+            }
+            if (tinhTrangCell) {
+              tinhTrangCell.innerHTML = tinhTrangInputHTML;
+            }
+        }
+        
+        const maVt = maVtInput.value;
+        const lot = lotInput.value;
+        if (maVt && lot && selectedDate) {
+            const day = String(selectedDate.getDate()).padStart(2, '0');
+            const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+            const year = selectedDate.getFullYear();
+            const formattedDate = `${day}.${month}.${year}`;
+            maVachInput.value = `${maVt}${lot}${formattedDate}`;
+        } else {
+            maVachInput.value = '';
+        }
+    }
+
+
     function handleSync() {
-        if (currentEditState.mode) {
-            console.log('Không đồng bộ khi đang chỉnh sửa.');
+        if (Object.keys(currentEditState).length > 0) {
+            showToast('Không thể đồng bộ khi đang chỉnh sửa!', 'warning');
             return;
         }
 
-        console.log(`Bắt đầu đồng bộ ngầm cho view: ${currentView}`);
-        // Logic đồng bộ ngầm: Tải lại dữ liệu hiện tại
-        loadDataForCurrentView(); 
-        
-        // Cập nhật thời gian đồng bộ sẽ được gọi từ loadDataForCurrentView()
-        // để đảm bảo thời gian hiển thị chính xác sau khi fetch hoàn tất.
-        // updateLastSyncTime(); 
+        console.log(`Bắt đầu đồng bộ thủ công cho view: ${currentView}`);
+        showToast(`Đang đồng bộ dữ liệu ${currentView}...`, 'warning');
+        loadDataForCurrentView();
     }
 
-    /**
-     * MỚI: Cập nhật hiển thị thời gian đồng bộ gần nhất
-     */
     function updateLastSyncTime() {
         const now = new Date();
         const timeString = now.toLocaleTimeString('vi-VN', { 
@@ -1808,394 +2280,536 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
             minute: '2-digit', 
             second: '2-digit' 
         });
-        const dateString = now.toLocaleDateString('vi-VN');
-        lastSyncTimeSpan.textContent = `Đồng bộ gần nhất: ${dateString} ${timeString}`;
+        lastSyncTimeSpan.textContent = `Lúc: ${timeString}`;
+        if (window.appLoaded) {
+            showToast('Đồng bộ dữ liệu thành công!', 'success');
+        }
     }
 
-    /**
-     * MỚI: Thay đổi kích thước chữ (Scaling App)
-     */
     function handleFontSizeChange() {
         const percentage = parseInt(fontSizeSelect.value, 10);
-        // Thay đổi font size gốc của HTML để scale toàn bộ ứng dụng (dựa trên rem/em)
-        // Đây là cách chuẩn để thay đổi kích thước chữ toàn bộ mà không làm hỏng layout
         document.documentElement.style.fontSize = `${percentage}%`; 
     }
 
-    /**
-     * Hiển thị/ẩn các nút điều khiển khi chỉnh sửa nội tuyến
-     */
     function showInlineEditControls() {
       toolbar.save.hidden = false;
       toolbar.cancel.hidden = false;
-
       toolbar.add.disabled = true;
       toolbar.edit.disabled = true;
       toolbar.delete.disabled = true;
       toolbar.excel.disabled = true;
       toolbar.search.disabled = true;
       toolbar.clearFilter.disabled = true;
-      toolbar.sync.disabled = true; // MỚI: Vô hiệu hóa Sync khi đang edit
-
-      // Vô hiệu hóa các tab
-      navLinks.forEach(link => link.style.pointerEvents = 'none');
+      toolbar.sync.disabled = true;
     }
 
     function hideInlineEditControls() {
       toolbar.save.hidden = true;
       toolbar.cancel.hidden = true;
-
       toolbar.add.disabled = false;
-      // Kích hoạt lại nút dựa trên trạng thái selection
       toolbar.edit.disabled = !selectedItem.id;
       toolbar.delete.disabled = !selectedItem.id;
-
       toolbar.excel.disabled = false;
       toolbar.search.disabled = false;
       toolbar.clearFilter.disabled = false;
-      toolbar.sync.disabled = false; // MỚI: Kích hoạt lại Sync
-
-      // Kích hoạt lại các tab
-      navLinks.forEach(link => link.style.pointerEvents = 'auto');
-
-      // Reset trạng thái
-      currentEditState = { view: null, id: null, mode: null };
+      toolbar.sync.disabled = false;
     }
 
-    /**
-     * Nút Lưu (Save) chung
-     */
     async function handleToolbarSave() {
-      const { view, id, mode } = currentEditState;
-      if (!view) return;
-
-      const editRows = document.querySelectorAll('tr[data-editing="true"]');
-      if (editRows.length === 0) {
-        hideInlineEditControls();
-        return;
-      }
+      const state = currentEditState[currentView];
+      if (!state) return;
 
       try {
-        let allSavesSuccessful = true; // MỚI: Cờ theo dõi
+        let allSavesSuccessful = true; 
+        showToast('Đang lưu...', 'warning');
 
-        for (const editRow of editRows) {
-          // Thu thập dữ liệu từ form
-          const inputs = editRow.querySelectorAll('input, textarea, select');
+        for (const [rowId, rowData] of Object.entries(state.data)) {
+            let saveResult = true;
+            const saveId = (state.mode === 'edit') ? rowId : null;
 
-          // === SỬA LỖI LOGIC ===
-          const data = {}; // 1. Khởi tạo data cho hàng này
-          inputs.forEach(input => { // 2. Lặp qua từng input
-            const name = input.name;
-            if (name) {
-              data[name] = (input.type === 'checkbox') ? input.checked : input.value;
+            switch (currentView) {
+                case 'sanpham': 
+                    saveResult = await saveSanpham(rowData, state.mode, saveId); 
+                    break;
+                case 'tonkho': 
+                    saveResult = await saveTonkho(rowData, state.mode, saveId); 
+                    break;
+                case 'donhang': 
+                    saveResult = await saveDonhang(rowData, state.mode, saveId); 
+                    break;
             }
-          }); // 3. Kết thúc vòng lặp
-          // === KẾT THÚC SỬA LỖI ===
-
-          // Lấy id từ hàng (quan trọng cho mode 'edit')
-          const rowId = editRow.id.split('-row-')[1];
-
-          // *** THÊM LẠI LOGIC SAVE BỊ MẤT ***
-          // Nếu mode 'edit', id là rowId. Nếu 'add', id là null.
-          const saveId = (mode === 'edit') ? rowId : null;
-          let saveResult = true; // MỚI
-
-          switch (view) {
-            case 'sanpham': 
-              saveResult = await saveSanpham(data, mode, saveId); 
-              break;
-            case 'tonkho': 
-              // Giả sử saveTonkho cũng trả về boolean (sẽ cần thêm nếu muốn validation)
-              await saveTonkho(data, mode, saveId); 
-              // saveResult = await saveTonkho(data, mode, saveId); 
-              break;
-            case 'donhang': 
-              // Giả sử saveDonhang cũng trả về boolean (sẽ cần thêm nếu muốn validation)
-              await saveDonhang(data, mode, saveId); 
-              // saveResult = await saveDonhang(data, mode, saveId); 
-              break;
-          }
-          // *** KẾT THÚC THÊM LẠI LOGIC SAVE ***
           
-          if (!saveResult) { // MỚI: Nếu một hàng lưu thất bại
-            allSavesSuccessful = false;
-            // Dừng lại ngay khi có lỗi
-            break; 
-          }
+            if (!saveResult) {
+                allSavesSuccessful = false;
+                break; 
+            }
         }
 
-        // === SỬA LỖI SYNTAX ===
-        // MỚI: Chỉ ẩn controls và tải lại nếu TẤT CẢ lưu thành công
         if (allSavesSuccessful) {
-          hideInlineEditControls();
-          loadDataForCurrentView(); // Tải lại dữ liệu
+            delete currentEditState[currentView]; // Xóa state của view hiện tại
+            hideInlineEditControls();
+            showToast('Lưu thành công!', 'success');
+            loadDataForCurrentView();
         }
-        // === KẾT THÚC SỬA LỖI SYNTAX ===
-
       } catch (error) {
         console.error('Lỗi lưu dữ liệu:', error);
-        alert(`Lỗi: ${error.message}`);
+        showToast(`Lỗi khi lưu: ${error.message}`, 'error');
       }
     }
 
-    /**
-     * Nút Hủy (Cancel) chung
-     */
     function handleToolbarCancel() {
-      const mode = currentEditState.mode; // Lấy mode trước khi reset
-      hideInlineEditControls(); // Reset state về null
-
-      if (mode === 'edit') {
-        loadDataForCurrentView(); // Tải lại để hủy thay đổi (khôi phục hàng cũ)
-      } else if (mode === 'add') {
-        // Chỉ xóa các hàng mới đã được thêm
-        document.querySelectorAll('tr[data-editing="true"]').forEach(row => row.remove());
-      }
+        if (currentEditState[currentView]) {
+            delete currentEditState[currentView]; // Xóa state của view hiện tại
+            hideInlineEditControls();
+            loadDataForCurrentView(); // Tải lại để loại bỏ các dòng edit
+            showToast('Đã hủy thao tác.', 'warning');
+        }
     }
 
-    /**
-     * Tạo HTML cho các ô (TD) có thể chỉnh sửa
-     */
     function createEditableRowContents(view, data = {}, isEdit = false) {
-      // Hàm trợ giúp
       const val = (key) => data[key] || '';
       const num = (key) => data[key] || 0;
       const date = (key) => (data[key] ? data[key].slice(0, 10) : '');
       const check = (key) => (data[key] ? 'checked' : '');
-      // THAY ĐỔI: Luôn cho phép chỉnh sửa Mã VT
-      const ro = 'class="inline-input"'; 
 
       switch (view) {
         case 'sanpham':
           return `
-                    <td class="td px-6 py-2"><input type="checkbox" class="row-checkbox" disabled></td>
-                    <td class="td px-6 py-2"><input type="text" name="ma_vt" value="${val('ma_vt')}" ${ro} required></td>
-                    <td class="td px-6 py-2"><input type="text" name="ten_vt" value="${val('ten_vt')}" class="inline-input" required></td>
-                    <td class="td px-6 py-2"><input type="text" name="nganh" value="${val('nganh')}" class="inline-input"></td>
-                    <td class="td px-6 py-2"><input type="text" name="phu_trach" value="${val('phu_trach')}" class="inline-input"></td>
-                `;
-        case 'tonkho':
-          return `
-                    <td class="td px-6 py-2"><input type="checkbox" class="row-checkbox" disabled></td>
-                    <td class="td px-6 py-2"><input type="text" name="ma_vach" value="${val('ma_vach')}" ${ro} required></td>
-                    <td class="td px-6 py-2"><input type="text" name="ma_vt" value="${val('ma_vt')}" class="inline-input"></td>
-                    <td class="td px-6 py-2"><input type="text" name="ten_vt" value="${val('ten_vt')}" class="inline-input"></td>
-                    <td class="td px-6 py-2"><input type="text" name="lot" value="${val('lot')}" class="inline-input"></td>
-                    <td class="td px-6 py-2"><input type="date" name="date" value="${date('date')}" class="inline-input"></td>
-                    <td class="td px-6 py-2"><input type="number" name="ton_dau" value="${num('ton_dau')}" class="inline-input"></td>
-                    <td class="td px-6 py-2"><input type="number" name="nhap" value="${num('nhap')}" class="inline-input"></td>
-                    <td class="td px-6 py-2"><input type="number" name="xuat" value="${num('xuat')}" class="inline-input"></td>
-                    <td class="td px-6 py-2"></td> <!-- Tồn cuối (tính toán) -->
-                    <td class="td px-6 py-2"><input type="text" name="tinh_trang" value="${val('tinh_trang')}" class="inline-input"></td>
-                    <td class="td px-6 py-2"><input type="text" name="tray" value="${val('tray')}" class="inline-input"></td>
-                    <td class="td px-6 py-2"><input type="text" name="nganh" value="${val('nganh')}" class="inline-input"></td>
-                    <td class="td px-6 py-2"><input type="text" name="phu_trach" value="${val('phu_trach')}" class="inline-input"></td>
-                `;
+            <td class="td px-6 py-2"><input type="checkbox" class="row-checkbox" disabled></td>
+            <td class="td px-6 py-2"><input type="text" name="ma_vt" value="${val('ma_vt')}" class="inline-input" required></td>
+            <td class="td px-6 py-2"><input type="text" name="ten_vt" value="${val('ten_vt')}" class="inline-input" required></td>
+            <td class="td px-6 py-2"><input type="text" name="nganh" value="${val('nganh')}" class="inline-input"></td>
+            <td class="td px-6 py-2"><input type="text" name="phu_trach" value="${val('phu_trach')}" class="inline-input"></td>
+          `;
+        case 'tonkho': {
+            const tonDauValue = num('ton_dau');
+            let tinhTrangInputHTML = '';
+            const selectedDate = data.date ? new Date(data.date) : null;
+            if (selectedDate) {
+                const today = new Date(); today.setHours(0, 0, 0, 0);
+                const threeMonthsFromNow = new Date(); threeMonthsFromNow.setMonth(threeMonthsFromNow.getMonth() + 3);
+                if (selectedDate < today) {
+                    tinhTrangInputHTML = `<input type="text" name="tinh_trang" value="Hết Date" class="inline-input bg-gray-input" readonly>`;
+                } else if (selectedDate <= threeMonthsFromNow) {
+                    tinhTrangInputHTML = `<input type="text" name="tinh_trang" value="Cận Date" class="inline-input bg-gray-input" readonly>`;
+                } else {
+                    const isDangSuDung = val('tinh_trang') === 'Đang Sử Dụng'; const isHangHu = val('tinh_trang') === 'Hàng Hư';
+                    tinhTrangInputHTML = `
+                        <select name="tinh_trang" class="inline-input">
+                            <option value=""></option>
+                            <option value="Đang Sử Dụng" ${isDangSuDung ? 'selected' : ''}>Đang Sử Dụng</option>
+                            <option value="Hàng Hư" ${isHangHu ? 'selected' : ''}>Hàng Hư</option>
+                        </select>`;
+                }
+            } else {
+                tinhTrangInputHTML = `<input type="text" name="tinh_trang" value="" class="inline-input bg-gray-input" readonly placeholder="Chọn ngày">`;
+            }
+            
+            const maVtSelectorHTML = `
+              <div class="inline-custom-select relative">
+                <input type="hidden" name="ma_vt" value="${val('ma_vt')}">
+                <button type="button" class="inline-custom-select-toggle w-full text-left inline-input">
+                    <span class="truncate">${val('ma_vt') || 'Chọn Mã VT...'}</span>
+                </button>
+                <div class="inline-custom-select-panel hidden absolute top-full left-0 mt-1 w-64 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg z-50 p-2">
+                    <input type="text" class="inline-custom-select-search w-full px-2 py-1 mb-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700" placeholder="Tìm Mã VT...">
+                    <div class="inline-custom-select-list max-h-48 overflow-y-auto">
+                        ${sanphamDataForLookup.map(p => `<div class="inline-custom-select-item p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer" data-value="${p.ma_vt}">${p.ma_vt}</div>`).join('')}
+                    </div>
+                </div>
+              </div>`;
+
+            return `
+                <td class="td px-6 py-2"><input type="checkbox" class="row-checkbox" disabled></td>
+                <td class="td px-6 py-2"><input type="text" name="ma_vach" value="${val('ma_vach')}" class="inline-input bg-gray-input" readonly required placeholder="Tự động tạo"></td>
+                <td class="td px-6 py-2">${maVtSelectorHTML}</td>
+                <td class="td px-6 py-2"><input type="text" name="ten_vt" value="${val('ten_vt')}" class="inline-input bg-gray-input" readonly></td>
+                <td class="td px-6 py-2"><input type="text" name="lot" value="${val('lot')}" class="inline-input" required oninput="handleTonkhoInputChange(this)"></td>
+                <td class="td px-6 py-2"><input type="text" name="date" value="${formatDate(data.date)}" placeholder="dd/mm/yyyy" class="inline-input" required oninput="handleTonkhoInputChange(this)"></td>
+                <td class="td px-6 py-2"><input type="number" name="ton_dau" value="${tonDauValue}" class="inline-input" required></td>
+                <td class="td px-6 py-2"><input type="text" value="Tự động" class="inline-input bg-gray-input" readonly></td>
+                <td class="td px-6 py-2"><input type="text" value="Tự động" class="inline-input bg-gray-input" readonly></td>
+                <td class="td px-6 py-2"><input type="text" value="${tonDauValue}" class="inline-input bg-gray-input" readonly></td>
+                <td class="td px-6 py-2 tinh-trang-cell">${tinhTrangInputHTML}</td>
+                <td class="td px-6 py-2"><input type="text" name="tray" value="${val('tray')}" class="inline-input"></td>
+                <td class="td px-6 py-2"><input type="text" name="nganh" value="${val('nganh')}" class="inline-input bg-gray-input" readonly></td>
+                <td class="td px-6 py-2"><input type="text" name="phu_trach" value="${val('phu_trach')}" class="inline-input bg-gray-input" readonly></td>
+            `;
+        }
         case 'donhang':
           return `
-                    <td class="td px-6 py-2"><input type="checkbox" class="row-checkbox" disabled></td>
-                    <td class="td px-6 py-2"><input type="text" name="ma_kho" value="${val('ma_kho')}" class="inline-input"></td>
-                    <td class="td px-6 py-2"><input type="date" name="thoi_gian" value="${date('thoi_gian')}" class="inline-input"></td>
-                    <td class="td px-6 py-2"><input type="text" name="ma_nx" value="${val('ma_nx')}" ${ro} required></td>
-                    <td class="td px-6 py-2"><input type="text" name="user" value="${val('user')}" class="inline-input"></td>
-                    <td class="td px-6 py-2"><input type="text" name="nganh" value="${val('nganh')}" class="inline-input"></td>
-                    <td class="td px-6 py-2"><input type="text" name="muc_dich" value="${val('muc_dich')}" class="inline-input"></td>
-                    <td class="td px-6 py-2"><input type="text" name="dia_chi" value="${val('dia_chi')}" class="inline-input"></td>
-                    <td class="td px-6 py-2"><input type="text" name="ghi_chu" value="${val('ghi_chu')}" class="inline-input"></td>
-                    <td class="td px-6 py-2"><input type="text" name="order" value="${val('order')}" class="inline-input"></td>
-                    <td class="td px-6 py-2"><input type="text" name="pkl" value="${val('pkl')}" class="inline-input"></td>
-                    <td class="td px-6 py-2"><input type="checkbox" name="done" ${check('done')} class="h-4 w-4"></td>
-                    <td class="td px-6 py-2"><input type="text" name="image" value="${val('image')}" class="inline-input"></td>
-                `;
+            <td class="td px-6 py-2"><input type="checkbox" class="row-checkbox" disabled></td>
+            <td class="td px-6 py-2"><input type="text" name="ma_kho" value="${val('ma_kho')}" class="inline-input"></td>
+            <td class="td px-6 py-2"><input type="date" name="thoi_gian" value="${date('thoi_gian')}" class="inline-input"></td>
+            <td class="td px-6 py-2"><input type="text" name="ma_nx" value="${val('ma_nx')}" class="inline-input" required></td>
+            <td class="td px-6 py-2"><input type="text" name="user" value="${val('user')}" class="inline-input"></td>
+            <td class="td px-6 py-2"><input type="text" name="nganh" value="${val('nganh')}" class="inline-input"></td>
+            <td class="td px-6 py-2"><input type="text" name="muc_dich" value="${val('muc_dich')}" class="inline-input"></td>
+            <td class="td px-6 py-2"><input type="text" name="dia_chi" value="${val('dia_chi')}" class="inline-input"></td>
+            <td class="td px-6 py-2"><input type="text" name="ghi_chu" value="${val('ghi_chu')}" class="inline-input"></td>
+            <td class="td px-6 py-2"><input type="text" name="order" value="${val('order')}" class="inline-input"></td>
+            <td class="td px-6 py-2"><input type="text" name="pkl" value="${val('pkl')}" class="inline-input"></td>
+            <td class="td px-6 py-2"><input type="checkbox" name="done" ${check('done')} class="h-4 w-4"></td>
+            <td class="td px-6 py-2"><input type="text" name="image" value="${val('image')}" class="inline-input"></td>
+          `;
         default: return '';
       }
     } 
 
-    // ===== 12. Khởi chạy =====
-    window.addEventListener('DOMContentLoaded', () => {
-      // Xóa các listener form cũ
+    // ===== 11.5. LOGIC TẢI EXCEL =====
+    function buildFilteredQuery(view) {
+      const searchTerm = toolbar.search.value.toLowerCase();
+      let query = supabase.from(view.toUpperCase()).select('*');
 
-      // Gắn listener cho toolbar
+      if (searchTerm) {
+        let searchFilter = '';
+        switch (view) {
+          case 'sanpham':
+            searchFilter = `ma_vt.ilike.%${searchTerm}%,ten_vt.ilike.%${searchTerm}%,nganh.ilike.%${searchTerm}%,phu_trach.ilike.%${searchTerm}%`;
+            break;
+          case 'tonkho':
+            searchFilter = `ma_vach.ilike.%${searchTerm}%,ma_vt.ilike.%${searchTerm}%,ten_vt.ilike.%${searchTerm}%,lot.ilike.%${searchTerm}%,tinh_trang.ilike.%${searchTerm}%`;
+            break;
+          case 'chitiet':
+            searchFilter = `ma-kho.ilike.%${searchTerm}%,ma_nx.ilike.%${searchTerm}%,ma_vt.ilike.%${searchTerm}%,ten_vt.ilike.%${searchTerm}%,user.ilike.%${searchTerm}%`;
+            break;
+        }
+        if (searchFilter) {
+          query = query.or(searchFilter);
+        }
+      }
+
+      if (view === 'sanpham') {
+        const { ma_vt, ten_vt, nganh, phu_trach } = sanphamFilterState;
+        if (ma_vt.size > 0) { query = query.in('ma_vt', Array.from(ma_vt)); }
+        if (ten_vt.size > 0) { query = query.in('ten_vt', Array.from(ten_vt)); }
+        if (nganh.size > 0) { query = query.in('nganh', Array.from(nganh)); }
+        if (phu_trach.size > 0) { query = query.in('phu_trach', Array.from(phu_trach)); }
+      }
+      
+      return query;
+    }
+
+    async function handleDownloadExcel() {
+      if (Object.keys(currentEditState).length > 0) return;
+      
+      const originalText = toolbar.excel.innerHTML;
+      const icon = originalText.substring(0, originalText.indexOf('</svg>') + 6);
+      
+      toolbar.excel.disabled = true;
+      toolbar.excel.innerHTML = `${icon} Đang tải...`;
+      showToast('Đang chuẩn bị tệp Excel...', 'warning');
+
+      try {
+        let data, error;
+        let headers = [];
+        let mappedData = [];
+        let filename = `${currentView.toUpperCase()}.xlsx`;
+
+        let query = buildFilteredQuery(currentView);
+
+        try { ({ data, error } = await query.order('ma_vt')); } 
+        catch(e) { ({ data, error } = await query); }
+        if (error) throw error;
+
+        if (data.length === 0) {
+          showConfirm('Không có dữ liệu để tải.', () => {}, true);
+          return;
+        }
+
+        switch (currentView) {
+          case 'sanpham':
+            headers = ['Mã VT', 'Tên VT', 'Ngành', 'Phụ trách'];
+            mappedData = data.map(item => [item.ma_vt, item.ten_vt, item.nganh, item.phu_trach]);
+            break;
+            
+          case 'tonkho':
+            headers = ['Mã vạch', 'Mã VT', 'Tên VT', 'Lot', 'Date', 'Tồn đầu', 'Nhập', 'Xuất', 'Tồn cuối', 'Tình trạng', 'Tray', 'Ngành', 'Phụ trách'];
+            await loadSanphamForLookup();
+            mappedData = data.map(item => {
+              const ton_dau = Number(item.ton_dau) || 0;
+              const nhap = Number(item.nhap) || 0;
+              const xuat = Number(item.xuat) || 0;
+              const ton_cuoi = ton_dau + nhap - xuat;
+              const productInfo = sanphamDataForLookup.find(p => p.ma_vt === item.ma_vt) || {};
+              return [item.ma_vach, item.ma_vt, productInfo.ten_vt || item.ten_vt, item.lot, formatDate(item.date), ton_dau, nhap, xuat, ton_cuoi, item.tinh_trang, item.tray, productInfo.nganh || item.nganh, productInfo.phu_trach || item.phu_trach];
+            });
+            break;
+            
+          case 'chitiet':
+            headers = ['ID', 'Thời gian', 'Mã kho', 'Mã NX', 'Mã vạch', 'Mã VT', 'Tên VT', 'Lot', 'Date', 'Yêu cầu', 'Số lượng', 'Loại', 'User', 'Mục đích', 'Ngành', 'Phụ trách'];
+            mappedData = data.map(item => [item.id, item.thoi_gian, item.ma_kho, item.ma_nx, item.ma_vach, item.ma_vt, item.ten_vt, item.lot, item.date, item.yeu_cau, item.so_luong, item.loai, item.user, item.muc_dich, item.nganh, item.phu_trach]);
+            break;
+            
+          default:
+            console.warn('View không hỗ trợ Tải Excel:', currentView);
+            return;
+        }
+
+        const ws_data = [headers, ...mappedData];
+        const ws = XLSX.utils.aoa_to_sheet(ws_data);
+        
+        const colWidths = headers.map(h => ({ wch: h.length }));
+        mappedData.forEach(row => {
+            row.forEach((cell, i) => {
+                const len = cell ? String(cell).length : 10;
+                if (!colWidths[i] || colWidths[i].wch < len) {
+                    colWidths[i] = { wch: len + 2 };
+                }
+            });
+        });
+        colWidths.forEach(w => { if (w.wch > 50) w.wch = 50; });
+        ws['!cols'] = colWidths;
+        
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, currentView);
+
+        XLSX.writeFile(wb, filename);
+        showToast('Tải Excel thành công!', 'success');
+
+      } catch (error) {
+        console.error('Lỗi khi tải Excel:', error);
+        showToast(`Lỗi tải Excel: ${error.message}`, 'error');
+      } finally {
+        toolbar.excel.disabled = false;
+        toolbar.excel.innerHTML = originalText;
+      }
+    }
+
+
+    // ===== 12. Khởi chạy & Real-time =====
+    
+    function setupRealtimeListeners() {
+      console.log('Setting up Supabase real-time listeners...');
+      
+      const handleRealtimeChange = (payload, viewName) => {
+        console.log('Realtime change received for', viewName, payload);
+        
+        if (viewName === 'sanpham') {
+          sanphamDataForLookup = [];
+          sanphamFiltersPopulated = false;
+          // Nếu đang xem Tồn Kho, phải tải lại Tồn Kho
+          if (currentView === 'tonkho') {
+            showToast(`Phát hiện thay đổi ở Sản Phẩm, đang cập nhật Tồn Kho...`, 'warning');
+            loadDataForCurrentView();
+          }
+        }
+        
+        if (viewName === 'chitiet' && currentView === 'tonkho') {
+          showToast(`Phát hiện thay đổi ở Chi Tiết, đang cập nhật Tồn Kho...`, 'warning');
+          loadDataForCurrentView();
+        }
+
+        if (currentView === viewName) {
+          console.log(`Reloading data for active view: ${viewName}`);
+          showToast(`Phát hiện thay đổi, đang cập nhật ${viewName}...`, 'warning');
+          loadDataForCurrentView();
+        }
+      };
+
+      supabase.channel('public:SANPHAM')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'SANPHAM' }, 
+          (payload) => handleRealtimeChange(payload, 'sanpham'))
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            console.log('Successfully subscribed to SANPHAM changes!');
+          }
+        });
+
+      supabase.channel('public:TONKHO')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'TONKHO' }, 
+          (payload) => handleRealtimeChange(payload, 'tonkho'))
+        .subscribe();
+
+      supabase.channel('public:DONHANG')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'DONHANG' }, 
+          (payload) => handleRealtimeChange(payload, 'donhang'))
+        .subscribe();
+      
+      supabase.channel('public:CHITIET')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'CHITIET' }, 
+          (payload) => handleRealtimeChange(payload, 'chitiet'))
+        .subscribe();
+    }
+
+    window.appLoaded = false;
+
+    window.addEventListener('DOMContentLoaded', () => {
       toolbar.add.addEventListener('click', handleToolbarAdd);
       toolbar.edit.addEventListener('click', handleToolbarEdit);
       toolbar.delete.addEventListener('click', handleToolbarDelete);
       toolbar.search.addEventListener('input', handleToolbarSearch);
       toolbar.clearFilter.addEventListener('click', handleToolbarClearFilter);
-
-      // Listener MỚI
       toolbar.save.addEventListener('click', handleToolbarSave);
       toolbar.cancel.addEventListener('click', handleToolbarCancel);
-      toolbar.sync.addEventListener('click', handleSync); // MỚI: Listener Đồng bộ
+      toolbar.sync.addEventListener('click', handleSync);
 
-      // Listener Bộ Lọc (MỚI)
       toolbarToggleFilter.addEventListener('click', () => {
         const isHidden = filterPanel.classList.toggle('hidden');
         toolbarToggleFilterText.textContent = isHidden ? 'Hiện bộ lọc' : 'Ẩn bộ lọc';
       });
 
-      // MỚI: Gắn listener cho BỘ LỌC CUSTOM
-      customFilters = document.querySelectorAll('#filter-sanpham .custom-filter');
-      
-      customFilters.forEach(filter => {
-        const toggle = filter.querySelector('.custom-filter-toggle');
-        const panel = filter.querySelector('.custom-filter-panel');
-        const search = filter.querySelector('.custom-filter-search');
-        const list = filter.querySelector('.custom-filter-list');
-        const column = filter.dataset.filterColumn;
-
-        // 1. Mở/đóng panel
-        toggle.addEventListener('click', () => {
-          // Đóng tất cả các panel khác
-          customFilters.forEach(otherFilter => {
-            if (otherFilter !== filter) {
-              otherFilter.querySelector('.custom-filter-panel').classList.add('hidden');
-            }
-          });
-          // Mở/đóng panel hiện tại
-          panel.classList.toggle('hidden');
-        });
-
-        // 2. Tìm kiếm trong panel
-        search.addEventListener('input', () => {
-          const searchTerm = search.value.toLowerCase();
-          list.querySelectorAll('.custom-filter-item').forEach(item => {
-            const label = item.querySelector('label')?.textContent.toLowerCase();
-            if (label) {
-              // Ẩn/hiện item (bỏ qua 'Chọn tất cả')
-              if (label === '(chọn tất cả)') {
-                item.style.display = 'flex';
-              } else {
-                item.style.display = label.includes(searchTerm) ? 'flex' : 'none';
-              }
-            }
-          });
-        });
-
-        // MỚI: Áp dụng bằng Enter khi đang ở ô tìm kiếm
-        search.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault(); // Ngăn hành vi mặc định
-            // MỚI: Tìm nút Áp dụng TRONG CÙNG PANEL
-            const applyButton = filter.querySelector('.custom-filter-apply');
-            if (applyButton) {
-              applyButton.click();
-            }
+      document.getElementById('filter-panel').addEventListener('click', async (e) => {
+          const toggle = e.target.closest('.custom-filter-toggle');
+          if (toggle) {
+              const panel = toggle.nextElementSibling;
+              document.querySelectorAll('.custom-filter-panel').forEach(p => {
+                  if (p !== panel) p.classList.add('hidden');
+              });
+              panel.classList.toggle('hidden');
           }
-        });
 
-        // 3. Xử lý checkbox (dùng event delegation)
-        list.addEventListener('change', async (e) => {
-          if (!e.target.matches('input[type="checkbox"]')) return;
+          const applyButton = e.target.closest('.custom-filter-apply');
+          if (applyButton) {
+              applyButton.closest('.custom-filter-panel').classList.add('hidden');
+              filterPanel.classList.add('hidden');
+              toolbarToggleFilterText.textContent = 'Hiện bộ lọc';
+              pagination.page = 1;
+              paginationControls.pageInput.value = 1;
+              loadDataForCurrentView();
+          }
 
-          const checkbox = e.target;
+          const item = e.target.closest('.custom-filter-item');
+          if (item) {
+              const checkbox = item.querySelector('input[type="checkbox"]');
+              if (checkbox && !e.target.isSameNode(checkbox) && !e.target.isSameNode(item.querySelector('label'))) {
+                  checkbox.checked = !checkbox.checked;
+                  checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+          }
+      });
+
+      document.getElementById('filter-panel').addEventListener('input', (e) => {
+          const searchInput = e.target.closest('.custom-filter-search');
+          if (searchInput) {
+              const searchTerm = searchInput.value.toLowerCase();
+              const list = searchInput.parentElement.nextElementSibling;
+              list.querySelectorAll('.custom-filter-item').forEach(item => {
+                  const label = item.querySelector('label')?.textContent.toLowerCase();
+                  if (label && label !== '(chọn tất cả)') {
+                      item.style.display = label.includes(searchTerm) ? 'flex' : 'none';
+                  }
+              });
+          }
+      });
+      
+      document.getElementById('filter-panel').addEventListener('change', (e) => {
+          const checkbox = e.target.closest('.custom-filter-list input[type="checkbox"]');
+          if (!checkbox) return;
+          
+          const column = checkbox.dataset.column;
+          const filterState = (currentView === 'sanpham') ? sanphamFilterState : tonkhoFilterState;
+          const list = checkbox.closest('.custom-filter-list');
 
           if (checkbox.classList.contains('custom-filter-select-all')) {
-            // Checkbox "Chọn tất cả"
-            const isChecked = checkbox.checked;
-            list.querySelectorAll('.custom-filter-checkbox').forEach(cb => {
-              // Chỉ chọn các mục đang hiển thị (phù hợp với tìm kiếm)
-              if (cb.closest('.custom-filter-item').style.display !== 'none') {
-                cb.checked = isChecked;
-                if (isChecked) {
-                  sanphamFilterState[column].add(cb.value);
-                } else {
-                  sanphamFilterState[column].delete(cb.value);
-                }
-              }
-            });
+              const isChecked = checkbox.checked;
+              list.querySelectorAll('.custom-filter-checkbox').forEach(cb => {
+                  if (cb.closest('.custom-filter-item').style.display !== 'none') {
+                      cb.checked = isChecked;
+                      if (isChecked) filterState[column].add(cb.value);
+                      else filterState[column].delete(cb.value);
+                  }
+              });
           } else {
-            // Checkbox item
-            if (checkbox.checked) {
-              sanphamFilterState[column].add(checkbox.value);
-            } else {
-              sanphamFilterState[column].delete(checkbox.value);
-            }
-            // Cập nhật "Chọn tất cả"
-            const allCheckboxes = list.querySelectorAll('.custom-filter-checkbox');
-            const checkedCheckboxes = list.querySelectorAll('.custom-filter-checkbox:checked');
-            const selectAllCheckbox = list.querySelector('.custom-filter-select-all');
-            
-            if (selectAllCheckbox) { // Thêm kiểm tra null
-                selectAllCheckbox.checked = allCheckboxes.length > 0 && allCheckboxes.length === checkedCheckboxes.length;
-            }
+              if (checkbox.checked) filterState[column].add(checkbox.value);
+              else filterState[column].delete(checkbox.value);
+              
+              const selectAll = list.querySelector('.custom-filter-select-all');
+              if (selectAll) {
+                const allCheckboxes = Array.from(list.querySelectorAll('.custom-filter-checkbox'));
+                const allVisibleCheckboxes = allCheckboxes.filter(cb => cb.closest('.custom-filter-item').style.display !== 'none');
+                const checkedVisibleCheckboxes = allVisibleCheckboxes.filter(cb => cb.checked);
+                selectAll.checked = allVisibleCheckboxes.length > 0 && allVisibleCheckboxes.length === checkedVisibleCheckboxes.length;
+              }
+          }
+          updateCustomFilterText(column, checkbox.closest('.custom-filter'));
+      });
+      
+
+      tonkhoTableBody.addEventListener('click', (e) => {
+          const toggle = e.target.closest('.inline-custom-select-toggle');
+          if (toggle) {
+              document.querySelectorAll('.inline-custom-select-panel').forEach(p => {
+                  if (p !== toggle.nextElementSibling) p.classList.add('hidden');
+              });
+              const panel = toggle.nextElementSibling;
+              panel.classList.toggle('hidden');
+              if (!panel.classList.contains('hidden')) {
+                  panel.querySelector('.inline-custom-select-search').focus();
+              }
+              return;
           }
 
-          // Cập nhật text nút
-          updateCustomFilterText(column, filter);
-        });
-
-        // MỚI: Xử lý click vào HÀNG (item) để toggle checkbox
-        list.addEventListener('click', (e) => {
-          const item = e.target.closest('.custom-filter-item');
-          if (!item) return; // Không click vào item
-
-          // Nếu click vào checkbox hoặc label, để trình duyệt tự xử lý
-          if (e.target.matches('input[type="checkbox"]') || e.target.matches('label')) {
-            return;
+          const item = e.target.closest('.inline-custom-select-item');
+          if (item) {
+              const selectedValue = item.dataset.value;
+              const cell = item.closest('td');
+              const hiddenInput = cell.querySelector('input[name="ma_vt"]');
+              const toggleText = cell.querySelector('.inline-custom-select-toggle span');
+              
+              hiddenInput.value = selectedValue;
+              toggleText.textContent = selectedValue;
+              item.closest('.inline-custom-select-panel').classList.add('hidden');
+              
+              handleTonkhoInputChange(hiddenInput);
+              return;
           }
-
-          // Click vào vùng đệm của .custom-filter-item
-          const checkbox = item.querySelector('input[type="checkbox"]');
-          if (checkbox) {
-            checkbox.checked = !checkbox.checked;
-            // Phải tự kích hoạt sự kiện change
-            checkbox.dispatchEvent(new Event('change', { bubbles: true })); 
-          }
-        });
-
-        // MỚI: Gắn listener cho nút Áp Dụng (bên trong mỗi panel)
-        const applyButton = filter.querySelector('.custom-filter-apply');
-        if (applyButton) {
-          applyButton.addEventListener('click', async () => {
-            // 1. Đóng tất cả panel custom
-            customFilters.forEach(f => {
-              f.querySelector('.custom-filter-panel').classList.add('hidden');
-            });
-            // 2. Đóng panel filter chính
-            filterPanel.classList.add('hidden');
-            toolbarToggleFilterText.textContent = 'Hiện bộ lọc';
-
-            // 3. Reset phân trang
-            pagination.page = 1;
-            paginationControls.pageInput.value = 1;
-
-            // 4. Tải lại dữ liệu (với state đã chọn)
-            loadDataForCurrentView();
-
-            // 5. Cập nhật các bộ lọc phụ thuộc (dựa trên state MỚI)
-            await populateSanphamFilters();
-          });
-        }
       });
 
-      // MỚI: Đóng filter khi click ra ngoài
+      tonkhoTableBody.addEventListener('input', (e) => {
+          const searchInput = e.target.closest('.inline-custom-select-search');
+          if (searchInput) {
+              const searchTerm = searchInput.value.toLowerCase();
+              const list = searchInput.nextElementSibling;
+              list.querySelectorAll('.inline-custom-select-item').forEach(item => {
+                  const value = item.dataset.value.toLowerCase();
+                  item.style.display = value.includes(searchTerm) ? 'block' : 'none';
+              });
+          }
+      });
+      
+
       document.addEventListener('click', (e) => {
-        if (!e.target.closest('.custom-filter')) {
-          customFilters.forEach(filter => {
-            filter.querySelector('.custom-filter-panel').classList.add('hidden');
+        if (!e.target.closest('.custom-filter') && !e.target.closest('.inline-custom-select')) {
+          document.querySelectorAll('.custom-filter-panel, .inline-custom-select-panel').forEach(panel => {
+            panel.classList.add('hidden');
           });
+        }
+        if (!e.target.closest('#settings-menu')) {
+          settingsPopover.classList.add('hidden');
         }
       });
 
-
-      // MỚI: Listener cho phím Escape
       document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && currentEditState.mode) {
+        if (e.key === 'Escape' && currentEditState[currentView]) {
           handleToolbarCancel();
         }
       });
 
-      // MỚI: Listener cho Cỡ chữ
+      settingsToggleButton.addEventListener('click', (e) => {
+        e.stopPropagation();
+        settingsPopover.classList.toggle('hidden');
+      });
+
+      darkModeToggle.addEventListener('click', () => {
+        const isDarkMode = document.documentElement.classList.toggle('dark');
+        localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+        darkModeToggle.setAttribute('aria-checked', isDarkMode);
+        darkModeToggleKnob.classList.toggle('translate-x-5', isDarkMode);
+        showToast(isDarkMode ? 'Đã bật chế độ tối.' : 'Đã tắt chế độ tối.', 'success');
+      });
+
+      if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+        darkModeToggle.setAttribute('aria-checked', 'true');
+        darkModeToggleKnob.classList.add('translate-x-5');
+      }
+
       fontSizeSelect.addEventListener('change', handleFontSizeChange);
 
-      // MỚI: Thiết lập Đồng bộ tự động mỗi 30s
-      const AUTO_SYNC_INTERVAL = 30000;
-      setInterval(handleSync, AUTO_SYNC_INTERVAL);
-      console.log(`Đồng bộ tự động đã được kích hoạt mỗi ${AUTO_SYNC_INTERVAL / 1000} giây.`);
+      setupRealtimeListeners();
 
-      // MỚI: Listener cho Phân trang
       paginationControls.limitSelect.addEventListener('change', () => {
-        // Khi đổi limit, reset về trang 1
         pagination.page = 1;
         paginationControls.pageInput.value = 1;
         pagination.limit = parseInt(paginationControls.limitSelect.value, 10);
@@ -2203,59 +2817,102 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
       });
       paginationControls.pageInput.addEventListener('change', () => {
         let newPage = parseInt(paginationControls.pageInput.value, 10);
-        if (isNaN(newPage) || newPage < 1) {
-          newPage = 1;
-        } else if (newPage > pagination.totalPages) {
-          newPage = pagination.totalPages;
-        }
+        if (isNaN(newPage) || newPage < 1) newPage = 1;
+        else if (newPage > pagination.totalPages) newPage = pagination.totalPages;
         pagination.page = newPage;
         paginationControls.pageInput.value = newPage;
         loadDataForCurrentView();
       });
        paginationControls.pageInput.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') {
-            paginationControls.pageInput.blur(); // Trigger sự kiện 'change'
-          }
+          if (e.key === 'Enter') e.target.blur();
         });
       paginationControls.prevButton.addEventListener('click', () => {
         if (pagination.page > 1) {
           pagination.page--;
-          paginationControls.pageInput.value = pagination.page;
           loadDataForCurrentView();
         }
       });
       paginationControls.nextButton.addEventListener('click', () => {
         if (pagination.page < pagination.totalPages) {
           pagination.page++;
-          paginationControls.pageInput.value = pagination.page;
           loadDataForCurrentView();
         }
       });
 
-      // MỚI: Listener cho sự kiện Dán (Paste)
       document.addEventListener('paste', handlePaste);
+      toolbar.excel.addEventListener('click', handleDownloadExcel);
+      document.body.addEventListener('input', captureEditStateOnInput); // MỚI
 
-      toolbar.excel.addEventListener('click', () => {
-        if (currentEditState.mode) return;
-        console.log(`Yêu cầu tải Excel cho view: ${currentView}.`);
-        showConfirm(`Chức năng 'Tải Excel' cho '${currentView}' đang được phát triển.`, () => { }, true);
-      });
-
-      // Hiển thị view mặc định
       showView('sanpham');
-      // Thiết lập cỡ chữ ban đầu (100% là mặc định)
       handleFontSizeChange();
+      
+      window.appLoaded = true;
     });
 
-    /**
-     * MỚI: Xử lý dán (Paste)
-     */
+    // ===== MỚI: Các hàm helper cho trạng thái edit liên-view =====
+    function captureEditStateOnInput(e) {
+        const row = e.target.closest('tr[data-editing="true"]');
+        if (!row || !currentEditState[currentView]) return;
+
+        const rowId = row.id.split('-row-')[1];
+        if (!currentEditState[currentView].data[rowId]) {
+            currentEditState[currentView].data[rowId] = {};
+        }
+
+        const inputs = row.querySelectorAll('input, textarea, select');
+        inputs.forEach(input => {
+            const name = input.name;
+            if (name) {
+                currentEditState[currentView].data[rowId][name] = (input.type === 'checkbox') ? input.checked : input.value;
+            }
+        });
+    }
+
+    function captureEditState(view) {
+        const state = currentEditState[view];
+        if (!state) return;
+
+        document.querySelectorAll(`#view-${view} tr[data-editing="true"]`).forEach(row => {
+            const rowId = row.id.split('-row-')[1];
+            if (!state.data[rowId]) state.data[rowId] = {};
+            
+            const inputs = row.querySelectorAll('input, textarea, select');
+            inputs.forEach(input => {
+                const name = input.name;
+                if (name) {
+                    state.data[rowId][name] = (input.type === 'checkbox') ? input.checked : input.value;
+                }
+            });
+        });
+    }
+
+    async function restoreEditState(view) {
+        const state = currentEditState[view];
+        if (!state) return;
+        
+        if (state.mode === 'add') {
+            const tableBody = document.getElementById(`${view}-table-body`);
+            const dataToRestore = Object.values(state.data).reverse();
+            for (const rowData of dataToRestore) {
+                const rowHtml = `<tr id="${view}-row-${rowData.tempId}" data-editing="true">${createEditableRowContents(view, rowData, false)}</tr>`;
+                tableBody.insertAdjacentHTML('afterbegin', rowHtml);
+            }
+        } else if (state.mode === 'edit') {
+            await loadSanphamForLookup(); // Ensure lookup data is ready for Tồn Kho
+            for (const [id, rowData] of Object.entries(state.data)) {
+                 const row = document.getElementById(`${view}-row-${id}`);
+                 if (row) {
+                     row.innerHTML = createEditableRowContents(view, rowData, true);
+                     row.setAttribute('data-editing', 'true');
+                 }
+            }
+        }
+    }
+
+
     function handlePaste(e) {
-      // Chỉ hoạt động ở view 'sanpham' và 'tonkho'
-      if (currentView !== 'sanpham' && currentView !== 'tonkho') return;
-      // Chỉ hoạt động ở chế độ 'add'
-      if (currentEditState.mode !== 'add') return;
-      // Chỉ hoạt động nếu dán vào input
+      const state = currentEditState[currentView];
+      if (!state || state.mode !== 'add') return;
       const targetElement = e.target;
       if (!targetElement.classList.contains('inline-input') || targetElement.readOnly) return;
 
@@ -2263,40 +2920,44 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
 
       const clipboardData = (e.clipboardData || window.clipboardData).getData('text/plain');
       const pastedRows = clipboardData.trim().split('\n').map(r => r.split('\t'));
-
       if (pastedRows.length === 0) return;
 
       const startInput = targetElement;
       const startRow = startInput.closest('tr');
       const startCellIndex = startInput.closest('td').cellIndex;
-
       let allEditRows = Array.from(document.querySelectorAll(`#${currentView}-table-body tr[data-editing="true"]`));
       let startRowIndex = allEditRows.indexOf(startRow);
-
-      if (startRowIndex === -1) return; // Không tìm thấy hàng
+      if (startRowIndex === -1) return;
 
       pastedRows.forEach((rowData, r_idx) => {
         const targetRowIndex = startRowIndex + r_idx;
         let targetRow = allEditRows[targetRowIndex];
 
-        // Nếu thiếu hàng, tạo hàng mới
         if (!targetRow) {
-          if (currentView === 'sanpham') {
-            targetRow = createNewSanphamRow();
-          } else if (currentView === 'tonkho') {
-            targetRow = createNewTonkhoRow();
-          }
-          allEditRows.push(targetRow); // Thêm vào mảng để vòng lặp sau tìm thấy
+          const newId = `new-${crypto.randomUUID()}`;
+          state.data[newId] = { tempId: newId };
+          if (currentView === 'sanpham') targetRow = createNewSanphamRow(newId);
+          else if (currentView === 'tonkho') targetRow = createNewTonkhoRow(newId);
+          // Add other views if they support paste-add
+          if (targetRow) allEditRows.push(targetRow);
         }
+        
+        if (!targetRow) return;
 
-        const targetInputs = targetRow.querySelectorAll('td .inline-input'); // Lấy input trong td
-
+        const targetInputs = targetRow.querySelectorAll('td .inline-input, td .inline-custom-select input[type=hidden]');
         rowData.forEach((cellData, c_idx) => {
-          // cellIndex 0 là checkbox, nên input index = cellIndex - 1
           const targetInputIndex = (startCellIndex - 1) + c_idx;
+          const currentInput = targetInputs[targetInputIndex];
+          if (currentInput && !currentInput.readOnly) {
+            currentInput.value = cellData.trim();
+            currentInput.dispatchEvent(new Event('input', { bubbles: true }));
+            currentInput.dispatchEvent(new Event('blur', { bubbles: true }));
 
-          if (targetInputs[targetInputIndex] && !targetInputs[targetInputIndex].readOnly) {
-            targetInputs[targetInputIndex].value = cellData.trim();
+            // Special handling for custom select in Tồn Kho
+            if(currentView === 'tonkho' && currentInput.name === 'ma_vt') {
+                const toggle = currentInput.closest('.inline-custom-select').querySelector('.inline-custom-select-toggle span');
+                if (toggle) toggle.textContent = cellData.trim();
+            }
           }
         });
       });
@@ -2306,4 +2967,3 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
 </body>
 
 </html>
-
