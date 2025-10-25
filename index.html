@@ -1,550 +1,678 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bảng điều khiển Dữ liệu Supabase</title>
-  
-  <!-- Import Tailwind CSS -->
+  <!-- 1. Tải Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- Import Font Awesome (cho các biểu tượng) -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-
+  <!-- MỚI: Tải Animated Icons -->
+  <script src="https://animatedicons.co/scripts/embed-animated-icons.js"></script>
+  <!-- 2. Tải Supabase Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- 3. Tải Font (Inter) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    /* Thêm một số style tùy chỉnh
-      Chúng ta dùng @apply của Tailwind để tái sử dụng các class
-    */
+    /* Kiểu chữ mặc định */
+    /* MỚI: Sử dụng font-size cho thẻ html để dễ dàng scale toàn bộ ứng dụng */
+    html {
+        font-size: 100%; /* Default scale */
+    }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: #f8f9fa; /* Màu nền xám nhạt */
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* Ẩn/hiện các view */
+    .view {
+      display: none;
+    }
+
+    .view.active {
+      display: block;
     }
 
     /* Tùy chỉnh thanh cuộn */
     ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #f1f1f1;
-      border-radius: 10px;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #c0c0c0;
-      border-radius: 10px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #a0a0a0;
+      width: 6px;
+      height: 6px;
     }
 
-    /* Kiểu của tab */
-    .tab-button {
-      @apply py-3 px-6 text-gray-600 font-semibold cursor-pointer border-b-4 border-transparent transition-all;
+    ::-webkit-scrollbar-thumb {
+      background: #9ca3af;
+      /* gray-400 */
+      border-radius: 10px;
     }
-    .tab-button.active {
-      @apply text-blue-600 border-blue-600;
+
+    ::-webkit-scrollbar-track {
+      background: #e5e7eb;
+      /* gray-200 */
     }
-    .tab-button:hover {
-      @apply bg-gray-100;
+
+    /* Kiểu thanh điều hướng (Tabs) */
+    .nav-link {
+      display: inline-block;
+      padding: 16px 20px;
+      font-weight: 500;
+      color: #4b5563;
+      /* gray-600 */
+      border-bottom: 4px solid transparent;
+      transition: all 0.2s ease-in-out;
     }
-    
-    /* Kiểu của nút cài đặt */
-    .settings-panel {
-      @apply absolute right-0 top-full mt-2 w-64 bg-white rounded-lg shadow-xl p-4 z-50;
-      display: none; /* Ẩn ban đầu */
+
+    .nav-link:hover {
+      color: #3b82f6;
+      /* blue-500 */
+    }
+
+    .nav-link.active {
+      color: #2563eb;
+      /* blue-600 */
+      font-weight: 600;
+      border-bottom-color: #2563eb;
+    }
+
+    /* Kiểu hàng được chọn */
+    .selectable-row.selected {
+      background-color: #dbeafe;
+      /* blue-100 */
+    }
+
+    .selectable-row {
+      cursor: pointer;
+    }
+
+    /* Input cho chỉnh sửa nội tuyến */
+    .inline-input {
+      width: 100%;
+      padding: 4px 8px;
+      border: 1px solid #9ca3af;
+      /* gray-400 */
+      border-radius: 4px;
+      background-color: #f0f9ff;
+      /* blue-50 */
+    }
+
+    .inline-input:focus {
+      outline: none;
+      border-color: #2563eb;
+      /* blue-600 */
+      box-shadow: 0 0 0 2px #dbeafe;
+      /* blue-100 */
+    }
+
+    /* MỚI: Tùy chỉnh select cho bộ lọc */
+    .filter-select {
+      /* Đảm bảo select có chiều cao giống input/button */
+      padding-top: 0.5rem;
+      padding-bottom: 0.5rem;
+      /* Thêm-webkit-appearance để ghi đè style trình duyệt */
+      -webkit-appearance: none;
+      appearance: none;
+      background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="%236b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>');
+      background-size: 1.25rem;
+      background-repeat: no-repeat;
+      background-position: right 0.5rem center;
+      padding-right: 2.5rem;
+      /* Thêm padding phải để text không đè lên icon */
+    }
+
+    /* MỚI: CSS cho bộ lọc custom */
+    .custom-filter-toggle {
+      width: 100%;
+      background-color: white;
+      border: 1px solid #d1d5db; /* gray-300 */
+      border-radius: 0.375rem; /* rounded-md */
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
+    }
+    .custom-filter-toggle:focus {
+      outline: none;
+      border-color: #2563eb; /* blue-600 */
+      box-shadow: 0 0 0 2px #dbeafe; /* blue-100 */
+    }
+    .custom-filter-text {
+      color: #374151; /* gray-700 */
+    }
+    .custom-filter-arrow {
+      width: 1.25rem; /* w-5 */
+      height: 1.25rem; /* h-5 */
+      color: #6b7280; /* gray-500 */
+    }
+    .custom-filter-panel {
+      position: absolute;
+      background-color: white;
+      border: 1px solid #d1d5db; /* gray-300 */
+      border-radius: 0.375rem; /* rounded-md */
+      margin-top: 0.25rem; /* mt-1 */
+      width: 100%;
+      z-index: 50;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
+      padding: 0.5rem; /* p-2 */
+    }
+    .custom-filter-search {
+      width: 100%;
+      padding: 0.5rem 0.75rem; /* px-3 py-2 */
+      border: 1px solid #d1d5db; /* gray-300 */
+      border-radius: 0.375rem; /* rounded-md */
+      margin-bottom: 0.5rem; /* mb-2 */
+      font-size: 0.875rem; /* text-sm */
+    }
+    .custom-filter-search:focus {
+      outline: none;
+      border-color: #2563eb; /* blue-600 */
+    }
+    .custom-filter-list {
+      max-height: 200px;
+      overflow-y: auto;
+      font-size: 0.875rem; /* text-sm */
+    }
+    .custom-filter-item {
+      display: flex;
+      align-items: center;
+      padding: 0.5rem; /* p-2 */
+      cursor: pointer;
+      border-radius: 0.25rem; /* rounded */
+    }
+    .custom-filter-item:hover {
+      background-color: #f3f4f6; /* gray-100 */
+    }
+    .custom-filter-item input {
+      margin-right: 0.5rem; /* mr-2 */
+      cursor: pointer;
+    }
+    .custom-filter-item label {
+      color: #374151; /* gray-700 */
+      cursor: pointer;
+      /* Cho phép ngắt dòng nếu text quá dài */
+      white-space: normal;
+      word-break: break-word;
     }
   </style>
 </head>
-<body class="text-gray-800">
 
-  <!-- ===== HEADER & NAVIGATION ===== -->
-  <header class="bg-white shadow-md sticky top-0 z-40">
-    <div class="container mx-auto px-4">
-      <div class="flex justify-between items-center h-16">
-        
-        <!-- Tabs điều hướng -->
-        <nav class="flex h-full">
-          <!-- 
-            Chúng ta thêm data-tab="ten-tab" để JS biết
-            nút này tương ứng với nội dung nào 
-          -->
-          <!-- THAY ĐỔI 1: Sửa tab đầu tiên thành "Vật Tư" (SANPHAM) và đặt làm active -->
-          <button class="tab-button active" data-tab="sanpham">
-            Vật Tư
-          </button>
-          <!-- THAY ĐỔI 2: Thêm tab "Tồn Kho" (TONKHO) -->
-          <button class="tab-button" data-tab="tonkho">
-            Tồn Kho
-          </button>
-          <button class="tab-button" data-tab="donhang">
-            Đơn Hàng
-          </button>
-          <!-- THAY ĐỔI 3: Sửa tab cuối cùng thành "Chi Tiết" -->
-          <button class="tab-button" data-tab="chitiet">
-            Chi Tiết
-          </button>
+<body class="bg-gray-100">
+
+  <div class="flex flex-col h-screen">
+    <!-- ===== Header Navigation (ĐÃ CẬP NHẬT) ===== -->
+    <header class="bg-white shadow-sm">
+      <!-- Container mới để căn chỉnh các mục -->
+      <div class="flex justify-between items-center h-16 px-6">
+        <!-- Tabs (LEFT/CENTER) -->
+        <nav>
+          <ul class="flex">
+            <!-- THAY ĐỔI: Xóa onclick, thêm data-view-target -->
+            <li><a href="#" data-view-target="sanpham" class="nav-link active" data-view="sanpham">Sản Phẩm</a></li>
+            <li><a href="#" data-view-target="tonkho" class="nav-link" data-view="tonkho">Tồn Kho</a></li>
+            <li><a href="#" data-view-target="donhang" class="nav-link" data-view="donhang">Đơn Hàng</a></li>
+            <li><a href="#" data-view-target="chitiet" class="nav-link" data-view="chitiet">Chi Tiết</a></li>
+          </ul>
         </nav>
 
-        <!-- Thanh tìm kiếm và Cài đặt -->
-        <div class="flex items-center space-x-4">
-          <div class="relative">
-            <input type="text" placeholder="Tìm kiếm..." class="border rounded-full py-2 px-4 pl-10 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-          </div>
-
-          <!-- Nút Cài Đặt (theo yêu cầu) -->
-          <div class="relative" id="settings-menu">
-            <button id="settings-button" class="text-gray-600 hover:text-blue-600 transition-colors">
-              <i class="fa-solid fa-gear fa-lg"></i>
+        <!-- MỚI: Sync and Font Size (RIGHT) -->
+        <div class="flex items-center gap-4">
+            <!-- 1. Nút Đồng bộ (Sync) với icon động -->
+            <!-- Giữ nguyên ID "toolbar-sync" để JS hoạt động -->
+            <button id="toolbar-sync" class="p-2 rounded-full hover:bg-gray-100 transition flex items-center justify-center relative w-10 h-10 disabled:opacity-50 disabled:cursor-not-allowed" title="Đồng bộ">
+                <!-- Icon động Sync (kích thước 24x24) -->
+                <animated-icons src="https://animatedicons.co/get-icon?name=Sync&style=minimalistic&token=e9dea012-465e-4473-9939-5de89e4a2b52" 
+                    trigger="click" 
+                    attributes='{"variationThumbColour":"#536DFE","variationName":"Two Tone","variationNumber":2,"numberOfGroups":2,"backgroundIsGroup":false,"strokeWidth":1,"defaultColours":{"group-1":"#000000","group-2":"#536DFE","background":"#FFFFFF"}}' 
+                    height="24" width="24"
+                    class="pointer-events-none"
+                ></animated-icons>
             </button>
-            
-            <!-- Bảng điều khiển Cài Đặt -->
-            <div id="settings-panel" class="settings-panel">
-              <label for="font-slider" class="block text-sm font-medium text-gray-700">
-                Kích thước chữ: <span id="font-size-label" class="font-bold text-blue-600">14</span>px
-              </label>
-              <input 
-                type="range" 
-                id="font-slider" 
-                min="10" 
-                max="20" 
-                value="14" 
-                class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mt-2"
-              >
-              <div class="text-xs text-gray-500 flex justify-between mt-1">
-                <span>10px</span>
-                <span>20px</span>
+
+            <!-- 2. Cỡ chữ (Font Size) với icon động và Select -->
+            <div class="flex items-center gap-2">
+                <!-- Icon Cài đặt (kích thước 24x24, trigger on hover) -->
+                <animated-icons src="https://animatedicons.co/get-icon?name=setting&style=minimalistic&token=dca75500-0e08-4c4f-b3f9-78b4fe6c03df" 
+                    trigger="hover" 
+                    attributes='{"variationThumbColour":"#536DFE","variationName":"Two Tone","variationNumber":2,"numberOfGroups":2,"backgroundIsGroup":false,"strokeWidth":1,"defaultColours":{"group-1":"#000000","group-2":"#536DFE","background":"#FFFFFF"}}' 
+                    height="24" width="24"
+                    class="cursor-pointer"
+                ></animated-icons>
+                <!-- Select box (Giữ nguyên ID "font-size-select") -->
+                <select id="font-size-select" class="filter-select text-sm py-1 border border-gray-300 rounded-md shadow-sm">
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                    <option value="30">30</option>
+                    <option value="40">40</option>
+                    <option value="50">50</option>
+                    <option value="60">60</option>
+                    <option value="70">70</option>
+                    <option value="80">80</option>
+                    <option value="90">90</option>
+                    <option value="100" selected>100</option>
+                </select>
+            </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ===== Shared Toolbar (ĐÃ CẬP NHẬT - XÓA NÚT CŨ) ===== -->
+    <div class="flex items-center gap-2 px-8 pb-6 border-b border-gray-200 bg-gray-100 pt-8">
+      <!-- Nhóm Lọc (BÊN TRÁI) -->
+      <input type="text" id="toolbar-search" placeholder="Tìm kiếm nhanh..."
+          class="w-1/4 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+        <button id="toolbar-clear-filter"
+          class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition">
+          Xóa bộ lọc
+        </button>
+        <!-- NÚT HIỆN BỘ LỌC -->
+        <button id="toolbar-toggle-filter"
+          class="text-sm font-medium text-blue-600 hover:text-blue-800 transition-all duration-150 flex items-center gap-1 px-3 py-2 bg-gray-50 rounded-lg hover:bg-gray-100 border border-gray-200">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd"
+              d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L13 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 019 17v-5.586L4.293 6.707A1 1 0 014 6V3z"
+              clip-rule="evenodd" />
+          </svg>
+          <span id="toolbar-toggle-filter-text">Hiện bộ lọc</span>
+        </button>
+
+
+        <!-- Spacer -->
+        <div class="flex-grow"></div>
+
+        <!-- (ĐÃ XÓA): Nhóm Cài đặt kích thước chữ (Cỡ chữ) -->
+        
+        <!-- (ĐÃ XÓA): Nút Đồng bộ -->
+        
+        <!-- Nhóm CRUD (BÊN PHẢI) -->
+        <button id="toolbar-add"
+          class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition">
+          + Thêm mới
+        </button>
+        <button id="toolbar-edit" disabled
+          class="px-4 py-2 bg-yellow-500 text-white rounded-lg shadow hover:bg-yellow-600 transition disabled:opacity-50 disabled:cursor-not-allowed">
+          Sửa
+        </button>
+        <button id="toolbar-delete" disabled
+          class="px-4 py-2 bg-red-600 text-white rounded-lg shadow hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
+          Xóa
+        </button>
+
+        <!-- NÚT LƯU/HỦY (BÊN PHẢI) -->
+        <button id="toolbar-save" hidden
+          class="px-4 py-2 bg-teal-600 text-white rounded-lg shadow hover:bg-teal-700 transition flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+            <path
+              d="M7.707 10.293a1 1 0 010-1.414l3-3a1 1 0 011.414 1.414L9.414 9H14a1 1 0 110 2H9.414l2.707 2.707a1 1 0 01-1.414 1.414l-3-3zM5 4a1 1 0 00-1 1v10a1 1 0 001 1h5a1 1 0 100-2H6V6h4a1 1 0 100-2H5z" />
+          </svg>
+          Lưu
+        </button>
+        <button id="toolbar-cancel" hidden
+          class="px-4 py-2 bg-gray-600 text-white rounded-lg shadow hover:bg-gray-700 transition flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd"
+              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+              clip-rule="evenodd" />
+          </svg>
+          Hủy
+        </button>
+
+        <!-- Nhóm khác (BÊN PHẢI) -->
+        <button id="toolbar-excel"
+          class="px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24"
+            stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          Tải Excel
+        </button>
+      </div>
+
+      <!-- ===== Bảng Lọc Chi Tiết (ĐÃ THAY ĐỔI) ===== -->
+      <div id="filter-panel" class="hidden px-8 pb-6 -mt-6 bg-gray-100"> <!-- Thêm -mt-6 để kéo lên gần toolbar VÀ bg-gray-100 -->
+        <div class="p-4 bg-white rounded-lg shadow-md border border-gray-200">
+
+          <!-- Bộ lọc cho SẢN PHẨM (ĐÃ THAY ĐỔI INPUTS THÀNH SELECTS) -->
+          <div id="filter-sanpham" class="filter-view-options hidden">
+            <!-- MỚI: Cấu trúc bộ lọc custom -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+              
+              <!-- Custom Filter: Mã VT -->
+              <div class="custom-filter" data-filter-column="ma_vt">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Mã VT</label>
+                <div class="relative">
+                  <button type="button" class="custom-filter-toggle">
+                    <span class="custom-filter-text truncate">Tất cả Mã VT</span>
+                    <svg class="custom-filter-arrow h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                  </button>
+                  <div class="custom-filter-panel hidden">
+                    <!-- MỚI: Flex container cho tìm kiếm và áp dụng -->
+                    <div class="flex gap-2 mb-2">
+                      <input type="text" class="custom-filter-search w-2/3" placeholder="Tìm kiếm..."> <!-- THAY ĐỔI: Bỏ mb-2, thêm w-2/3 -->
+                      <button class="custom-filter-apply w-1/3 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md shadow-sm hover:bg-blue-700 transition"> <!-- THAY ĐỔI: Bỏ w-full, mt-1, mb-2, thêm w-1/3 -->
+                        Áp dụng
+                      </button>
+                    </div>
+                    <div class="custom-filter-list">
+                      <!-- JS populates this -->
+                    </div>
+                  </div>
+                </div>
               </div>
+
+              <!-- Custom Filter: Tên VT -->
+              <div class="custom-filter" data-filter-column="ten_vt">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Tên VT</label>
+                <div class="relative">
+                  <button type="button" class="custom-filter-toggle">
+                    <span class="custom-filter-text truncate">Tất cả Tên VT</span>
+                    <svg class="custom-filter-arrow h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                  </button>
+                  <div class="custom-filter-panel hidden">
+                    <!-- MỚI: Flex container cho tìm kiếm và áp dụng -->
+                    <div class="flex gap-2 mb-2">
+                      <input type="text" class="custom-filter-search w-2/3" placeholder="Tìm kiếm..."> <!-- THAY ĐỔI: Bỏ mb-2, thêm w-2/3 -->
+                      <button class="custom-filter-apply w-1/3 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md shadow-sm hover:bg-blue-700 transition"> <!-- THAY ĐỔI: Bỏ w-full, mt-1, mb-2, thêm w-1/3 -->
+                        Áp dụng
+                      </button>
+                    </div>
+                    <div class="custom-filter-list">
+                      <!-- JS populates this -->
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Custom Filter: Ngành -->
+              <div class="custom-filter" data-filter-column="nganh">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Ngành</label>
+                <div class="relative">
+                  <button type="button" class="custom-filter-toggle">
+                    <span class="custom-filter-text truncate">Tất cả Ngành</span>
+                    <svg class="custom-filter-arrow h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                  </button>
+                  <div class="custom-filter-panel hidden">
+                    <!-- MỚI: Flex container cho tìm kiếm và áp dụng -->
+                    <div class="flex gap-2 mb-2">
+                      <input type="text" class="custom-filter-search w-2/3" placeholder="Tìm kiếm..."> <!-- THAY ĐỔI: Bỏ mb-2, thêm w-2/3 -->
+                      <button class="custom-filter-apply w-1/3 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md shadow-sm hover:bg-blue-700 transition"> <!-- THAY ĐỔI: Bỏ w-full, mt-1, mb-2, thêm w-1/3 -->
+                        Áp dụng
+                      </button>
+                    </div>
+                    <div class="custom-filter-list">
+                      <!-- JS populates this -->
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Custom Filter: Phụ trách -->
+              <div class="custom-filter" data-filter-column="phu_trach">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Phụ trách</label>
+                <div class="relative">
+                  <button type="button" class="custom-filter-toggle">
+                    <span class="custom-filter-text truncate">Tất cả Phụ trách</span>
+                    <svg class="custom-filter-arrow h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                  </button>
+                  <div class="custom-filter-panel hidden">
+                    <!-- MỚI: Flex container cho tìm kiếm và áp dụng -->
+                    <div class="flex gap-2 mb-2">
+                      <input type="text" class="custom-filter-search w-2/3" placeholder="Tìm kiếm..."> <!-- THAY ĐỔI: Bỏ mb-2, thêm w-2/3 -->
+                      <button class="custom-filter-apply w-1/3 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md shadow-sm hover:bg-blue-700 transition"> <!-- THAY ĐỔI: Bỏ w-full, mt-1, mb-2, thêm w-1/3 -->
+                        Áp dụng
+                      </button>
+                    </div>
+                    <div class="custom-filter-list">
+                      <!-- JS populates this -->
+                    </div>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
-          
-          <i class="fa-solid fa-sync text-gray-600 cursor-pointer" title="Đồng bộ"></i>
-        </div>
-      </div>
-    </div>
-  </header>
 
-  <!-- ===== MAIN CONTENT ===== -->
-  <main class="container mx-auto p-4">
-    
-    <!-- 
-      Đây là nơi chứa nội dung của các tab 
-      Chúng ta dùng class "tab-content" để JS nhận diện
-    -->
-
-    <!-- ===== THAY ĐỔI 4: Thêm nội dung TAB VẬT TƯ (SANPHAM) ===== -->
-    <div id="sanpham-content" class="tab-content" style="display: none;">
-      <!-- Toolbar -->
-      <div class="bg-white p-4 rounded-lg shadow mb-4">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-semibold">Quản lý Vật Tư (SANPHAM)</h2>
-          <div class="flex space-x-2">
-            <!-- Các nút Thêm/Lưu/Xóa có thể thêm chức năng sau -->
-            <button class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition-colors"><i class="fa-solid fa-plus mr-2"></i>Thêm</button>
-            <button class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded transition-colors"><i class="fa-solid fa-save mr-2"></i>Lưu</button>
-            <button class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded transition-colors"><i class="fa-solid fa-trash mr-2"></i>Xóa</button>
+          <!-- Bộ lọc cho TỒN KHO (ví dụ) -->
+          <div id="filter-tonkho" class="filter-view-options hidden">
+            <p class="text-gray-500 text-sm">Bộ lọc cho Tồn kho chưa được thiết lập.</p>
           </div>
-        </div>
-      </div>
-      <!-- Bảng Dữ Liệu Vật Tư -->
-      <!-- THÊM CLASS 'data-table-wrapper' -->
-      <div class="bg-white rounded-lg shadow overflow-auto data-table-wrapper">
-        <table class="min-w-full divide-y divide-gray-200 whitespace-nowrap">
-          <thead class="bg-gray-50 sticky top-0 z-10">
-            <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"><input type="checkbox"></th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã Viết Tắt</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên Vật Tư</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngành</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phụ Trách</th>
-            </tr>
-          </thead>
-          <tbody id="sanpham-body" class="bg-white divide-y divide-gray-200">
-            <!-- JS sẽ chèn dữ liệu vào đây -->
-            <tr><td colspan="5" class="px-6 py-20 text-center text-gray-500"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><p class="mt-2">Đang tải dữ liệu...</p></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
 
-    <!-- ===== NỘI DUNG TAB TỒN KHO (TONKHO) ===== -->
-    <!-- Sửa lại: Tên tab là Tồn Kho, ẩn nó đi -->
-    <div id="tonkho-content" class="tab-content" style="display: none;">
-      
-      <!-- Toolbar (giống ảnh 2) -->
-      <div class="bg-white p-4 rounded-lg shadow mb-4">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-semibold">Quản lý Tồn Kho (TONKHO)</h2>
-          <div class="flex space-x-2">
-            <button class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition-colors"><i class="fa-solid fa-plus mr-2"></i>Thêm</button>
-            <button class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded transition-colors"><i class="fa-solid fa-save mr-2"></i>Lưu</button>
-            <button class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded transition-colors"><i class="fa-solid fa-trash mr-2"></i>Xóa</button>
+          <!-- Bộ lọc cho ĐƠN HÀNG (ví dụ) -->
+          <div id="filter-donhang" class="filter-view-options hidden">
+            <p class="text-gray-500 text-sm">Bộ lọc cho Đơn hàng chưa được thiết lập.</p>
           </div>
-        </div>
-        
-        <!-- Filters (Placeholder) -->
-        <div class="grid grid-cols-4 lg:grid-cols-7 gap-3">
-          <input type="text" placeholder="Mã Viết Tắt" class="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
-          <input type="text" placeholder="Số Lô" class="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
-          <input type="text" placeholder="Tình Trạng" class="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
-          <input type="text" placeholder="Tray" class="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
-          <input type="text" placeholder="Ngành" class="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
-          <input type="text" placeholder="Phụ Trách" class="border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
-          <button class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded transition-colors col-span-4 lg:col-span-1"><i class="fa-solid fa-filter mr-2"></i>Lọc</button>
+
+          <!-- Bộ lọc cho CHI TIẾT (sẽ luôn ẩn) -->
+          <div id="filter-chitiet" class="filter-view-options hidden">
+          </div>
+
         </div>
       </div>
 
-      <!-- Bảng Dữ Liệu Tồn Kho -->
-      <!-- 
-        Chúng ta bọc bảng trong 1 div để có thể cuộn ngang 
-        Và đặt ID để JS có thể điều khiển font-size 
-      -->
-      <!-- SỬA ID THÀNH CLASS 'data-table-wrapper' -->
-      <div class="bg-white rounded-lg shadow overflow-auto data-table-wrapper">
-        <table class="min-w-full divide-y divide-gray-200 whitespace-nowrap">
-          <thead class="bg-gray-50 sticky top-0 z-10">
-            <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"><input type="checkbox"></th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã Viết Tắt</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên Vật Tư</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số LOT</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tồn Đầu</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nhập</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Xuất</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tồn Cuối</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tình Trạng</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã Vạch</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tray</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngành</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phụ Trách</th>
-            </tr>
-          </thead>
-          <!-- Đây là nơi JS sẽ chèn dữ liệu vào -->
-          <tbody id="tonkho-body" class="bg-white divide-y divide-gray-200">
-            <!-- Dữ liệu mẫu (sẽ bị JS xóa) -->
-            <tr>
-              <td colspan="14" class="px-6 py-20 text-center text-gray-500">
-                <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
-                <p class="mt-2">Đang tải dữ liệu...</p>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+
+    <!-- ===== Main Content ===== -->
+    <main class="flex-1 overflow-hidden px-8 pb-8">
+
+      <!-- ===== View: Sản Phẩm (MẪU ĐẦY ĐỦ) ===== -->
+      <div id="view-sanpham" class="view active h-full">
+        <div class="bg-white shadow rounded-lg overflow-x-auto overflow-y-auto h-full">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="th w-10"><input type="checkbox" class="select-all-checkbox" data-view="sanpham"></th>
+                <th class="th">Mã VT</th>
+                <th class="th">Tên VT</th>
+                <th class="th">Ngành</th>
+                <th class="th">Phụ trách</th>
+              </tr>
+            </thead>
+            <tbody id="sanpham-table-body" class="bg-white divide-y divide-gray-200">
+              <!-- Dữ liệu sẽ được load bằng JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ===== View: Tồn Kho ===== -->
+      <div id="view-tonkho" class="view h-full">
+        <div class="bg-white shadow rounded-lg overflow-x-auto overflow-y-auto h-full">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="th w-10"><input type="checkbox" class="select-all-checkbox" data-view="tonkho"></th>
+                <th class="th">Mã vạch</th>
+                <th class="th">Mã VT</th>
+                <th class="th">Tên VT</th>
+                <th class="th">Lot</th>
+                <th class="th">Date</th>
+                <th class="th">Tồn đầu</th>
+                <th class="th">Nhập</th>
+                <th class="th">Xuất</th>
+                <th class="th">Tồn cuối</th>
+                <th class="th">Tình trạng</th>
+                <th class="th">Tray</th>
+                <th class="th">Ngành</th>
+                <th class="th">Phụ trách</th>
+              </tr>
+            </thead>
+            <tbody id="tonkho-table-body">
+              <!-- Dữ liệu sẽ được load bằng JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ===== View: Đơn Hàng ===== -->
+      <div id="view-donhang" class="view h-full">
+        <div class="bg-white shadow rounded-lg overflow-x-auto overflow-y-auto h-full">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="th w-10"><input type="checkbox" class="select-all-checkbox" data-view="donhang"></th>
+                <th class="th">Mã kho</th>
+                <th class="th">Thời gian</th>
+                <th class="th">Mã NX</th>
+                <th class="th">User</th>
+                <th class="th">Ngành</th>
+                <th class="th">Mục đích</th>
+                <th class="th">Địa chỉ</th>
+                <th class="th">Ghi chú</th>
+                <th class="th">Order</th>
+                <th class="th">PKL</th>
+                <th class="th">Done</th>
+                <th class="th">Image</th>
+              </tr>
+            </thead>
+            <tbody id="donhang-table-body">
+              <!-- Dữ liệu sẽ được load bằng JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ===== View: Chi Tiết ===== -->
+      <div id="view-chitiet" class="view h-full">
+        <div class="bg-white shadow rounded-lg overflow-x-auto overflow-y-auto h-full">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="th w-10"><input type="checkbox" class="select-all-checkbox" data-view="chitiet"></th>
+                <th class="th">ID</th>
+                <th class="th">Mã kho</th>
+                <th class="th">Mã NX</th>
+                <th class="th">Mã VT</th>
+                <th class="th">Tên VT</th>
+                <th class="th">Lot</th>
+                <th class="th">Date</th>
+                <th class="th">Yêu cầu</th>
+                <th class="th">Số lượng</th>
+                <th class="th">Loại</th>
+                <th class="th">User</th>
+                <th class="th">Mục đích</th>
+                <th class="th">Ngành</th>
+                <th class="th">Phụ trách</th>
+              </tr>
+            </thead>
+            <tbody id="chitiet-table-body">
+              <!-- Dữ liệu sẽ được load bằng JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CSS cho bảng (dùng chung) -->
+      <style>
+        .th {
+          /* MỚI: Cố định tiêu đề */
+          position: sticky;
+          top: 0;
+          z-index: 10;
+          /* THAY ĐỔI THEO YÊU CẦU: Đậm hơn */
+          background-color: #e5e7eb; /* bg-gray-200 */
+
+          padding: 12px 16px;
+          text-align: left;
+          font-size: 0.75rem;
+          /* THAY ĐỔI THEO YÊU CẦU: Đậm hơn */
+          font-weight: 700; /* bold */
+          color: #1f2937; /* gray-800 */
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          vertical-align: top;
+          /* Căn lề cho input nội tuyến */
+        }
+
+        .td {
+          padding: 12px 16px;
+          vertical-align: top;
+        }
+
+        .td-center {
+          padding: 12px 16px;
+          text-align: center;
+          color: #6b7280;
+          /* gray-500 */
+        }
+
+        /* CSS cho modal */
+        .modal-content {
+          max-height: 70vh;
+          overflow-y: auto;
+        }
+      </style>
+
+    </main>
+
+    <!-- ===== MỚI: Pagination Bar (ĐÃ CẬP NHẬT) ===== -->
+    <footer class="bg-white border-t border-gray-200 p-3 flex items-center justify-between z-20 shadow-inner">
+        <div class="flex items-center gap-2">
+            <!-- MỚI: Hiển thị thời gian đồng bộ gần nhất -->
+            <span id="last-sync-time" class="text-xs text-gray-500 mr-4">Chưa đồng bộ.</span>
+            <span class="text-sm text-gray-700">Hiển thị:</span>
+            <select id="pagination-limit" class="filter-select text-sm py-1">
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="200">200</option>
+                <option value="500">500</option>
+            </select>
+            <span id="pagination-info" class="text-sm text-gray-700 ml-4">
+                Hiển thị 0-0 của 0
+            </span>
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="pagination-prev" class="px-3 py-1 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                &lt; Trước
+            </button>
+            <span class="text-sm text-gray-700">
+                Trang <input type="number" id="pagination-page" value="1" min="1" class="w-16 text-center border border-gray-300 rounded-md py-1"> / <span id="pagination-total-pages">1</span>
+            </span>
+            <button id="pagination-next" class="px-3 py-1 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                Tiếp &gt;
+            </button>
+        </div>
+    </footer>
+
+  </div>
+
+  <!-- ===== Modal Xác nhận Xóa ===== -->
+  <div id="confirm-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <!-- ... (Nội dung modal xác nhận không đổi) ... -->
+    <div class="relative top-20 mx-auto p-5 border w-full max-w-sm shadow-lg rounded-md bg-white">
+      <h3 class="text-lg font-medium text-gray-900 mb-4">Xác nhận hành động</h3>
+      <p id="confirm-message" class="text-sm text-gray-600 mb-6">Bạn có chắc chắn muốn xóa mục này?</p>
+      <div class="flex justify-end gap-3">
+        <button id="confirm-cancel" class="btn-cancel">Hủy</button>
+        <button id="confirm-ok"
+          class="px-4 py-2 bg-red-600 text-white rounded-lg shadow hover:bg-red-700 transition">Xóa</button>
       </div>
     </div>
+  </div>
 
-    <!-- ===== NỘI DUNG TAB ĐƠN HÀNG ===== -->
-    <!-- THAY ĐỔI 5: Thay thế nội dung placeholder bằng bảng biểu -->
-    <div id="donhang-content" class="tab-content bg-white p-6 rounded-lg shadow" style="display: none;">
-      <h2 class="text-xl font-semibold mb-4">Quản lý Đơn Hàng (DONHANG)</h2>
-      <!-- Bảng Dữ Liệu Đơn Hàng -->
-      <!-- THÊM CLASS 'data-table-wrapper' -->
-      <div class="bg-white rounded-lg shadow overflow-auto data-table-wrapper">
-        <table class="min-w-full divide-y divide-gray-200 whitespace-nowrap">
-          <thead class="bg-gray-50 sticky top-0 z-10">
-            <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"><input type="checkbox"></th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã Kho</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thời Gian</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã NX</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngành</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mục Đích</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Địa Chỉ</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ghi Chú</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PKL</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Done</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
-            </tr>
-          </thead>
-          <tbody id="donhang-body" class="bg-white divide-y divide-gray-200">
-             <!-- JS sẽ chèn dữ liệu vào đây -->
-            <tr><td colspan="13" class="px-6 py-20 text-center text-gray-500"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><p class="mt-2">Đang tải dữ liệu...</p></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+  <!-- CSS cho Form (dùng chung) -->
+  <style>
+    /* ... (CSS cho form-input và button không cần nữa, 
+           vì ta dùng .inline-input và button Tailwind) ... */
 
-    <!-- ===== NỘI DUNG TAB THẺ KHO (CHI TIẾT) ===== -->
-    <!-- THAY ĐỔI 6: Thay thế nội dung placeholder bằng bảng biểu -->
-    <div id="chitiet-content" class="tab-content bg-white p-6 rounded-lg shadow" style="display: none;">
-      <h2 class="text-xl font-semibold mb-4">Quản lý Chi Tiết (CHITIET)</h2>
-      <!-- Bảng Dữ Liệu Chi Tiết -->
-       <!-- THÊM CLASS 'data-table-wrapper' -->
-       <div class="bg-white rounded-lg shadow overflow-auto data-table-wrapper">
-        <table class="min-w-full divide-y divide-gray-200 whitespace-nowrap">
-          <thead class="bg-gray-50 sticky top-0 z-10">
-            <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"><input type="checkbox"></th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã Kho</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã NX</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã VT</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên VT</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lot</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Yêu Cầu</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số Lượng</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loại</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mục Đích</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngành</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phụ Trách</th>
-            </tr>
-          </thead>
-          <tbody id="chitiet-body" class="bg-white divide-y divide-gray-200">
-             <!-- JS sẽ chèn dữ liệu vào đây -->
-            <tr><td colspan="15" class="px-6 py-20 text-center text-gray-500"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><p class="mt-2">Đang tải dữ liệu...</p></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-    
-  </main>
+    /* CSS cho .btn-cancel và .btn-save (dùng trong modal confirm) */
+    @tailwind base;
+    @tailwind components;
+    @tailwind utilities;
 
-  <!-- ===== JAVASCRIPT ===== -->
-  <script>
-    // Chờ cho đến khi toàn bộ trang HTML được tải xong
-    document.addEventListener('DOMContentLoaded', () => {
-      
-      // === CÀI ĐẶT ===
-      const settingsButton = document.getElementById('settings-button');
-      const settingsPanel = document.getElementById('settings-panel');
-      const fontSlider = document.getElementById('font-slider');
-      const fontLabel = document.getElementById('font-size-label');
-      // SỬA: Chọn tất cả các bảng bằng class
-      const dataTableContainers = document.querySelectorAll('.data-table-wrapper');
-
-      // Mở/đóng bảng Cài đặt
-      settingsButton.addEventListener('click', () => {
-        settingsPanel.style.display = settingsPanel.style.display === 'block' ? 'none' : 'block';
-      });
-
-      // Xử lý khi click bên ngoài để đóng bảng Cài đặt
-      document.addEventListener('click', (e) => {
-        if (!settingsButton.contains(e.target) && !settingsPanel.contains(e.target)) {
-          settingsPanel.style.display = 'none';
-        }
-      });
-
-      // Xử lý thanh trượt Font Size (theo yêu cầu)
-      fontSlider.addEventListener('input', (e) => {
-        const fontSize = e.target.value;
-        fontLabel.textContent = fontSize; // Cập nhật nhãn
-        // SỬA: Áp dụng font-size cho TẤT CẢ các bảng
-        dataTableContainers.forEach(container => {
-          container.style.fontSize = fontSize + 'px';
-        });
-      });
-      // Đặt giá trị font-size ban đầu khi tải trang
-      // SỬA: Áp dụng font-size cho TẤT CẢ các bảng
-      dataTableContainers.forEach(container => {
-        container.style.fontSize = fontSlider.value + 'px';
-      });
-
-
-      // === ĐIỀU HƯỚNG TAB ===
-      const tabButtons = document.querySelectorAll('.tab-button');
-      const tabContents = document.querySelectorAll('.tab-content');
-
-      tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-          // Lấy tên tab từ thuộc tính data-tab
-          const tabName = button.dataset.tab;
-          
-          // Xóa class 'active' khỏi tất cả các nút
-          tabButtons.forEach(btn => btn.classList.remove('active'));
-          // Thêm class 'active' cho nút vừa click
-          button.classList.add('active');
-          
-          // Ẩn tất cả nội dung tab
-          tabContents.forEach(content => {
-            content.style.display = 'none';
-          });
-          
-          // Hiển thị nội dung tab tương ứng
-          document.getElementById(tabName + '-content').style.display = 'block';
-        });
-      });
-
-
-      // === TẢI DỮ LIỆU ===
-      const API_URL = 'http://localhost:3000/api/all-data';
-
-      // Lấy các thẻ <tbody>
-      // THAY ĐỔI 7: Thêm sanphamBody
-      const sanphamBody = document.getElementById('sanpham-body');
-      const tonkhoBody = document.getElementById('tonkho-body');
-      const donhangBody = document.getElementById('donhang-body');
-      const chitietBody = document.getElementById('chitiet-body');
-
-      // Dùng hàm tiện ích để tránh lỗi null/undefined
-      const val = (field) => field || ''; 
-
-      // THAY ĐỔI 8: Thêm Hàm Render Bảng Vật Tư (SANPHAM)
-      function renderSanPhamTable(data) {
-        sanphamBody.innerHTML = '';
-        if (!data || data.length === 0) {
-          sanphamBody.innerHTML = '<tr><td colspan="5" class="px-6 py-10 text-center text-gray-500">Không có dữ liệu Vật tư.</td></tr>';
-          return;
-        }
-        data.forEach(row => {
-          const tr = document.createElement('tr');
-          tr.className = 'hover:bg-gray-50 transition-colors';
-          tr.innerHTML = `
-            <td class="px-6 py-3"><input type="checkbox" class="rounded"></td>
-            <td class="px-6 py-3 text-sm font-medium text-gray-900">${val(row.ma_vt)}</td>
-            <td class="px-6 py-3 text-sm">${val(row.ten_vt)}</td>
-            <td class="px-6 py-3 text-sm">${val(row.nganh)}</td>
-            <td class="px-6 py-3 text-sm">${val(row.phu_trach)}</td>
-          `;
-          sanphamBody.appendChild(tr);
-        });
+    @layer components {
+      .btn-cancel {
+        @apply px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition;
       }
 
-      // Hàm Render Bảng Tồn Kho
-      function renderTonKhoTable(data) {
-        // Xóa nội dung "Đang tải..."
-        tonkhoBody.innerHTML = '';
-        
-        if (!data || data.length === 0) {
-          tonkhoBody.innerHTML = '<tr><td colspan="14" class="px-6 py-10 text-center text-gray-500">Không có dữ liệu Tồn kho.</td></tr>';
-          return;
-        }
-        
-        // Lặp qua từng dòng dữ liệu để tạo hàng
-        data.forEach(row => {
-          const tr = document.createElement('tr');
-          tr.className = 'hover:bg-gray-50 transition-colors';
-          // Dùng hàm tiện ích để tránh lỗi null/undefined
-          const val = (field) => field || ''; 
-
-          tr.innerHTML = `
-            <td class="px-6 py-3"><input type="checkbox" class="rounded"></td>
-            <td class="px-6 py-3 text-sm font-medium text-gray-900">${val(row.ma_vt)}</td>
-            <td class="px-6 py-3 text-sm">${val(row.ten_vt)}</td>
-            <td class="px-6 py-3 text-sm">${val(row.lot)}</td>
-            <td class="px-6 py-3 text-sm">${val(row.date)}</td>
-            <td class="px-6 py-3 text-sm text-right">${val(row.ton_dau)}</td>
-            <td class="px-6 py-3 text-sm text-right text-green-600 font-semibold">${val(row.nhap)}</td>
-            <td class="px-6 py-3 text-sm text-right text-red-600 font-semibold">${val(row.xuat)}</td>
-            <td class="px-6 py-3 text-sm text-right font-bold">${val(row.ton_cuoi)}</td>
-            <td class="px-6 py-3 text-sm">${val(row.tinh_trang)}</td>
-            <td class="px-6 py-3 text-sm">${val(row.ma_vach)}</td>
-            <td class="px-6 py-3 text-sm">${val(row.tray)}</td>
-            <td class="px-6 py-3 text-sm">${val(row.nganh)}</td>
-            <td class="px-6 py-3 text-sm">${val(row.phu_trach)}</td>
-          `;
-          tonkhoBody.appendChild(tr);
-        });
+      .btn-save {
+        @apply px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition;
       }
+    }
+  </style>
 
-      // Hàm Render Bảng Đơn Hàng (Đơn giản)
-      // THAY ĐỔI 9: Cập nhật hàm render Đơn Hàng
-      function renderDonHangTable(data) {
-        donhangBody.innerHTML = '';
-        if (!data || data.length === 0) {
-          donhangBody.innerHTML = '<tr><td colspan="13" class="px-6 py-10 text-center text-gray-500">Không có dữ liệu Đơn hàng.</td></tr>';
-          return;
-        }
-        data.forEach(row => {
-          const tr = document.createElement('tr');
-          tr.className = 'hover:bg-gray-50 transition-colors';
-          tr.innerHTML = `
-            <td class="px-6 py-3"><input type="checkbox" class="rounded"></td>
-            <td class="px-6 py-3 text-sm">${val(row.ma_kho)}</td>
-            <td class="px-6 py-3 text-sm">${val(row.thoi_gian)}</td>
-            <td class="px-6 py-3 text-sm">${val(row.ma_nx)}</td>
-            <td class="px-6 py-3 text-sm">${val(row.user)}</td>
-            <td class="px-6 py-3 text-sm">${val(row.nganh)}</td>
-            <td class="px-6 py-3 text-sm">${val(row.muc_dich)}</td>
-            <td class="px-6 py-3 text-sm">${val(row.dia_chi)}</td>
-            <td class="px-6 py-3 text-sm">${val(row.ghi_chu)}</td>
-            <td class="px-6 py-3 text-sm">${val(row.order)}</td>
-            <td class="px-6 py-3 text-sm">${val(row.pkl)}</td>
-            <td class="px-6 py-3 text-sm">${val(row.done)}</td>
-            <td class="px-6 py-3 text-sm">${val(row.image)}</td>
-          `;
-          donhangBody.appendChild(tr);
-        });
-      }
-      
-      // Hàm Render Bảng Chi Tiết (Đơn giản)
-      // THAY ĐỔI 10: Cập nhật hàm render Chi Tiết
-      function renderChiTietTable(data) {
-        chitietBody.innerHTML = '';
-         if (!data || data.length === 0) {
-          chitietBody.innerHTML = '<tr><td colspan="15" class="px-6 py-10 text-center text-gray-500">Không có dữ liệu Chi tiết.</td></tr>';
-          return;
-        }
-        data.forEach(row => {
-          const tr = document.createElement('tr');
-          tr.className = 'hover:bg-gray-50 transition-colors';
-          tr.innerHTML = `
-            <td class="px-6 py-3"><input type="checkbox" class="rounded"></td>
-            <td class="px-6 py-3 text-sm font-medium text-gray-900">${val(row.id)}</td>
-            <td class="px-6 py-3 text-sm">${val(row.ma_kho)}</td>
-            <td class="px-6 py-3 text-sm">${val(row.ma_nx)}</td>
-            <td class="px-6 py-3 text-sm">${val(row.ma_vt)}</td>
-            <td class="px-6 py-3 text-sm">${val(row.ten_vt)}</td>
-            <td class="px-6 py-3 text-sm">${val(row.lot)}</td>
-            <td class="px-6 py-3 text-sm">${val(row.date)}</td>
-            <td class="px-6 py-3 text-sm">${val(row.yeu_cau)}</td>
-            <td class="px-6 py-3 text-sm text-right font-semibold">${val(row.so_luong)}</td>
-            <td class="px-6 py-3 text-sm">${val(row.loai)}</td>
-            <td class="px-6 py-3 text-sm">${val(row.user)}</td>
-            <td class="px-6 py-3 text-sm">${val(row.muc_dich)}</td>
-            <td class="px-6 py-3 text-sm">${val(row.nganh)}</td>
-            <td class="px-6 py-3 text-sm">${val(row.phu_trach)}</td>
-          `;
-          chitietBody.appendChild(tr);
-        });
-      }
 
-      // Hàm bất đồng bộ để gọi API
-      async function layDuLieu() {
-        try {
-          const response = await fetch(API_URL);
-          if (!response.ok) {
-            throw new Error(`Lỗi máy chủ: ${response.status}`);
-          }
-          const data = await response.json();
-
-          // Gọi các hàm render cho từng bảng
-          // THAY ĐỔI 11: Thêm renderSanPhamTable
-          renderSanPhamTable(data.SANPHAM);
-          renderTonKhoTable(data.TONKHO);
-          renderDonHangTable(data.DONHANG);
-          renderChiTietTable(data.CHITIET);
-
-        } catch (error) {
-          console.error('Lỗi khi lấy dữ liệu:', error);
-          // Hiển thị lỗi trên bảng
-          tonkhoBody.innerHTML = `
-            <tr>
-              <td colspan="14" class="px-6 py-20 text-center text-red-500">
-                <i class="fa-solid fa-circle-exclamation fa-2x"></i>
-                <p class="mt-2 font-semibold">Không thể tải dữ liệu</p>
-                <p class="text-sm text-gray-600">${error.message}. Bạn đã chạy 'npm run dev' chưa?</p>
-              </td>
-            </tr>`;
-        }
-      }
-
-      // Gọi hàm này ngay khi trang được tải
-      layDuLieu();
-
-      // THAY ĐỔI 12: Chủ động hiển thị tab "sanpham" (Vật Tư) mặc định
-      document.getElementById('sanpham-content').style.display = 'block';
-    });
-  </script>
-
+  <!-- ===== JavaScript Logic ===== -->
+  <!-- THAY ĐỔI: Tải script từ tệp bên ngoài -->
+  <script src="script.js" defer></script>
+  
 </body>
+
 </html>
-
-
-
-
 

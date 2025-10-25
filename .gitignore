@@ -1,5 +1,0 @@
-# Bỏ qua thư mục chứa các gói đã cài đặt
-node_modules/
-
-# Bỏ qua tệp chứa biến môi trường bí mật
-.env
