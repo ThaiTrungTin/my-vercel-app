@@ -456,10 +456,11 @@
             <thead class="bg-gray-50">
               <tr>
                 <th class="th w-10"><input type="checkbox" class="select-all-checkbox" data-view="sanpham"></th>
-                <th class="th">Mã VT</th>
-                <th class="th">Tên VT</th>
-                <th class="th">Ngành</th>
-                <th class="th">Phụ trách</th>
+                <!-- THAY ĐỔI: Thêm style width -->
+                <th class="th" style="width: 20%;">Mã VT</th>
+                <th class="th" style="width: 60%;">Tên VT</th>
+                <th class="th" style="width: 7%;">Ngành</th>
+                <th class="th" style="width: 13%;">Phụ trách</th>
               </tr>
             </thead>
             <tbody id="sanpham-table-body" class="bg-white divide-y divide-gray-200">
@@ -581,6 +582,8 @@
         .td {
           padding: 12px 16px;
           vertical-align: top;
+          /* MỚI: Cho phép ngắt dòng nếu nội dung quá dài */
+          word-break: break-word;
         }
 
         .td-center {
@@ -1131,7 +1134,8 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
           <tr id="sanpham-row-${item.ma_vt}" class="selectable-row hover:bg-gray-50" onclick="toggleRowSelection('sanpham', '${item.ma_vt}', event)">
             <td class="px-6 py-4"><input type="checkbox" class="row-checkbox" data-view="sanpham" data-id="${item.ma_vt}"></td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.ma_vt}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${item.ten_vt}</td>
+            <!-- THAY ĐỔI: Xóa 'whitespace-nowrap' để cho phép xuống dòng -->
+            <td class="px-6 py-4 text-sm text-gray-600">${item.ten_vt}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${item.nganh || ''}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${item.phu_trach || ''}</td>
           </tr>
@@ -1183,14 +1187,56 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
         phu_trach: data.phu_trach || null
       };
 
+      // === THÊM VALIDATION ===
+      // 1. Kiểm tra trống
+      if (!cleanData.ten_vt) {
+        showConfirm('Lỗi: Tên VT không được để trống.', () => {}, true);
+        return false; // Báo hiệu lưu thất bại
+      }
+      if (!cleanData.nganh) {
+        showConfirm('Lỗi: Ngành không được để trống.', () => {}, true);
+        return false; // Báo hiệu lưu thất bại
+      }
+      if (!cleanData.phu_trach) {
+        showConfirm('Lỗi: Phụ trách không được để trống.', () => {}, true);
+        return false; // Báo hiệu lưu thất bại
+      }
+
+      // 2. Kiểm tra trùng Mã VT
+      // Chỉ kiểm tra khi Thêm mới (mode === 'add')
+      // Hoặc khi Sửa (mode === 'edit') VÀ Mã VT đã thay đổi (data.ma_vt !== id)
+      if (mode === 'add' || (mode === 'edit' && data.ma_vt !== id)) {
+        if (!cleanData.ma_vt) {
+            showConfirm('Lỗi: Mã VT không được để trống khi thêm mới hoặc thay đổi.', () => {}, true);
+            return false;
+        }
+        
+        const { data: existing, error: checkError } = await supabase
+          .from('SANPHAM')
+          .select('ma_vt')
+          .eq('ma_vt', cleanData.ma_vt)
+          .maybeSingle(); // Lấy một (hoặc null)
+
+        if (checkError) throw checkError; // Ném lỗi nếu query hỏng
+
+        if (existing) {
+          showConfirm(`Lỗi: Mã VT '${cleanData.ma_vt}' đã tồn tại. Vui lòng chọn Mã VT khác.`, () => {}, true);
+          return false; // Báo hiệu lưu thất bại
+        }
+      }
+      // === KẾT THÚC VALIDATION ===
+
+
       let error;
       if (mode === 'edit') {
-        // Khi sửa, không update PK (ma_vt)
+        // Khi sửa, cho phép update PK (ma_vt)
+        // Cần update dữ liệu dựa trên id (Mã VT cũ)
         const { error: updateError } = await supabase.from('SANPHAM').update({
+          ma_vt: cleanData.ma_vt, // Cho phép sửa Mã VT
           ten_vt: cleanData.ten_vt,
           nganh: cleanData.nganh,
           phu_trach: cleanData.phu_trach
-        }).eq('ma_vt', id); // id là ma_vt
+        }).eq('ma_vt', id); // id là ma_vt CŨ
         error = updateError;
       } else {
         // Khi thêm mới, insert (id là null)
@@ -1198,6 +1244,7 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
         error = insertError;
       }
       if (error) throw error; // Ném lỗi để handleToolbarSave bắt
+      return true; // MỚI: Báo hiệu lưu thành công
     }
 
     async function deleteSanpham(ma_vt) {
@@ -1829,6 +1876,8 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
       }
 
       try {
+        let allSavesSuccessful = true; // MỚI: Cờ theo dõi
+
         for (const editRow of editRows) {
           // Thu thập dữ liệu từ form
           const inputs = editRow.querySelectorAll('input, textarea, select');
@@ -1849,19 +1898,38 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
           // *** THÊM LẠI LOGIC SAVE BỊ MẤT ***
           // Nếu mode 'edit', id là rowId. Nếu 'add', id là null.
           const saveId = (mode === 'edit') ? rowId : null;
+          let saveResult = true; // MỚI
 
           switch (view) {
-            case 'sanpham': await saveSanpham(data, mode, saveId); break;
-            case 'tonkho': await saveTonkho(data, mode, saveId); break;
-            case 'donhang': await saveDonhang(data, mode, saveId); break;
+            case 'sanpham': 
+              saveResult = await saveSanpham(data, mode, saveId); 
+              break;
+            case 'tonkho': 
+              // Giả sử saveTonkho cũng trả về boolean (sẽ cần thêm nếu muốn validation)
+              await saveTonkho(data, mode, saveId); 
+              // saveResult = await saveTonkho(data, mode, saveId); 
+              break;
+            case 'donhang': 
+              // Giả sử saveDonhang cũng trả về boolean (sẽ cần thêm nếu muốn validation)
+              await saveDonhang(data, mode, saveId); 
+              // saveResult = await saveDonhang(data, mode, saveId); 
+              break;
           }
           // *** KẾT THÚC THÊM LẠI LOGIC SAVE ***
+          
+          if (!saveResult) { // MỚI: Nếu một hàng lưu thất bại
+            allSavesSuccessful = false;
+            // Dừng lại ngay khi có lỗi
+            break; 
+          }
         }
 
         // === SỬA LỖI SYNTAX ===
-        // Di chuyển 2 dòng này vào trong 'try' block
-        hideInlineEditControls();
-        loadDataForCurrentView(); // Tải lại dữ liệu
+        // MỚI: Chỉ ẩn controls và tải lại nếu TẤT CẢ lưu thành công
+        if (allSavesSuccessful) {
+          hideInlineEditControls();
+          loadDataForCurrentView(); // Tải lại dữ liệu
+        }
         // === KẾT THÚC SỬA LỖI SYNTAX ===
 
       } catch (error) {
@@ -1894,7 +1962,8 @@ Vn-file-meta:eyJjYW52YXNWZXJzaW9uIjoiZjM4MmYzZTEifQ==
       const num = (key) => data[key] || 0;
       const date = (key) => (data[key] ? data[key].slice(0, 10) : '');
       const check = (key) => (data[key] ? 'checked' : '');
-      const ro = isEdit ? 'readonly class="inline-input bg-gray-200"' : 'class="inline-input"'; // Readonly cho PK
+      // THAY ĐỔI: Luôn cho phép chỉnh sửa Mã VT
+      const ro = 'class="inline-input"'; 
 
       switch (view) {
         case 'sanpham':
