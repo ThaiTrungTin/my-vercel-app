@@ -336,8 +336,8 @@ function clearSelection() {
 }
 
 
-// ===== 6. Logic Modal Xác Nhận (Custom Confirm) =====
-// ... (Không thay đổi) ...
+// ===== 6. Logic Modal & Toast =====
+// ... (Logic modal xác nhận không đổi) ...
 function showConfirm(message, callback, isAlert = false) {
   confirmMessage.textContent = message;
   confirmCallback = callback;
@@ -367,6 +367,43 @@ confirmCancelButton.addEventListener('click', () => {
   confirmCallback = null;
   confirmModal.classList.add('hidden');
 });
+
+// MỚI: Toast Notification
+const toastElement = document.getElementById('toast-notification');
+const toastMessage = document.getElementById('toast-message');
+let toastTimer;
+
+/**
+ * Hiển thị thông báo toast
+ * @param {string} message Nội dung
+ * @param {'success' | 'error' | 'info'} type Loại thông báo
+ */
+function showToast(message, type = 'info') {
+  clearTimeout(toastTimer);
+
+  toastMessage.textContent = message;
+
+  // Reset classes
+  toastElement.classList.remove('bg-green-500', 'bg-red-500', 'bg-blue-500', 'text-white');
+
+  if (type === 'success') {
+    toastElement.classList.add('bg-green-500', 'text-white');
+  } else if (type === 'error') {
+    toastElement.classList.add('bg-red-500', 'text-white');
+  } else {
+    toastElement.classList.add('bg-blue-500', 'text-white');
+  }
+
+  toastElement.classList.remove('hidden', 'opacity-0', 'translate-x-full');
+  toastElement.classList.add('opacity-100', 'translate-x-0');
+
+  // Tự động ẩn sau 3 giây
+  toastTimer = setTimeout(() => {
+    toastElement.classList.add('opacity-0', 'translate-x-full');
+    setTimeout(() => toastElement.classList.add('hidden'), 300); // Chờ transition
+  }, 3000);
+}
+
 
 // ===== MỚI: 6.5. Cập nhật UI Phân trang =====
 /**
@@ -460,7 +497,8 @@ async function loadSanpham() {
       <tr id="sanpham-row-${item.ma_vt}" class="selectable-row hover:bg-gray-50" onclick="toggleRowSelection('sanpham', '${item.ma_vt}', event)">
         <td class="px-6 py-4"><input type="checkbox" class="row-checkbox" data-view="sanpham" data-id="${item.ma_vt}"></td>
         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.ma_vt}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${item.ten_vt}</td>
+        <!-- THAY ĐỔI: Thêm class whitespace-normal break-words -->
+        <td class="px-6 py-4 text-sm text-gray-600 whitespace-normal break-words">${item.ten_vt}</td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${item.nganh || ''}</td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${item.phu_trach || ''}</td>
       </tr>
@@ -488,7 +526,7 @@ async function editSanpham(ma_vt) {
     showInlineEditControls();
   } catch (error) {
     console.error('Lỗi lấy dữ liệu sửa:', error);
-    alert(`Lỗi: ${error.message}`);
+    showToast(`Lỗi: ${error.message}`, 'error'); // THAY ĐỔI: Dùng toast
   }
 }
 
@@ -514,12 +552,13 @@ async function saveSanpham(data, mode, id) {
 
   let error;
   if (mode === 'edit') {
-    // Khi sửa, không update PK (ma_vt)
+    // THAY ĐỔI: Cho phép sửa PK
     const { error: updateError } = await supabase.from('SANPHAM').update({
+      ma_vt: cleanData.ma_vt, // Sửa PK
       ten_vt: cleanData.ten_vt,
       nganh: cleanData.nganh,
       phu_trach: cleanData.phu_trach
-    }).eq('ma_vt', id); // id là ma_vt
+    }).eq('ma_vt', id); // id là ma_vt CŨ
     error = updateError;
   } else {
     // Khi thêm mới, insert (id là null)
@@ -537,7 +576,7 @@ async function deleteSanpham(ma_vt) {
       loadSanpham();
     } catch (error) {
       console.error('Lỗi xóa sản phẩm:', error);
-      alert(`Lỗi: ${error.message}`);
+      showToast(`Lỗi: ${error.message}`, 'error'); // THAY ĐỔI: Dùng toast
     }
   });
 }
@@ -641,7 +680,7 @@ async function editTonkho(ma_vach) {
     showInlineEditControls();
   } catch (error) {
     console.error('Lỗi lấy dữ liệu sửa:', error);
-    alert(`Lỗi: ${error.message}`);
+    showToast(`Lỗi: ${error.message}`, 'error'); // THAY ĐỔI: Dùng toast
   }
 }
 
@@ -693,7 +732,7 @@ async function deleteTonkho(ma_vach) {
       loadTonkho();
     } catch (error) {
       console.error('Lỗi xóa tồn kho:', error);
-      alert(`Lỗi: ${error.message}`);
+      showToast(`Lỗi: ${error.message}`, 'error'); // THAY ĐỔI: Dùng toast
     }
   });
 }
@@ -774,7 +813,7 @@ async function editDonhang(ma_nx) {
     showInlineEditControls();
   } catch (error) {
     console.error('Lỗi lấy dữ liệu sửa:', error);
-    alert(`Lỗi: ${error.message}`);
+    showToast(`Lỗi: ${error.message}`, 'error'); // THAY ĐỔI: Dùng toast
   }
 }
 
@@ -828,7 +867,7 @@ async function deleteDonhang(ma_nx) {
       loadDonhang();
     } catch (error) {
       console.error('Lỗi xóa đơn hàng:', error);
-      alert(`Lỗi: ${error.message}`);
+      showToast(`Lỗi: ${error.message}`, 'error'); // THAY ĐỔI: Dùng toast
     }
   });
 }
@@ -909,7 +948,7 @@ async function deleteChitiet(id) {
       loadChitiet();
     } catch (error) {
       console.error('Lỗi xóa chi tiết:', error);
-      alert(`Lỗi: ${error.message}`);
+      showToast(`Lỗi: ${error.message}`, 'error'); // THAY ĐỔI: Dùng toast
     }
   });
 }
@@ -1156,46 +1195,103 @@ async function handleToolbarSave() {
     hideInlineEditControls();
     return;
   }
+  
+  // Tạm thời vô hiệu hóa nút Lưu để tránh click đúp
+  toolbar.save.disabled = true;
 
   try {
     for (const editRow of editRows) {
       // Thu thập dữ liệu từ form
       const inputs = editRow.querySelectorAll('input, textarea, select');
 
-      // === SỬA LỖI LOGIC ===
-      const data = {}; // 1. Khởi tạo data cho hàng này
-      inputs.forEach(input => { // 2. Lặp qua từng input
+      const data = {}; 
+      inputs.forEach(input => {
         const name = input.name;
         if (name) {
           data[name] = (input.type === 'checkbox') ? input.checked : input.value;
         }
-      }); // 3. Kết thúc vòng lặp
-      // === KẾT THÚC SỬA LỖI ===
+      });
 
       // Lấy id từ hàng (quan trọng cho mode 'edit')
       const rowId = editRow.id.split('-row-')[1];
-
-      // *** THÊM LẠI LOGIC SAVE BỊ MẤT ***
-      // Nếu mode 'edit', id là rowId. Nếu 'add', id là null.
       const saveId = (mode === 'edit') ? rowId : null;
+      
+      // ===== BẮT ĐẦU VALIDATION (CHỈ CHO SẢN PHẨM) =====
+      if (view === 'sanpham') {
+        const ma_vt = data.ma_vt ? data.ma_vt.trim() : '';
+        const ten_vt = data.ten_vt ? data.ten_vt.trim() : '';
+        const nganh = data.nganh ? data.nganh.trim() : '';
+        const phu_trach = data.phu_trach ? data.phu_trach.trim() : '';
+
+        // 1. Kiểm tra rỗng
+        if (!ma_vt || !ten_vt || !nganh || !phu_trach) {
+          showToast('Lỗi: Mã VT, Tên VT, Ngành, và Phụ Trách không được để trống.', 'error');
+          editRow.style.outline = '2px solid red';
+          // Kích hoạt lại nút lưu sau 1s
+          setTimeout(() => { 
+              toolbar.save.disabled = false; 
+              editRow.style.outline = 'none'; 
+          }, 1000);
+          throw new Error('Validation failed: Fields cannot be empty.'); // Dừng
+        }
+
+        // 2. Kiểm tra trùng lặp ma_vt
+        let { data: existing, error } = await supabase
+          .from('SANPHAM')
+          .select('ma_vt')
+          .eq('ma_vt', ma_vt);
+
+        if (error) throw error; // Lỗi CSDL
+
+        let isDuplicate = false;
+        if (mode === 'add') {
+          isDuplicate = existing.length > 0;
+        } else if (mode === 'edit') {
+          // Chỉ báo lỗi nếu ma_vt MỚI (ma_vt) khác ma_vt CŨ (saveId) VÀ ma_vt MỚI đã tồn tại
+          if (ma_vt !== saveId && existing.length > 0) {
+            isDuplicate = true;
+          }
+        }
+        
+        if (isDuplicate) {
+          showToast(`Lỗi: Mã VT '${ma_vt}' đã tồn tại. Vui lòng chọn một mã khác.`, 'error');
+          editRow.style.outline = '2px solid red';
+          // Kích hoạt lại nút lưu sau 1s
+          setTimeout(() => { 
+              toolbar.save.disabled = false; 
+              editRow.style.outline = 'none'; 
+          }, 1000);
+          throw new Error('Validation failed: Duplicate ma_vt.'); // Dừng
+        }
+      }
+      // ===== KẾT THÚC VALIDATION =====
+
 
       switch (view) {
         case 'sanpham': await saveSanpham(data, mode, saveId); break;
         case 'tonkho': await saveTonkho(data, mode, saveId); break;
         case 'donhang': await saveDonhang(data, mode, saveId); break;
       }
-      // *** KẾT THÚC THÊM LẠI LOGIC SAVE ***
     }
 
-    // === SỬA LỖI SYNTAX ===
-    // Di chuyển 2 dòng này vào trong 'try' block
     hideInlineEditControls();
     loadDataForCurrentView(); // Tải lại dữ liệu
-    // === KẾT THÚC SỬA LỖI SYNTAX ===
+    showToast('Đã lưu thành công!', 'success'); // THAY ĐỔI: Thêm toast thành công
 
   } catch (error) {
     console.error('Lỗi lưu dữ liệu:', error);
-    alert(`Lỗi: ${error.message}`);
+    
+    // Kích hoạt lại nút lưu nếu có lỗi
+    toolbar.save.disabled = false;
+    
+    // CHỈ HIỂN THỊ TOAST NẾU LỖI KHÔNG PHẢI LÀ TỪ VALIDATION
+    // (Vì validation đã tự hiển thị toast rồi)
+    if (error.message.startsWith('Validation failed:')) {
+      // Validation đã xử lý, không làm gì thêm
+    } else {
+      // Đây là lỗi CSDL (ví dụ: RLS, network)
+      showToast(`Lỗi lưu dữ liệu: ${error.message}`, 'error');
+    }
   }
 }
 
@@ -1223,21 +1319,24 @@ function createEditableRowContents(view, data = {}, isEdit = false) {
   const num = (key) => data[key] || 0;
   const date = (key) => (data[key] ? data[key].slice(0, 10) : '');
   const check = (key) => (data[key] ? 'checked' : '');
-  const ro = isEdit ? 'readonly class="inline-input bg-gray-200"' : 'class="inline-input"'; // Readonly cho PK
+  
+  // THAY ĐỔI: Tách ro (readonly) cho các PK khác, ma_vt luôn có thể sửa
+  const roPK = isEdit ? 'readonly class="inline-input bg-gray-200"' : 'class="inline-input"'; // Readonly cho PK (Tồn kho, Đơn hàng)
 
   switch (view) {
     case 'sanpham':
       return `
                 <td class="td px-6 py-2"><input type="checkbox" class="row-checkbox" disabled></td>
-                <td class="td px-6 py-2"><input type="text" name="ma_vt" value="${val('ma_vt')}" ${ro} required></td>
+                <!-- SỬA LỖI: Đã xóa comment chứa ${ro} -->
+                <td class="td px-6 py-2"><input type="text" name="ma_vt" value="${val('ma_vt')}" class="inline-input" required></td>
                 <td class="td px-6 py-2"><input type="text" name="ten_vt" value="${val('ten_vt')}" class="inline-input" required></td>
-                <td class="td px-6 py-2"><input type="text" name="nganh" value="${val('nganh')}" class="inline-input"></td>
-                <td class="td px-6 py-2"><input type="text" name="phu_trach" value="${val('phu_trach')}" class="inline-input"></td>
+                <td class="td px-6 py-2"><input type="text" name="nganh" value="${val('nganh')}" class="inline-input" required></td>
+                <td class="td px-6 py-2"><input type="text" name="phu_trach" value="${val('phu_trach')}" class="inline-input" required></td>
             `;
     case 'tonkho':
       return `
                 <td class="td px-6 py-2"><input type="checkbox" class="row-checkbox" disabled></td>
-                <td class="td px-6 py-2"><input type="text" name="ma_vach" value="${val('ma_vach')}" ${ro} required></td>
+                <td class="td px-6 py-2"><input type="text" name="ma_vach" value="${val('ma_vach')}" ${roPK} required></td>
                 <td class="td px-6 py-2"><input type="text" name="ma_vt" value="${val('ma_vt')}" class="inline-input"></td>
                 <td class="td px-6 py-2"><input type="text" name="ten_vt" value="${val('ten_vt')}" class="inline-input"></td>
                 <td class="td px-6 py-2"><input type="text" name="lot" value="${val('lot')}" class="inline-input"></td>
@@ -1256,7 +1355,7 @@ function createEditableRowContents(view, data = {}, isEdit = false) {
                 <td class="td px-6 py-2"><input type="checkbox" class="row-checkbox" disabled></td>
                 <td class="td px-6 py-2"><input type="text" name="ma_kho" value="${val('ma_kho')}" class="inline-input"></td>
                 <td class="td px-6 py-2"><input type="date" name="thoi_gian" value="${date('thoi_gian')}" class="inline-input"></td>
-                <td class="td px-6 py-2"><input type="text" name="ma_nx" value="${val('ma_nx')}" ${ro} required></td>
+                <td class="td px-6 py-2"><input type="text" name="ma_nx" value="${val('ma_nx')}" ${roPK} required></td>
                 <td class="td px-6 py-2"><input type="text" name="user" value="${val('user')}" class="inline-input"></td>
                 <td class="td px-6 py-2"><input type="text" name="nganh" value="${val('nganh')}" class="inline-input"></td>
                 <td class="td px-6 py-2"><input type="text" name="muc_dich" value="${val('muc_dich')}" class="inline-input"></td>
@@ -1569,3 +1668,4 @@ function handlePaste(e) {
     });
   });
 }
+
