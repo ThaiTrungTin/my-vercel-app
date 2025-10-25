@@ -3,176 +3,659 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản Lý Sản Phẩm (Frontend)</title>
-    <!-- Tải Tailwind CSS để tạo giao diện đẹp và responsive -->
+    <title>Hệ Thống Quản Lý Kho</title>
+    <!-- Tải Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tải thư viện icon (cho các nút Sửa/Xóa) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
-        /* Tùy chỉnh nhỏ để đảm bảo font đẹp */
+        /* Tùy chỉnh cho font và giao diện */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f7f9fb;
+            background-color: #f4f7f6;
+        }
+        
+        /* CSS cho tiêu đề cố định (sticky header) */
+        .sticky-header thead th {
+            position: sticky;
+            top: 0;
+            background-color: #f1f5f9; /* Màu nền của tiêu đề */
+            z-index: 10;
+        }
+
+        /* Thêm đường viền cho bảng */
+        .table-container table {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        .table-container th,
+        .table-container td {
+            border-bottom: 1px solid #e2e8f0;
+            border-right: 1px solid #e2e8f0;
+            padding: 8px 12px;
+        }
+        .table-container th:first-child,
+        .table-container td:first-child {
+            border-left: 1px solid #e2e8f0;
+        }
+        .table-container th {
+             border-top: 1px solid #e2e8f0;
+        }
+
+        /* Lớp cho ô có thể chỉnh sửa */
+        .editable-cell {
+            background-color: #fff;
+            cursor: cell;
+        }
+        .editable-cell:focus {
+            background-color: #fefcbf; /* Màu vàng nhạt khi focus */
+            outline: 2px solid #3b82f6; /* Viền xanh khi focus */
+        }
+
+        /* Nút điều hướng được chọn */
+        .nav-button[aria-selected="true"] {
+            background-color: #3b82f6;
+            color: white;
+        }
+        .nav-button[aria-selected="false"] {
+            background-color: #e0e7ff;
+            color: #3730a3;
+        }
+        
+        /* Hàng mới để thêm */
+        .new-row-template td {
+            background-color: #f0fff4;
         }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="antialiased text-gray-800">
 
-    <div class="max-w-4xl mx-auto">
-        <header class="mb-8">
-            <h1 class="text-4xl font-extrabold text-gray-800 mb-2">Quản Lý Sản Phẩm</h1>
-            <p class="text-gray-500">Gọi dữ liệu từ API Node.js/Supabase đã triển khai trên Vercel.</p>
+    <!-- CONTAINER CHÍNH -->
+    <div class="max-w-full mx-auto p-4">
+
+        <!-- TIÊU ĐỀ ỨNG DỤNG -->
+        <header class="mb-4">
+            <h1 class="text-3xl font-bold text-gray-900">Hệ Thống Quản Lý Kho</h1>
         </header>
 
-        <!-- Form Thêm Sản Phẩm Mới -->
-        <div id="addProductForm" class="bg-white p-6 rounded-xl shadow-lg mb-8">
-            <h2 class="text-xl font-semibold text-blue-600 mb-4">Thêm Sản Phẩm Mới</h2>
-            <form id="product-form" class="space-y-4">
-                <div>
-                    <label for="product_name" class="block text-sm font-medium text-gray-700">Tên Sản Phẩm (ten)</label>
-                    <input type="text" id="product_name" placeholder="Ví dụ: Áo Thun Nam" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <div>
-                    <label for="product_price" class="block text-sm font-medium text-gray-700">Giá (gia)</label>
-                    <input type="number" id="product_price" placeholder="Ví dụ: 250000" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <button type="submit" class="w-full py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out">
-                    Thêm Sản Phẩm
-                </button>
-                <div id="message-box" class="mt-3 p-3 text-sm rounded-lg hidden"></div>
-            </form>
-        </div>
+        <!-- THANH ĐIỀU HƯỚNG CHÍNH (4 VIEWS) -->
+        <nav class="flex space-x-2 mb-4" id="main-nav">
+            <button data-view="SANPHAM" class="nav-button py-2 px-4 rounded-lg font-semibold transition duration-150" aria-selected="true">
+                <i class="fa-solid fa-box-archive mr-2"></i>Sản Phẩm
+            </button>
+            <button data-view="TONKHO" class="nav-button py-2 px-4 rounded-lg font-semibold transition duration-150" aria-selected="false">
+                <i class="fa-solid fa-warehouse mr-2"></i>Tồn Kho
+            </button>
+            <button data-view="DONHANG" class="nav-button py-2 px-4 rounded-lg font-semibold transition duration-150" aria-selected="false">
+                <i class="fa-solid fa-truck-fast mr-2"></i>Đơn Hàng
+            </button>
+            <button data-view="CHITIET" class="nav-button py-2 px-4 rounded-lg font-semibold transition duration-150" aria-selected="false">
+                <i class="fa-solid fa-list-check mr-2"></i>Chi Tiết
+            </button>
+        </nav>
 
-        <!-- Khu vực Hiển thị Danh sách Sản phẩm -->
-        <div class="bg-white p-6 rounded-xl shadow-lg">
-            <h2 class="text-xl font-semibold text-gray-800 mb-4">Danh sách Sản phẩm</h2>
-            <div id="product-list" class="space-y-4">
-                <!-- Dữ liệu sản phẩm sẽ được thêm vào đây -->
+        <!-- THANH CÔNG CỤ (TÌM KIẾM, LỌC, PHÂN TRANG) -->
+        <div class="flex flex-wrap justify-between items-center bg-white p-4 rounded-lg shadow-sm mb-4 gap-4">
+            <!-- Tìm kiếm nhanh -->
+            <div class="flex-grow min-w-[250px]">
+                <label for="search-input" class="sr-only">Tìm kiếm nhanh</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fa-solid fa-magnifying-glass text-gray-400"></i>
+                    </div>
+                    <input type="search" id="search-input" placeholder="Tìm kiếm nhanh..." class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
             </div>
-            <p id="loading-message" class="text-gray-500 text-center py-4">Đang tải dữ liệu...</p>
+
+            <!-- Nút thêm hàng mới -->
+            <button id="add-row-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition duration-150">
+                <i class="fa-solid fa-plus mr-2"></i>Thêm Hàng Mới
+            </button>
+
+            <!-- Phân trang -->
+            <div class="flex items-center space-x-2">
+                <span class="text-sm text-gray-600">Hiển thị:</span>
+                <select id="items-per-page" class="border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                    <option value="200">200</option>
+                    <option value="500">500</option>
+                </select>
+                
+                <div class="flex items-center space-x-1" id="pagination-controls">
+                    <!-- Các nút phân trang sẽ được tạo bằng JS -->
+                </div>
+            </div>
         </div>
+        
+        <!-- Thống báo (message box) -->
+        <div id="message-box" class_name="p-4 rounded-lg mb-4 text-center font-medium hidden"></div>
 
-    </div>
+        <!-- KHUNG CHỨA BẢNG DỮ LIỆU (CÓ THỂ CUỘN) -->
+        <div id="table-container" class="w-full overflow-auto bg-white rounded-lg shadow-md sticky-header table-container" style="max-height: 70vh;">
+            <table class="w-full min-w-max">
+                <thead id="table-head">
+                    <!-- Tiêu đề bảng sẽ được tạo bằng JS -->
+                </thead>
+                <tbody id="table-body">
+                    <!-- Dữ liệu bảng sẽ được tạo bằng JS -->
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Hàng mẫu để thêm (ẩn) -->
+        <template id="new-row-template">
+            <tr class="new-row-template">
+                <!-- Checkbox -->
+                <td class="text-center px-2">
+                    <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 rounded">
+                </td>
+                <!-- Các ô dữ liệu (sẽ được tạo bằng JS) -->
+                <!-- Nút Lưu/Hủy -->
+                <td class="text-center p-2">
+                    <button class="save-new-row-btn bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg text-sm">
+                        <i class="fa-solid fa-save"></i>
+                    </button>
+                    <button class="cancel-new-row-btn bg-gray-400 hover:bg-gray-500 text-white px-3 py-1 rounded-lg text-sm ml-1">
+                        <i class="fa-solid fa-times"></i>
+                    </button>
+                </td>
+            </tr>
+        </template>
 
+    </div> <!-- Hết container chính -->
+
+    <!-- SCRIPT CHÍNH CỦA ỨNG DỤNG -->
     <script>
-        // ĐÃ CẬP NHẬT: URL này là tên miền Vercel thật của bạn
-        const API_BASE_URL = 'https://johnson-two.vercel.app'; 
-        const productList = document.getElementById('product-list');
-        const loadingMessage = document.getElementById('loading-message');
-        const productForm = document.getElementById('product-form');
-        const messageBox = document.getElementById('message-box');
+        // =================================================================
+        // KHAI BÁO BIẾN TOÀN CỤC VÀ TRẠNG THÁI (STATE)
+        // =================================================================
 
-        // Hàm hiển thị thông báo
-        function showMessage(text, isError = false) {
-            messageBox.textContent = text;
-            messageBox.classList.remove('hidden', 'bg-red-100', 'text-red-800', 'bg-green-100', 'text-green-800');
+        // URL của API backend (Vercel)
+        // QUAN TRỌNG: Thay thế URL này bằng tên miền Vercel thật của bạn
+        const API_BASE_URL = 'https://johnson-two.vercel.app'; // <-- ĐÃ SỬA TỪ 'httpsa'
+
+        // Cấu hình các bảng (khớp với ảnh chụp CSDL của bạn)
+        // Đây là trái tim của ứng dụng, định nghĩa cách hiển thị mỗi bảng
+        const TABLE_CONFIG = {
+            'SANPHAM': {
+                columns: ['ma_vt', 'ten_vt', 'nganh', 'phu_trach'],
+                displayNames: ['Mã VT', 'Tên VT', 'Ngành', 'Phụ Trách']
+            },
+            'TONKHO': {
+                columns: ['ma_vach', 'ma_vt', 'ten_vt', 'lot', 'date', 'ton_dau', 'nhap', 'xuat', 'ton_cuoi', 'tinh_trang', 'tray', 'nganh', 'phu_trach'],
+                displayNames: ['Mã Vạch', 'Mã VT', 'Tên VT', 'Lô', 'Ngày', 'Tồn Đầu', 'Nhập', 'Xuất', 'Tồn Cuối', 'Tình Trạng', 'Tray', 'Ngành', 'Phụ Trách']
+            },
+            'DONHANG': {
+                columns: ['ma_kho', 'thoi_gian', 'ma_nx', 'user', 'nganh', 'muc_dich', 'dia_chi', 'ghi_chu', 'order', 'pkl', 'done', 'image'],
+                displayNames: ['Mã Kho', 'Thời Gian', 'Mã NX', 'User', 'Ngành', 'Mục Đích', 'Địa Chỉ', 'Ghi Chú', 'Order', 'PKL', 'Done', 'Image']
+            },
+            'CHITIET': {
+                columns: ['id', 'ma_kho', 'ma_nx', 'ten_vt', 'lot', 'date', 'yeu_cau', 'so_luong', 'loai', 'user', 'muc_dich', 'nganh', 'phuc_trach'],
+                displayNames: ['ID', 'Mã Kho', 'Mã NX', 'Tên VT', 'Lô', 'Ngày', 'Yêu Cầu', 'Số Lượng', 'Loại', 'User', 'Mục Đích', 'Ngành', 'Phụ Trách']
+            }
+        };
+
+        // Trạng thái (state) hiện tại của ứng dụng
+        let state = {
+            currentView: 'SANPHAM', // View mặc định
+            currentPage: 1,
+            itemsPerPage: 50,
+            searchTerm: '',
+            totalItems: 0,
+            isLoading: false,
+            editCache: {} // Cache cho các ô đang chỉnh sửa
+        };
+
+        // Lấy các phần tử DOM chính
+        const mainNav = document.getElementById('main-nav');
+        const searchInput = document.getElementById('search-input');
+        const itemsPerPageSelect = document.getElementById('items-per-page');
+        const paginationControls = document.getElementById('pagination-controls');
+        const tableHead = document.getElementById('table-head');
+        const tableBody = document.getElementById('table-body');
+        const tableContainer = document.getElementById('table-container');
+        const messageBox = document.getElementById('message-box');
+        const addRowBtn = document.getElementById('add-row-btn');
+        const newRowTemplate = document.getElementById('new-row-template');
+
+        // =================================================================
+        // HÀM HIỂN THỊ (RENDERING FUNCTIONS)
+        // =================================================================
+
+        /**
+         * Hàm render chính: Vẽ lại toàn bộ bảng (tiêu đề + nội dung)
+         */
+        function renderTable(data) {
+            const config = TABLE_CONFIG[state.currentView];
+            if (!config) return;
+
+            // --- 1. Vẽ Tiêu đề (Header) ---
+            tableHead.innerHTML = ''; // Xóa tiêu đề cũ
+            const headerRow = document.createElement('tr');
+            
+            // Thêm cột tickbox
+            headerRow.innerHTML += `<th class="px-2 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-10"><input type="checkbox" id="select-all-checkbox" class="form-checkbox h-5 w-5"></th>`;
+            
+            // Thêm các cột dữ liệu
+            config.displayNames.forEach(name => {
+                headerRow.innerHTML += `<th class="px-3 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">${name}</th>`;
+            });
+            
+            // Thêm cột Hành động (Sửa/Xóa)
+            headerRow.innerHTML += `<th class="px-3 py-3 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">Hành Động</th>`;
+            
+            tableHead.appendChild(headerRow);
+
+            // --- 2. Vẽ Nội dung (Body) ---
+            tableBody.innerHTML = ''; // Xóa nội dung cũ
+            if (data.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="${config.columns.length + 2}" class="text-center p-8 text-gray-500">Không tìm thấy dữ liệu.</td></tr>`;
+                return;
+            }
+
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                row.dataset.id = item.id; // Gán ID của hàng (quan trọng cho Sửa/Xóa)
+                
+                // Thêm tickbox
+                let rowHtml = `<td class="text-center px-2"><input type="checkbox" class="row-checkbox form-checkbox h-5 w-5 text-blue-600 rounded" data-id="${item.id}"></td>`;
+
+                // Thêm các ô dữ liệu
+                config.columns.forEach(colName => {
+                    // `contenteditable="true"` cho phép chỉnh sửa như Excel
+                    // `data-column` để biết đang sửa cột nào
+                    rowHtml += `<td 
+                                    contenteditable="true" 
+                                    class="editable-cell whitespace-nowrap px-3 py-2 text-sm text-gray-700" 
+                                    data-column="${colName}"
+                                    data-original-value="${item[colName] || ''}"
+                                >${item[colName] || ''}</td>`;
+                });
+
+                // Thêm nút Hành động
+                rowHtml += `<td class="text-center whitespace-nowrap p-2">
+                                <button class="save-row-btn bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg text-sm" data-id="${item.id}">
+                                    <i class="fa-solid fa-save"></i>
+                                </button>
+                                <button class="delete-row-btn bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-sm ml-1" data-id="${item.id}">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </td>`;
+                
+                row.innerHTML = rowHtml;
+                tableBody.appendChild(row);
+            });
+        }
+
+        /**
+         * Vẽ lại các nút điều khiển phân trang
+         */
+        function renderPagination() {
+            const totalPages = Math.ceil(state.totalItems / state.itemsPerPage);
+            paginationControls.innerHTML = ''; // Xóa nút cũ
+
+            if (totalPages <= 1) return;
+
+            // Nút "Trang trước"
+            paginationControls.innerHTML += `
+                <button class="page-btn ${state.currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}" 
+                        data-page="${state.currentPage - 1}" 
+                        ${state.currentPage === 1 ? 'disabled' : ''}>
+                    <i class="fa-solid fa-chevron-left p-2 rounded-lg"></i>
+                </button>
+            `;
+
+            // Hiển thị trang hiện tại / tổng số trang
+            paginationControls.innerHTML += `
+                <span class="text-sm px-2">
+                    Trang <strong>${state.currentPage}</strong> / <strong>${totalPages}</strong>
+                </span>
+            `;
+
+            // Nút "Trang sau"
+            paginationControls.innerHTML += `
+                <button class="page-btn ${state.currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-200'}" 
+                        data-page="${state.currentPage + 1}" 
+                        ${state.currentPage === totalPages ? 'disabled' : ''}>
+                    <i class="fa-solid fa-chevron-right p-2 rounded-lg"></i>
+                </button>
+            `;
+        }
+        
+        /**
+         * Hiển thị thông báo (thành công hoặc lỗi)
+         */
+        function showMessage(message, isError = false) {
+            messageBox.textContent = message;
+            messageBox.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800');
+            
             if (isError) {
                 messageBox.classList.add('bg-red-100', 'text-red-800');
             } else {
                 messageBox.classList.add('bg-green-100', 'text-green-800');
             }
-            setTimeout(() => {
-                messageBox.classList.add('hidden');
-            }, 5000);
+            
+            setTimeout(() => messageBox.classList.add('hidden'), 4000);
         }
 
-        // --- HÀM 1: LẤY DỮ LIỆU (GET) ---
-        async function fetchProducts() {
-            productList.innerHTML = '';
-            loadingMessage.classList.remove('hidden');
+        // =================================================================
+        // HÀM XỬ LÝ DỮ LIỆU (API CALLS)
+        // =================================================================
+
+        /**
+         * Hàm chính: Lấy dữ liệu từ API backend
+         */
+        async function fetchData() {
+            if (state.isLoading) return;
+            state.isLoading = true;
+            tableBody.innerHTML = `<tr><td colspan="99" class="text-center p-8 text-gray-500"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Đang tải dữ liệu...</td></tr>`;
+
+            // Tính toán phạm vi (range) cho Supabase
+            const from = (state.currentPage - 1) * state.itemsPerPage;
+            const to = from + state.itemsPerPage - 1;
+
+            // Xây dựng URL
+            const url = new URL(`${API_BASE_URL}/api/data/${state.currentView}`);
+            url.searchParams.append('from', from);
+            url.searchParams.append('to', to);
+            if (state.searchTerm) {
+                url.searchParams.append('search', state.searchTerm);
+            }
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/sanpham`);
-                
-                // Kiểm tra lỗi mạng hoặc lỗi server
+                const response = await fetch(url);
                 if (!response.ok) {
-                    throw new Error(`Lỗi HTTP: ${response.status} - ${response.statusText}`);
+                    const err = await response.json();
+                    throw new Error(err.error || `Lỗi ${response.status}`);
                 }
-
-                const products = await response.json();
                 
-                loadingMessage.classList.add('hidden');
-
-                if (products.length === 0) {
-                    productList.innerHTML = '<p class="text-gray-500 p-4 border rounded-lg">Chưa có sản phẩm nào. Hãy thêm một sản phẩm!</p>';
-                    return;
+                const result = await response.json();
+                
+                // Cập nhật tổng số item (từ PostgREST count)
+                // 'content-range' có dạng '0-49/1234'
+                const rangeHeader = response.headers.get('content-range');
+                if (rangeHeader) {
+                    state.totalItems = parseInt(rangeHeader.split('/')[1], 10);
+                } else {
+                    state.totalItems = result.length; // Fallback
                 }
-
-                products.forEach(product => {
-                    const productElement = document.createElement('div');
-                    productElement.className = 'p-4 border border-gray-200 rounded-lg shadow-sm bg-gray-50 flex justify-between items-center';
-                    
-                    // LƯU Ý: Hiển thị ID, Tên (ten) và Giá (gia)
-                    // Dữ liệu từ Supabase thường có cột 'id' tự động
-                    const id = product.id || 'N/A'; 
-                    const ten = product.ten || 'Không có tên'; // Phải khớp với cột bạn dùng
-                    const gia = product.gia ? new Intl.NumberFormat('vi-VN').format(product.gia) : 'N/A';
-
-                    productElement.innerHTML = `
-                        <div class="flex-1">
-                            <p class="text-sm text-gray-400">ID: ${id}</p>
-                            <p class="text-lg font-semibold text-gray-700">${ten}</p>
-                            <p class="text-md font-bold text-blue-600">${gia} VNĐ</p>
-                        </div>
-                    `;
-                    productList.appendChild(productElement);
-                });
+                
+                // Render lại bảng và phân trang
+                renderTable(result);
+                renderPagination();
 
             } catch (error) {
-                loadingMessage.textContent = 'Lỗi tải dữ liệu. Vui lòng kiểm tra API URL và Console Log.';
-                showMessage(`Lỗi: ${error.message}`, true);
-                console.error('Lỗi khi fetch sản phẩm:', error);
+                showMessage(`Lỗi tải dữ liệu: ${error.message}`, true);
+                tableBody.innerHTML = `<tr><td colspan="99" class="text-center p-8 text-red-500">Lỗi: ${error.message}</td></tr>`;
+                console.error(error);
+            } finally {
+                state.isLoading = false;
             }
         }
 
-        // --- HÀM 2: GỬI DỮ LIỆU (POST) ---
-        productForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
+        /**
+         * Lưu một hàng (Sửa - PUT)
+         */
+        async function handleSaveRow(rowId) {
+            const row = tableBody.querySelector(`tr[data-id="${rowId}"]`);
+            if (!row) return;
 
-            const nameInput = document.getElementById('product_name');
-            const priceInput = document.getElementById('product_price');
-
-            const ten = nameInput.value;
-            const gia = parseFloat(priceInput.value);
+            const editableCells = row.querySelectorAll('td[contenteditable="true"]');
+            let updates = {};
+            let hasChanges = false;
             
-            if (!ten || isNaN(gia)) {
-                showMessage('Vui lòng nhập Tên và Giá hợp lệ.', true);
+            editableCells.forEach(cell => {
+                const colName = cell.dataset.column;
+                const newValue = cell.textContent;
+                const oldValue = cell.dataset.originalValue;
+
+                if (newValue !== oldValue) {
+                    updates[colName] = newValue;
+                    hasChanges = true;
+                }
+            });
+
+            if (!hasChanges) {
+                showMessage('Không có thay đổi để lưu.', false);
                 return;
             }
 
-            const newProduct = {
-                // TÊN CỘT PHẢI KHỚP VỚI index.js và Supabase
-                ten: ten, 
-                gia: gia
-            };
-
+            // Gửi yêu cầu PUT
             try {
-                const response = await fetch(`${API_BASE_URL}/api/sanpham`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(newProduct),
+                const response = await fetch(`${API_BASE_URL}/api/data/${state.currentView}/${rowId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updates),
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error || `Lỗi ${response.status}`);
+                }
+
+                showMessage(`Đã cập nhật hàng ID: ${rowId}`, false);
+                // Cập nhật lại giá trị original-value để tránh lưu lại
+                editableCells.forEach(cell => {
+                    cell.dataset.originalValue = cell.textContent;
                 });
 
-                const result = await response.json();
-
-                if (!response.ok) {
-                    // Xử lý lỗi từ Supabase/Server
-                    throw new Error(result.error || `Thêm thất bại. Mã lỗi: ${response.status}`);
-                }
-                
-                // Thành công
-                showMessage(`Thêm sản phẩm "${ten}" thành công!`);
-                nameInput.value = '';
-                priceInput.value = '';
-                fetchProducts(); // Tải lại danh sách
             } catch (error) {
-                showMessage(`Lỗi thêm sản phẩm: ${error.message}`, true);
-                console.error('Lỗi POST:', error);
+                showMessage(`Lỗi cập nhật: ${error.message}`, true);
+                console.error(error);
+                // Có thể rollback lại giá trị cũ ở đây
             }
+        }
+        
+        /**
+         * Lưu một hàng mới (Thêm - POST)
+         */
+        async function handleSaveNewRow(rowElement) {
+            const config = TABLE_CONFIG[state.currentView];
+            const editableCells = rowElement.querySelectorAll('td[contenteditable="true"]');
+            let newItem = {};
+            
+            editableCells.forEach(cell => {
+                const colName = cell.dataset.column;
+                newItem[colName] = cell.textContent;
+            });
+
+            // Gửi yêu cầu POST
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/data/${state.currentView}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newItem),
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error || `Lỗi ${response.status}`);
+                }
+
+                showMessage(`Đã thêm hàng mới thành công!`, false);
+                rowElement.remove(); // Xóa hàng tạm
+                fetchData(); // Tải lại dữ liệu để hiển thị hàng mới
+
+            } catch (error) {
+                showMessage(`Lỗi thêm mới: ${error.message}`, true);
+                console.error(error);
+            }
+        }
+
+        /**
+         * Xóa một hàng (Xóa - DELETE)
+         */
+        async function handleDeleteRow(rowId) {
+            // KHÔNG dùng window.confirm
+            // Bạn có thể thay thế bằng một modal tùy chỉnh
+            // Tạm thời, chúng ta sẽ xóa trực tiếp để demo
+            
+            // Gửi yêu cầu DELETE
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/data/${state.currentView}/${rowId}`, {
+                    method: 'DELETE',
+                });
+                
+                if (!response.ok) {
+                    const result = await response.json();
+                    throw new Error(result.error || `Lỗi ${response.status}`);
+                }
+
+                showMessage(`Đã xóa hàng ID: ${rowId}`, false);
+                fetchData(); // Tải lại dữ liệu
+
+            } catch (error) {
+                showMessage(`Lỗi khi xóa: ${error.message}`, true);
+                console.error(error);
+            }
+        }
+
+        // =================================================================
+        // HÀM XỬ LÝ SỰ KIỆN (EVENT HANDLERS)
+        // =================================================================
+
+        /**
+         * Xử lý khi nhấn nút điều hướng (nav)
+         */
+        function handleNavClick(e) {
+            const button = e.target.closest('.nav-button');
+            if (!button) return;
+
+            const view = button.dataset.view;
+            if (view === state.currentView) return; // Không làm gì nếu vẫn ở view cũ
+
+            // Cập nhật trạng thái
+            state.currentView = view;
+            state.currentPage = 1;
+            state.searchTerm = '';
+            searchInput.value = '';
+            
+            // Cập nhật UI cho nút
+            mainNav.querySelectorAll('.nav-button').forEach(btn => {
+                btn.setAttribute('aria-selected', btn.dataset.view === view);
+            });
+
+            // Tải dữ liệu cho view mới
+            fetchData();
+        }
+
+        /**
+         * Xử lý khi thay đổi số item/trang
+         */
+        function handleItemsPerPageChange(e) {
+            state.itemsPerPage = parseInt(e.target.value, 10);
+            state.currentPage = 1; // Quay về trang 1
+            fetchData();
+        }
+        
+        /**
+         * Xử lý khi nhấn nút phân trang
+         */
+        function handlePaginationClick(e) {
+            const button = e.target.closest('.page-btn');
+            if (!button) return;
+            
+            const page = parseInt(button.dataset.page, 10);
+            if (page === state.currentPage || page < 1) return;
+            
+            state.currentPage = page;
+            fetchData();
+        }
+
+        /**
+         * Xử lý khi nhấn "Enter" trên ô tìm kiếm
+         */
+        function handleSearch(e) {
+            if (e.key === 'Enter') {
+                state.searchTerm = e.target.value;
+                state.currentPage = 1; // Quay về trang 1
+                fetchData();
+            }
+        }
+        
+        /**
+         * Xử lý khi nhấn "Thêm Hàng Mới"
+         */
+        function handleAddRow() {
+            const config = TABLE_CONFIG[state.currentView];
+            const newRow = newRowTemplate.content.cloneNode(true).querySelector('tr');
+            
+            let cellsHtml = '';
+            config.columns.forEach(colName => {
+                cellsHtml += `<td 
+                                contenteditable="true" 
+                                class="editable-cell whitespace-nowrap px-3 py-2 text-sm" 
+                                data-column="${colName}"
+                             ></td>`;
+            });
+            
+            // Chèn các ô dữ liệu vào sau ô checkbox
+            newRow.children[0].insertAdjacentHTML('afterend', cellsHtml);
+            
+            // Thêm vào đầu bảng
+            tableBody.prepend(newRow);
+            
+            // Focus vào ô đầu tiên
+            newRow.querySelector('.editable-cell').focus();
+        }
+
+        /**
+         * Xử lý các click chung trên body của bảng (Sửa, Xóa, Lưu hàng mới)
+         */
+        function handleTableBodyClick(e) {
+            const target = e.target;
+            
+            // 1. Nhấn nút "Lưu" (cho hàng đã tồn tại)
+            const saveBtn = target.closest('.save-row-btn');
+            if (saveBtn) {
+                handleSaveRow(saveBtn.dataset.id);
+                return;
+            }
+            
+            // 2. Nhấn nút "Xóa"
+            const deleteBtn = target.closest('.delete-row-btn');
+            if (deleteBtn) {
+                // TODO: Thêm modal xác nhận ở đây
+                handleDeleteRow(deleteBtn.dataset.id);
+                return;
+            }
+            
+            // 3. Nhấn nút "Lưu" (cho hàng MỚI)
+            const saveNewBtn = target.closest('.save-new-row-btn');
+            if (saveNewBtn) {
+                handleSaveNewRow(saveNewBtn.closest('tr'));
+                return;
+            }
+            
+            // 4. Nhấn nút "Hủy" (cho hàng MỚI)
+            const cancelNewBtn = target.closest('.cancel-new-row-btn');
+            if (cancelNewBtn) {
+                cancelNewBtn.closest('tr').remove();
+                return;
+            }
+        }
+        
+        // =================================================================
+        // KHỞI CHẠY ỨNG DỤNG
+        // =================================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            // Gán sự kiện
+            mainNav.addEventListener('click', handleNavClick);
+            itemsPerPageSelect.addEventListener('change', handleItemsPerPageChange);
+            paginationControls.addEventListener('click', handlePaginationClick);
+            searchInput.addEventListener('keydown', handleSearch);
+            tableBody.addEventListener('click', handleTableBodyClick);
+            addRowBtn.addEventListener('click', handleAddRow);
+
+            // Tải dữ liệu lần đầu
+            fetchData();
         });
 
-        // Khởi chạy khi trang được tải
-        document.addEventListener('DOMContentLoaded', fetchProducts);
     </script>
 </body>
 </html>
+
+

@@ -1,199 +1,182 @@
-// Import các gói cần thiết
-const express = require('express');
-const { createClient } = require('@supabase/supabase-js');
-const cors = require('cors');
-require('dotenv').config(); // Tải các biến môi trường từ file .env
+// --- IMPORT CÁC THƯ VIỆN CẦN THIẾT ---
+import express from 'express';
+import cors from 'cors';
+import { createClient }D from '@supabase/supabase-js';
+import 'dotenv/config'; // Tự động đọc tệp .env
 
-// Khởi tạo ứng dụng Express
+// --- KHỞI TẠO ỨNG DỤNG EXPRESS ---
 const app = express();
-const port = process.env.PORT || 3001; // Sử dụng cổng do Vercel cung cấp hoặc 3001 (nếu chạy local)
+const port = process.env.PORT || 3000;
 
-// Lấy thông tin kết nối Supabase từ biến môi trường
+// --- KẾT NỐI SUPABASE ---
+// Lấy thông tin từ các biến môi trường (đã có trong .env)
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
 
-// Kiểm tra xem biến môi trường đã được tải đúng cách chưa
+// Kiểm tra xem biến môi trường đã được cung cấp chưa
 if (!supabaseUrl || !supabaseKey) {
-  console.error('LỖI: SUPABASE_URL hoặc SUPABASE_KEY không được tìm thấy.');
-  console.error('Hãy đảm bảo bạn đã tạo file .env và điền đúng thông tin,');
-  console.error('hoặc đã cấu hình Environment Variables trên Vercel.');
+  console.error('Lỗi: SUPABASE_URL hoặc SUPABASE_KEY chưa được đặt trong tệp .env');
+  process.exit(1); // Thoát ứng dụng nếu thiếu
 }
 
+// Tạo một client Supabase
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Cấu hình middleware
-app.use(cors()); // Cho phép Cross-Origin Resource Sharing
-app.use(express.json()); // Cho phép đọc JSON từ body của request
+// --- CẤU HÌNH MIDDLEWARE ---
+// CORS: Cho phép frontend (từ bất kỳ đâu) gọi API này
+app.use(cors({
+    origin: '*', // Cho phép mọi nguồn gốc
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    // Cho phép frontend đọc header 'content-range' để phân trang
+    exposedHeaders: ['content-range'] 
+}));
 
-// --- ĐỊNH NGHĨA CÁC API ENDPOINTS ---
+// JSON: Phân tích body của request thành JSON
+app.use(express.json());
 
-// =============================================
-// API CHO BẢNG SANPHAM
-// =============================================
+// --- DANH SÁCH CÁC BẢNG ĐƯỢC PHÉP TRUY CẬP ---
+// Điều này rất quan trọng để bảo mật, chỉ cho phép API tương tác với 4 bảng này
+const ALLOWED_TABLES = ['SANPHAM', 'TONKHO', 'DONHANG', 'CHITIET'];
 
-// Endpoint G-E-T: Lấy tất cả dữ liệu từ bảng SANPHAM
-// Ví dụ: https://your-domain.vercel.app/api/sanpham
-app.get('/api/sanpham', async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from('SANPHAM')
-      .select('*');
+// Middleware để kiểm tra tên bảng
+const checkTable = (req, res, next) => {
+    const { view } = req.params;
+    if (!ALLOWED_TABLES.includes(view.toUpperCase())) {
+        return res.status(403).json({ error: `Không được phép truy cập bảng: ${view}` });
+    }
+    // Gán tên bảng đã chuẩn hóa (viết hoa) vào request
+    req.tableName = view.toUpperCase();
+    next();
+};
 
-    if (error) throw error;
-    res.status(200).json(data);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+
+// =================================================================
+// ĐỊNH NGHĨA CÁC API ENDPOINTS
+// =================================================================
+
+// --- 1. GET: LẤY DỮ LIỆU (Có Phân Trang và Tìm Kiếm) ---
+// GET /api/data/SANPHAM?from=0&to=49&search=ao
+app.get('/api/data/:view', checkTable, async (req, res) => {
+    const { tableName } = req;
+    const { from, to, search } = req.query;
+
+    // Phân trang
+    const rangeFrom = parseInt(from) || 0;
+    const rangeTo = parseInt(to) || 49;
+
+    let query = supabase.from(tableName).select('*', { count: 'exact' });
+
+    // Tìm kiếm (nếu có)
+    if (search) {
+        // Lấy danh sách cột của bảng từ TABLE_CONFIG (cần định nghĩa ở backend)
+        // Tạm thời, chúng ta sẽ tìm kiếm trên các cột phổ biến
+        // CÁCH TỐT HƠN: Tạo một cột 'search_vector' trong Supabase (PostgreSQL)
+        // Tạm thời dùng 'or'
+        if (tableName === 'SANPHAM') {
+             query = query.or(`ma_vt.ilike.%${search}%,ten_vt.ilike.%${search}%,nganh.ilike.%${search}%`);
+        }
+        // Thêm logic 'or' cho các bảng khác nếu cần
+        // ...
+    }
+    
+    // Áp dụng phân trang
+    query = query.range(rangeFrom, rangeTo);
+    
+    // Sắp xếp (mặc định theo 'id' hoặc 'created_at' nếu có)
+    // Tạm thời sắp xếp theo 'id' giảm dần
+    query = query.order('id', { ascending: false });
+
+    // Thực thi truy vấn
+    const { data, error, count } = await query;
+
+    if (error) {
+        console.error('Lỗi Supabase (GET):', error);
+        return res.status(500).json({ error: error.message });
+    }
+
+    // Gửi header Content-Range cho frontend biết tổng số item
+    res.setHeader('Content-Range', `${rangeFrom}-${rangeTo}/${count}`);
+    res.json(data);
 });
 
-// Endpoint P-O-S-T: Thêm một sản phẩm mới
-// Ví dụ: P-O-S-T đến https://your-domain.vercel.app/api/sanpham
-app.post('/api/sanpham', async (req, res) => {
-  try {
-    const { body } = req; // Lấy dữ liệu từ body của request
+// --- 2. POST: THÊM MỚI DỮ LIỆU ---
+// POST /api/data/SANPHAM
+app.post('/api/data/:view', checkTable, async (req, res) => {
+    const { tableName } = req;
+    const newItem = req.body; // Dữ liệu hàng mới từ frontend
 
-    // LƯU Ý: Đảm bảo bạn có cột 'ten' hoặc 'tensanpham' trong bảng SANPHAM
     const { data, error } = await supabase
-      .from('SANPHAM')
-      .insert([
-        { ten: body.ten, gia: body.gia } // <-- SỬA LẠI CỘT CHO ĐÚNG
-      ])
-      .select();
+        .from(tableName)
+        .insert([newItem])
+        .select(); // .select() để trả về dữ liệu vừa tạo
 
-    if (error) throw error;
-    res.status(201).json(data);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+    if (error) {
+        console.error('Lỗi Supabase (POST):', error);
+        return res.status(500).json({ error: error.message });
+    }
+
+    res.status(201).json(data[0]); // Trả về item vừa tạo
 });
 
-// =============================================
-// API CHO BẢNG DONHANG
-// =============================================
+// --- 3. PUT: CẬP NHẬT DỮ LIỆU (SỬA) ---
+// PUT /api/data/SANPHAM/123
+app.put('/api/data/:view/:id', checkTable, async (req, res) => {
+    const { tableName } = req;
+    const { id } = req.params;
+    const updates = req.body; // Các trường cần cập nhật
 
-// Endpoint G-E-T: Lấy tất cả dữ liệu từ bảng DONHANG
-// Ví dụ: https://your-domain.vercel.app/api/donhang
-app.get('/api/donhang', async (req, res) => {
-  try {
     const { data, error } = await supabase
-      .from('DONHANG')
-      .select('*');
+        .from(tableName)
+        .update(updates)
+        .eq('id', id)
+        .select();
 
-    if (error) throw error;
-    res.status(200).json(data);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+    if (error) {
+        console.error('Lỗi Supabase (PUT):', error);
+        return res.status(500).json({ error: error.message });
+    }
+    
+    if (!data || data.length === 0) {
+        return res.status(404).json({ error: `Không tìm thấy hàng có ID: ${id}` });
+    }
+
+    res.json(data[0]); // Trả về item vừa cập nhật
 });
 
-// Endpoint P-O-S-T: Thêm một đơn hàng mới
-// Ví dụ: P-O-S-T đến https://your-domain.vercel.app/api/donhang
-app.post('/api/donhang', async (req, res) => {
-  try {
-    const { body } = req;
 
-    // LƯU Ý: Đây chỉ là ví dụ. Sửa lại các cột cho đúng với bảng DONHANG
-    const { data, error } = await supabase
-      .from('DONHANG')
-      .insert([
-        { ten_khach_hang: body.ten_khach_hang, dia_chi: body.dia_chi } // <-- SỬA LẠI CỘT CHO ĐÚNG
-      ])
-      .select();
+// --- 4. DELETE: XÓA DỮ LIỆU ---
+// DELETE /api/data/SANPHAM/123
+app.delete('/api/data/:view/:id', checkTable, async (req, res) => {
+    const { tableName } = req;
+    const { id } = req.params;
 
-    if (error) throw error;
-    res.status(201).json(data);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+    const { error } = await supabase
+        .from(tableName)
+        .delete()
+        .eq('id', id);
+
+    if (error) {
+        console.error('Lỗi Supabase (DELETE):', error);
+        return res.status(500).json({ error: error.message });
+    }
+
+    res.status(204).send(); // 204 No Content - Xóa thành công
 });
 
-// =============================================
-// API CHO BẢNG CHITIET (Chi Tiết Đơn Hàng)
-// =============================================
 
-// Endpoint G-E-T: Lấy tất cả dữ liệu từ bảng CHITIET
-// Ví dụ: https://your-domain.vercel.app/api/chitiet
-app.get('/api/chitiet', async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from('CHITIET')
-      .select('*');
-
-    if (error) throw error;
-    res.status(200).json(data);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+// --- ENDPOINT CƠ BẢN (CHỈ ĐỂ KIỂM TRA) ---
+app.get('/', (req, res) => {
+  res.send('Chào mừng đến với API Quản Lý Kho! Vui lòng gọi /api/data/[ten_bang]');
 });
 
-// Endpoint P-O-S-T: Thêm một chi tiết đơn hàng mới
-// Ví dụ: P-O-S-T đến https://your-domain.vercel.app/api/chitiet
-app.post('/api/chitiet', async (req, res) => {
-  try {
-    const { body } = req;
-
-    // LƯU Ý: Đây chỉ là ví dụ. Sửa lại các cột cho đúng (ví dụ: id_donhang, id_sanpham, soluong)
-    const { data, error } = await supabase
-      .from('CHITIET')
-      .insert([
-        { id_donhang: body.id_donhang, id_sanpham: body.id_sanpham, soluong: body.soluong } // <-- SỬA LẠI CỘT CHO ĐÚNG
-      ])
-      .select();
-
-    if (error) throw error;
-    res.status(201).json(data);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// =============================================
-// API CHO BẢNG TONKHO
-// =============================================
-
-// Endpoint G-E-T: Lấy tất cả dữ liệu từ bảng TONKHO
-// Ví dụ: https://your-domain.vercel.app/api/tonkho
-app.get('/api/tonkho', async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from('TONKHO')
-      .select('*');
-
-    if (error) throw error;
-    res.status(200).json(data);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Endpoint P-O-S-T: Thêm (hoặc cập nhật) tồn kho
-// Ví dụ: P-O-S-T đến https://your-domain.vercel.app/api/tonkho
-app.post('/api/tonkho', async (req, res) => {
-  try {
-    const { body } = req;
-
-    // LƯU Ý: Đây chỉ là ví dụ. Sửa lại các cột cho đúng (ví dụ: id_sanpham, soluong_ton)
-    const { data, error } = await supabase
-      .from('TONKHO')
-      .insert([
-        { id_sanpham: body.id_sanpham, soluong_ton: body.soluong_ton } // <-- SỬA LẠI CỘT CHO ĐÚNG
-      ])
-      .select();
-
-    if (error) throw error;
-    res.status(201).json(data);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// --- KHỞI ĐỘNG MÁY CHỦ ---
-
-// Chạy máy chủ
+// --- KHỞI CHẠY SERVER ---
 app.listen(port, () => {
   console.log(`Server đang chạy tại http://localhost:${port}`);
 });
 
-// Quan trọng: Export 'app' để Vercel có thể sử dụng
-module.exports = app;
+// QUAN TRỌNG: Vercel sẽ tự động xử lý file này
+// Bạn không cần gọi app.listen() khi triển khai lên Vercel
+// Nhưng nó cần thiết để chạy local
+export default app;
 
