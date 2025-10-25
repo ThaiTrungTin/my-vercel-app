@@ -1,182 +1,93 @@
-// --- IMPORT CÁC THƯ VIỆN CẦN THIẾT ---
-import express from 'express';
-import cors from 'cors';
-import { createClient }D from '@supabase/supabase-js';
-import 'dotenv/config'; // Tự động đọc tệp .env
+// Import các thư viện cần thiết
+const express = require('express');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const path = require('path');
+const { createClient } = require('@supabase/supabase-js');
 
-// --- KHỞI TẠO ỨNG DỤNG EXPRESS ---
+// Nạp các biến môi trường từ tệp .env
+dotenv.config();
+
+// Khởi tạo máy chủ Express
 const app = express();
 const port = process.env.PORT || 3000;
 
-// --- KẾT NỐI SUPABASE ---
-// Lấy thông tin từ các biến môi trường (đã có trong .env)
+// ----- Cấu hình Supabase Client -----
+// Lấy thông tin kết nối từ biến môi trường
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
 
-// Kiểm tra xem biến môi trường đã được cung cấp chưa
+// Kiểm tra xem biến môi trường đã được cài đặt chưa
 if (!supabaseUrl || !supabaseKey) {
-  console.error('Lỗi: SUPABASE_URL hoặc SUPABASE_KEY chưa được đặt trong tệp .env');
-  process.exit(1); // Thoát ứng dụng nếu thiếu
+  console.error("Lỗi: SUPABASE_URL hoặc SUPABASE_KEY chưa được cài đặt trong tệp .env");
+  // Dừng ứng dụng nếu thiếu biến môi trường
+  // process.exit(1); // Bạn có thể bỏ comment dòng này nếu muốn ứng dụng dừng hẳn
 }
 
 // Tạo một client Supabase
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// --- CẤU HÌNH MIDDLEWARE ---
-// CORS: Cho phép frontend (từ bất kỳ đâu) gọi API này
-app.use(cors({
-    origin: '*', // Cho phép mọi nguồn gốc
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    // Cho phép frontend đọc header 'content-range' để phân trang
-    exposedHeaders: ['content-range'] 
-}));
+// ----- Cấu hình Middleware -----
 
-// JSON: Phân tích body của request thành JSON
+// Cho phép Cross-Origin Resource Sharing (CORS)
+// **QUAN TRỌNG: Dòng này cho phép cổng 5500 gọi đến cổng 3000**
+app.use(cors());
+
+// Cho phép Express đọc dữ liệu JSON
 app.use(express.json());
 
-// --- DANH SÁCH CÁC BẢNG ĐƯỢC PHÉP TRUY CẬP ---
-// Điều này rất quan trọng để bảo mật, chỉ cho phép API tương tác với 4 bảng này
-const ALLOWED_TABLES = ['SANPHAM', 'TONKHO', 'DONHANG', 'CHITIET'];
+// ----- Định nghĩa API Endpoints -----
 
-// Middleware để kiểm tra tên bảng
-const checkTable = (req, res, next) => {
-    const { view } = req.params;
-    if (!ALLOWED_TABLES.includes(view.toUpperCase())) {
-        return res.status(403).json({ error: `Không được phép truy cập bảng: ${view}` });
-    }
-    // Gán tên bảng đã chuẩn hóa (viết hoa) vào request
-    req.tableName = view.toUpperCase();
-    next();
-};
+// Tạo một API endpoint tại /api/all-data
+app.get('/api/all-data', async (req, res) => {
+  console.log('Nhận được yêu cầu tại /api/all-data');
+  try {
+    // Dùng Promise.all để gọi API lấy dữ liệu từ 4 bảng CÙNG LÚC
+    // Điều này nhanh hơn là gọi từng bảng một
+    const [sanpham, tonkho, donhang, chitiet] = await Promise.all([
+      supabase.from('SANPHAM').select('*'),
+      supabase.from('TONKHO').select('*'),
+      supabase.from('DONHANG').select('*'),
+      supabase.from('CHITIET').select('*')
+    ]);
 
+    // Kiểm tra lỗi cho từng yêu cầu
+    if (sanpham.error) throw sanpham.error;
+    if (tonkho.error) throw tonkho.error;
+    if (donhang.error) throw donhang.error;
+    if (chitiet.error) throw chitiet.error;
 
-// =================================================================
-// ĐỊNH NGHĨA CÁC API ENDPOINTS
-// =================================================================
+    // Nếu không có lỗi, gửi dữ liệu về cho client
+    res.status(200).json({
+      SANPHAM: sanpham.data,
+      TONKHO: tonkho.data,
+      DONHANG: donhang.data,
+      CHITIET: chitiet.data
+    });
 
-// --- 1. GET: LẤY DỮ LIỆU (Có Phân Trang và Tìm Kiếm) ---
-// GET /api/data/SANPHAM?from=0&to=49&search=ao
-app.get('/api/data/:view', checkTable, async (req, res) => {
-    const { tableName } = req;
-    const { from, to, search } = req.query;
-
-    // Phân trang
-    const rangeFrom = parseInt(from) || 0;
-    const rangeTo = parseInt(to) || 49;
-
-    let query = supabase.from(tableName).select('*', { count: 'exact' });
-
-    // Tìm kiếm (nếu có)
-    if (search) {
-        // Lấy danh sách cột của bảng từ TABLE_CONFIG (cần định nghĩa ở backend)
-        // Tạm thời, chúng ta sẽ tìm kiếm trên các cột phổ biến
-        // CÁCH TỐT HƠN: Tạo một cột 'search_vector' trong Supabase (PostgreSQL)
-        // Tạm thời dùng 'or'
-        if (tableName === 'SANPHAM') {
-             query = query.or(`ma_vt.ilike.%${search}%,ten_vt.ilike.%${search}%,nganh.ilike.%${search}%`);
-        }
-        // Thêm logic 'or' cho các bảng khác nếu cần
-        // ...
-    }
-    
-    // Áp dụng phân trang
-    query = query.range(rangeFrom, rangeTo);
-    
-    // Sắp xếp (mặc định theo 'id' hoặc 'created_at' nếu có)
-    // Tạm thời sắp xếp theo 'id' giảm dần
-    query = query.order('id', { ascending: false });
-
-    // Thực thi truy vấn
-    const { data, error, count } = await query;
-
-    if (error) {
-        console.error('Lỗi Supabase (GET):', error);
-        return res.status(500).json({ error: error.message });
-    }
-
-    // Gửi header Content-Range cho frontend biết tổng số item
-    res.setHeader('Content-Range', `${rangeFrom}-${rangeTo}/${count}`);
-    res.json(data);
+  } catch (error) {
+    // Nếu có bất kỳ lỗi nào xảy ra...
+    console.error('Lỗi khi lấy dữ liệu từ Supabase:', error.message);
+    res.status(500).json({ 
+      error: 'Không thể lấy dữ liệu từ Supabase', 
+      details: error.message 
+    });
+  }
 });
 
-// --- 2. POST: THÊM MỚI DỮ LIỆU ---
-// POST /api/data/SANPHAM
-app.post('/api/data/:view', checkTable, async (req, res) => {
-    const { tableName } = req;
-    const newItem = req.body; // Dữ liệu hàng mới từ frontend
+// ----- Phục vụ tệp Frontend -----
 
-    const { data, error } = await supabase
-        .from(tableName)
-        .insert([newItem])
-        .select(); // .select() để trả về dữ liệu vừa tạo
-
-    if (error) {
-        console.error('Lỗi Supabase (POST):', error);
-        return res.status(500).json({ error: error.message });
-    }
-
-    res.status(201).json(data[0]); // Trả về item vừa tạo
-});
-
-// --- 3. PUT: CẬP NHẬT DỮ LIỆU (SỬA) ---
-// PUT /api/data/SANPHAM/123
-app.put('/api/data/:view/:id', checkTable, async (req, res) => {
-    const { tableName } = req;
-    const { id } = req.params;
-    const updates = req.body; // Các trường cần cập nhật
-
-    const { data, error } = await supabase
-        .from(tableName)
-        .update(updates)
-        .eq('id', id)
-        .select();
-
-    if (error) {
-        console.error('Lỗi Supabase (PUT):', error);
-        return res.status(500).json({ error: error.message });
-    }
-    
-    if (!data || data.length === 0) {
-        return res.status(404).json({ error: `Không tìm thấy hàng có ID: ${id}` });
-    }
-
-    res.json(data[0]); // Trả về item vừa cập nhật
-});
-
-
-// --- 4. DELETE: XÓA DỮ LIỆU ---
-// DELETE /api/data/SANPHAM/123
-app.delete('/api/data/:view/:id', checkTable, async (req, res) => {
-    const { tableName } = req;
-    const { id } = req.params;
-
-    const { error } = await supabase
-        .from(tableName)
-        .delete()
-        .eq('id', id);
-
-    if (error) {
-        console.error('Lỗi Supabase (DELETE):', error);
-        return res.status(500).json({ error: error.message });
-    }
-
-    res.status(204).send(); // 204 No Content - Xóa thành công
-});
-
-
-// --- ENDPOINT CƠ BẢN (CHỈ ĐỂ KIỂM TRA) ---
+// Khi người dùng truy cập vào trang chủ (route '/'),
+// chúng ta sẽ gửi cho họ tệp index.html
 app.get('/', (req, res) => {
-  res.send('Chào mừng đến với API Quản Lý Kho! Vui lòng gọi /api/data/[ten_bang]');
+  // path.join đảm bảo nó hoạt động trên mọi hệ điều hành
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// --- KHỞI CHẠY SERVER ---
+// ----- Khởi động máy chủ -----
 app.listen(port, () => {
-  console.log(`Server đang chạy tại http://localhost:${port}`);
+  console.log(`Máy chủ đang chạy tại http://localhost:${port}`);
 });
 
-// QUAN TRỌNG: Vercel sẽ tự động xử lý file này
-// Bạn không cần gọi app.listen() khi triển khai lên Vercel
-// Nhưng nó cần thiết để chạy local
-export default app;
-
+// Xuất app để Vercel có thể sử dụng nó
+module.exports = app;
