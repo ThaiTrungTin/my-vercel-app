@@ -1,0 +1,548 @@
+/* Kiểu chữ mặc định */
+/* MỚI: Sử dụng font-size cho thẻ html để dễ dàng scale toàn bộ ứng dụng */
+html {
+    font-size: 100%; /* Default scale */
+}
+body {
+  font-family: 'Inter', sans-serif;
+}
+
+/* Ẩn/hiện các view */
+.view {
+  display: none;
+}
+
+.view.active {
+  display: block;
+}
+
+/* Tùy chỉnh thanh cuộn */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  /* gray-400 */
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #e5e7eb;
+  /* gray-200 */
+}
+
+/* Kiểu thanh điều hướng (Tabs) */
+.nav-link {
+  display: inline-block;
+  padding: 16px 20px;
+  font-weight: 500;
+  color: #4b5563;
+  /* gray-600 */
+  border-bottom: 4px solid transparent;
+  transition: all 0.2s ease-in-out;
+}
+
+.nav-link:hover {
+  color: #3b82f6;
+  /* blue-500 */
+}
+
+.nav-link.active {
+  color: #2563eb;
+  /* blue-600 */
+  font-weight: 600;
+  border-bottom-color: #2563eb;
+}
+
+/* Kiểu hàng được chọn */
+.selectable-row.selected {
+  background-color: #dbeafe;
+  /* blue-100 */
+}
+/* THÊM MỚI: Dark mode cho hàng được chọn */
+.dark .selectable-row.selected {
+  background-color: #1e3a8a; /* blue-900 */
+}
+
+.selectable-row {
+  cursor: pointer;
+}
+
+/* Input cho chỉnh sửa nội tuyến */
+.inline-input, .inline-input-text {
+  width: 100%;
+  padding: 4px 8px;
+  border: 1px solid #9ca3af;
+  /* gray-400 */
+  border-radius: 4px;
+  background-color: #f0f9ff;
+  /* blue-50 */
+}
+
+/* THÊM MỚI: Style cho input chỉ đọc */
+.inline-input[readonly] {
+    background-color: #f3f4f6; /* gray-100 */
+    cursor: not-allowed;
+}
+.dark .inline-input[readonly] {
+    background-color: #374151; /* gray-700 */
+}
+
+.inline-input-text {
+    background-color: #f3f4f6; /* gray-100 */
+}
+/* THÊM MỚI: Dark mode cho inline input */
+.dark .inline-input {
+  background-color: #1f2937; /* gray-800 */
+  border-color: #4b5563; /* gray-600 */
+  color: #e5e7eb; /* gray-200 */
+}
+.dark .inline-input-text {
+    background-color: #374151; /* gray-700 */
+}
+
+.inline-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  /* blue-600 */
+  box-shadow: 0 0 0 2px #dbeafe;
+  /* blue-100 */
+}
+/* THÊM MỚI: Dark mode cho inline input focus */
+.dark .inline-input:focus {
+  border-color: #3b82f6; /* blue-500 */
+  box-shadow: 0 0 0 2px #1e3a8a; /* blue-900 */
+}
+
+/* Input có nền xám */
+.inline-input.bg-gray-input, .inline-input-text.bg-gray-input {
+    background-color: #f3f4f6; /* gray-100 */
+    cursor: not-allowed;
+}
+.dark .inline-input.bg-gray-input, .dark .inline-input-text.bg-gray-input {
+    background-color: #374151; /* gray-700 */
+}
+
+
+/* MỚI: Tùy chỉnh select cho bộ lọc */
+.filter-select {
+  /* Đảm bảo select có chiều cao giống input/button */
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  /* Thêm-webkit-appearance để ghi đè style trình duyệt */
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="%236b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>');
+  background-size: 1.25rem;
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  padding-right: 2.5rem;
+  /* Thêm padding phải để text không đè lên icon */
+}
+/* THÊM MỚI: Dark mode cho filter select */
+.dark .filter-select {
+  background-color: #374151; /* gray-700 */
+  border-color: #4b5563; /* gray-600 */
+  color: #e5e7eb; /* gray-200 */
+  background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none" stroke="%23d1d5db" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>');
+}
+
+/* MỚI: CSS cho bộ lọc custom */
+.custom-filter-toggle {
+  width: 100%;
+  background-color: white;
+  border: 1px solid #d1d5db; /* gray-300 */
+  border-radius: 0.375rem; /* rounded-md */
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
+}
+/* THÊM MỚI: Dark mode */
+.dark .custom-filter-toggle {
+  background-color: #374151; /* gray-700 */
+  border-color: #4b5563; /* gray-600 */
+}
+.custom-filter-toggle:focus {
+  outline: none;
+  border-color: #2563eb; /* blue-600 */
+  box-shadow: 0 0 0 2px #dbeafe; /* blue-100 */
+}
+/* THÊM MỚI: Dark mode */
+.dark .custom-filter-toggle:focus {
+  border-color: #3b82f6; /* blue-500 */
+  box-shadow: 0 0 0 2px #1e3a8a; /* blue-900 */
+}
+.custom-filter-text {
+  color: #374151; /* gray-700 */
+}
+/* THÊM MỚI: Dark mode */
+.dark .custom-filter-text {
+  color: #e5e7eb; /* gray-200 */
+}
+.custom-filter-arrow {
+  width: 1.25rem; /* w-5 */
+  height: 1.25rem; /* h-5 */
+  color: #6b7280; /* gray-500 */
+}
+/* THÊM MỚI: Dark mode */
+.dark .custom-filter-arrow {
+  color: #9ca3af; /* gray-400 */
+}
+.custom-filter-panel {
+  position: absolute;
+  background-color: white;
+  border: 1px solid #d1d5db; /* gray-300 */
+  border-radius: 0.375rem; /* rounded-md */
+  margin-top: 0.25rem; /* mt-1 */
+  width: 100%;
+  z-index: 50;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
+  padding: 0.5rem; /* p-2 */
+}
+/* THÊM MỚI: Dark mode */
+.dark .custom-filter-panel {
+  background-color: #1f2937; /* gray-800 */
+  border-color: #4b5563; /* gray-600 */
+}
+.custom-filter-search {
+  width: 100%;
+  padding: 0.5rem 0.75rem; /* px-3 py-2 */
+  border: 1px solid #d1d5db; /* gray-300 */
+  border-radius: 0.375rem; /* rounded-md */
+  margin-bottom: 0.5rem; /* mb-2 */
+  font-size: 0.875rem; /* text-sm */
+}
+/* THÊM MỚI: Dark mode */
+.dark .custom-filter-search {
+  background-color: #374151; /* gray-700 */
+  border-color: #4b5563; /* gray-600 */
+  color: #e5e7eb; /* gray-200 */
+}
+.custom-filter-search:focus {
+  outline: none;
+  border-color: #2563eb; /* blue-600 */
+}
+/* THÊM MỚI: Dark mode */
+.dark .custom-filter-search:focus {
+  border-color: #3b82f6; /* blue-500 */
+}
+.custom-filter-list {
+  max-height: 200px;
+  overflow-y: auto;
+  font-size: 0.875rem; /* text-sm */
+}
+.custom-filter-item {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem; /* p-2 */
+  cursor: pointer;
+  border-radius: 0.25rem; /* rounded */
+}
+.custom-filter-item:hover {
+  background-color: #f3f4f6; /* gray-100 */
+}
+/* THÊM MỚI: Dark mode */
+.dark .custom-filter-item:hover {
+  background-color: #374151; /* gray-700 */
+}
+.custom-filter-item input {
+  margin-right: 0.5rem; /* mr-2 */
+  cursor: pointer;
+}
+.custom-filter-item label {
+  color: #374151; /* gray-700 */
+  cursor: pointer;
+  /* Cho phép ngắt dòng nếu text quá dài */
+  white-space: normal;
+  word-break: break-word;
+}
+/* THÊM MỚI: Dark mode */
+.dark .custom-filter-item label {
+  color: #e5e7eb; /* gray-200 */
+}
+
+/* THÊM MỚI: CSS cho Toast Notification */
+.toast {
+  padding: 1rem 1.5rem;
+  border-radius: 0.5rem; /* rounded-lg */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
+  color: white;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem; /* gap-3 */
+  opacity: 0;
+  transform: translateX(100%);
+  transition: all 0.3s ease-in-out;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateX(0);
+}
+.toast.hide {
+  opacity: 0;
+  transform: translateX(100%);
+}
+.toast-success { background-color: #16a34a; } /* green-600 */
+.toast-warning { background-color: #f59e0b; } /* amber-500 */
+.toast-error   { background-color: #dc2626; } /* red-600 */
+
+/* THÊM MỚI: CSS cho thanh tiến trình (Progress Bar) */
+#loading-progress-bar {
+  display: none; /* Ẩn mặc định */
+  position: absolute;
+  bottom: -1px; /* Nằm ngay dưới border của header */
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background-color: #dbeafe; /* blue-100 */
+  overflow: hidden;
+}
+.dark #loading-progress-bar {
+   background-color: #1e3a8a; /* blue-900 */
+}
+#loading-progress-bar-inner {
+  width: 100%;
+  height: 100%;
+  background-color: #3b82f6; /* blue-500 */
+  animation: loading-animation 2s infinite linear;
+}
+@keyframes loading-animation {
+  0% { transform: translateX(-100%); }
+  100% { translateX(100%); }
+}
+
+/* CSS cho bảng (dùng chung) */
+.th {
+  /* MỚI: Cố định tiêu đề */
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  /* THAY ĐỔI THEO YÊU CẦU: Đậm hơn */
+  background-color: #e5e7eb; /* bg-gray-200 */
+
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 0.75rem;
+  /* THAY ĐỔI THEO YÊU CẦU: Đậm hơn */
+  font-weight: 700; /* bold */
+  color: #1f2937; /* gray-800 */
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  vertical-align: top;
+  /* Căn lề cho input nội tuyến */
+  
+  /* MỚI: Thêm border giống Excel */
+  border-bottom: 1px solid #d1d5db; /* gray-300 */
+  border-right: 1px solid #d1d5db; /* gray-300 */
+}
+/* THÊM MỚI: Dark mode cho .th */
+.dark .th {
+  background-color: #374151; /* gray-700 */
+  color: #e5e7eb; /* gray-200 */
+  border-color: #4b5563; /* gray-600 */
+}
+
+/* MỚI: Thêm border trái cho ô đầu tiên */
+.th:first-child, .td:first-child {
+    border-left: 1px solid #d1d5db; /* gray-300 */
+}
+/* THÊM MỚI: Dark mode */
+.dark .th:first-child, .dark .td:first-child {
+    border-left-color: #4b5563; /* gray-600 */
+}
+
+.td {
+  padding: 12px 16px;
+  vertical-align: top;
+  /* MỚI: Cho phép ngắt dòng nếu nội dung quá dài */
+  word-break: break-word;
+  
+  /* MỚI: Thêm border giống Excel */
+  border-bottom: 1px solid #d1d5db; /* gray-300 */
+  border-right: 1px solid #d1d5db; /* gray-300 */
+}
+/* THÊM MỚI: Dark mode cho .td */
+.dark .td {
+  border-color: #4b5563; /* gray-600 */
+}
+
+.td-center {
+  padding: 12px 16px;
+  text-align: center;
+  color: #6b7280;
+  /* gray-500 */
+}
+/* THÊM MỚI: Dark mode */
+.dark .td-center {
+  color: #9ca3af; /* gray-400 */
+}
+
+/* MỚI: CSS cho màu chữ cột */
+.text-nhap { color: #16a34a; } /* green-600 */
+.dark .text-nhap { color: #22c55e; } /* green-500 */
+.text-xuat { color: #dc2626; } /* red-600 */
+.dark .text-xuat { color: #ef4444; } /* red-500 */
+
+.status-het-date { color: #dc2626; font-weight: 500; } /* red-600 */
+.dark .status-het-date { color: #ef4444; } /* red-500 */
+.status-can-date { color: #f59e0b; font-weight: 500; } /* amber-500 */
+.dark .status-can-date { color: #fcd34d; } /* amber-300 */
+.status-binh-thuong { color: #16a34a; font-weight: 500; } /* green-600 */
+.dark .status-binh-thuong { color: #22c55e; } /* green-500 */
+.status-hang-hu { color: #1f2937; font-weight: 700; } /* gray-800 */
+.dark .status-hang-hu { color: #f9fafb; font-weight: 700; } /* gray-50 */
+
+/* CSS cho modal */
+.modal-content {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+/* THÊM MỚI: Dark mode */
+.dark .modal-content {
+  background-color: #1f2937; /* gray-800 */
+}
+
+/* CSS cho .btn-cancel và .btn-save (dùng trong modal confirm) */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .btn-cancel {
+    @apply px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition;
+  }
+  /* THÊM MỚI: Dark mode */
+  .dark .btn-cancel {
+     @apply bg-gray-600 text-gray-200 hover:bg-gray-500;
+  }
+}
+
+/* =================================== */
+/* ===== CSS MỚI CHO MODAL ĐƠN HÀNG ===== */
+/* =================================== */
+
+#donhang-modal {
+  display: flex; /* Thay đổi từ 'none' để dùng với class 'hidden' của tailwind */
+}
+
+#donhang-modal.hidden {
+  display: none;
+}
+
+.section-title {
+  font-size: 1.125rem; /* text-lg */
+  font-weight: 600;
+  color: #1d4ed8; /* blue-700 */
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e5e7eb; /* border-gray-200 */
+  margin-bottom: 0.5rem;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 0.875rem; /* text-sm */
+  font-weight: 500;
+  color: #374151; /* gray-700 */
+}
+
+.form-input, .form-textarea {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db; /* gray-300 */
+  border-radius: 0.375rem; /* rounded-md */
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
+  transition: border-color 0.2s;
+}
+.form-input:focus, .form-textarea:focus {
+  outline: none;
+  border-color: #3b82f6; /* blue-500 */
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.form-textarea {
+  resize: vertical;
+}
+
+/* Bảng sản phẩm trong Modal */
+#donhang-modal-details-table {
+  border-collapse: collapse;
+  table-layout: fixed; /* Rất quan trọng để colgroup hoạt động */
+}
+
+.th-modal {
+  position: sticky;
+  top: 0;
+  padding: 0.75rem;
+  background-color: #f9fafb; /* gray-50 */
+  font-size: 0.875rem; /* text-sm */
+  font-weight: 600;
+  color: #4b5563; /* gray-600 */
+  text-align: left;
+  border: 1px solid #e5e7eb; /* gray-200 */
+}
+.th-modal:not(:last-child) {
+  border-right: 1px solid #e5e7eb;
+}
+
+.td-modal {
+  padding: 0; /* Xóa padding để input chiếm toàn bộ không gian */
+  border: 1px solid #e5e7eb;
+  position: relative; /* Cho panel gợi ý */
+}
+
+.modal-table-input {
+  width: 100%;
+  height: 100%;
+  padding: 0.6rem;
+  border: 2px solid transparent; /* Tạo không gian cho border khi focus */
+  background-color: transparent;
+  outline: none;
+  font-size: 0.875rem;
+  box-sizing: border-box; /* Quan trọng để padding không làm vỡ layout */
+}
+
+.modal-table-input:read-only {
+  background-color: #f9fafb; /* gray-50 */
+  color: #6b7280; /* gray-500 */
+  cursor: default;
+}
+
+.modal-table-input.highlight-required {
+  background-color: #fef9c3; /* yellow-100 */
+}
+
+/* Hiệu ứng focus-within trên TD để vẽ border bên ngoài */
+.td-modal:focus-within {
+  border-color: #3b82f6; /* blue-500 */
+  box-shadow: 0 0 0 1px #3b82f6 inset;
+  z-index: 1; /* Đưa ô được focus lên trên */
+}
+
+/* Panel gợi ý */
+.suggestion-panel {
+    position: absolute;
+    background-color: white;
+    border: 1px solid #d1d5db; /* gray-300 */
+    border-radius: 0.375rem;
+    margin-top: 2px;
+    width: 100%; /* Sẽ được set bằng JS */
+    z-index: 100; /* Luôn hiển thị trên cùng */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    max-height: 200px;
+    overflow-y: auto;
+    font-size: 0.875rem;
+}
+.suggestion-item {
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+}
+.suggestion-item:hover {
+    background-color: #eff6ff; /* blue-50 */
+}

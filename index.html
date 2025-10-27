@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <!-- THAY ĐỔI: Thêm class="" để JS có thể toggle 'dark' -->
 <html lang="vi" class="">
@@ -626,14 +627,60 @@
           </div>
 
 
-          <!-- Bộ lọc cho ĐƠN HÀNG (ví dụ) -->
+          <!-- MỚI: Bộ lọc cho ĐƠN HÀNG -->
           <div id="filter-donhang" class="filter-view-options hidden">
-            <!-- THAY ĐỔI: Thêm class dark:text-gray-400 -->
-            <p class="text-gray-500 text-sm dark:text-gray-400">Bộ lọc cho Đơn hàng chưa được thiết lập.</p>
+            <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+              <!-- Thời gian -->
+              <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Từ ngày</label>
+                  <input type="date" name="thoi_gian_from" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
+              </div>
+              <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Đến ngày</label>
+                  <input type="date" name="thoi_gian_to" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
+              </div>
+              <!-- Mã Kho -->
+              <div class="custom-filter" data-filter-column="ma_kho"><label class="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Mã Kho</label><div class="relative"><button type="button" class="custom-filter-toggle"><span class="custom-filter-text truncate">Tất cả Mã Kho</span><svg class="custom-filter-arrow h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg></button><div class="custom-filter-panel hidden"><div class="flex gap-2 mb-2"><input type="text" class="custom-filter-search w-2/3" placeholder="Tìm kiếm..."><button class="custom-filter-apply w-1/3 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md shadow-sm hover:bg-blue-700 transition">Áp dụng</button></div><div class="custom-filter-list"></div></div></div></div>
+              <!-- Mã NX -->
+              <div class="custom-filter" data-filter-column="ma_nx"><label class="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Mã NX</label><div class="relative"><button type="button" class="custom-filter-toggle"><span class="custom-filter-text truncate">Tất cả Mã NX</span><svg class="custom-filter-arrow h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg></button><div class="custom-filter-panel hidden"><div class="flex gap-2 mb-2"><input type="text" class="custom-filter-search w-2/3" placeholder="Tìm kiếm..."><button class="custom-filter-apply w-1/3 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md shadow-sm hover:bg-blue-700 transition">Áp dụng</button></div><div class="custom-filter-list"></div></div></div></div>
+              <!-- Loại Đơn -->
+              <div class="custom-filter" data-filter-column="loai_don"><label class="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Loại Đơn</label><div class="relative"><button type="button" class="custom-filter-toggle"><span class="custom-filter-text truncate">Tất cả</span><svg class="custom-filter-arrow h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg></button><div class="custom-filter-panel hidden"><div class="flex gap-2 mb-2"><button class="custom-filter-apply w-full px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md shadow-sm hover:bg-blue-700 transition">Áp dụng</button></div><div class="custom-filter-list"></div></div></div></div>
+              <!-- Trạng Thái -->
+              <div class="custom-filter" data-filter-column="trang_thai"><label class="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Trạng Thái</label><div class="relative"><button type="button" class="custom-filter-toggle"><span class="custom-filter-text truncate">Tất cả</span><svg class="custom-filter-arrow h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg></button><div class="custom-filter-panel hidden"><div class="flex gap-2 mb-2"><button class="custom-filter-apply w-full px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md shadow-sm hover:bg-blue-700 transition">Áp dụng</button></div><div class="custom-filter-list"></div></div></div></div>
+            </div>
           </div>
 
-          <!-- Bộ lọc cho CHI TIẾT (sẽ luôn ẩn) -->
+          <!-- MỚI: Bộ lọc cho CHI TIẾT -->
           <div id="filter-chitiet" class="filter-view-options hidden">
+            <div class="grid grid-cols-1 md:grid-cols-9 gap-2">
+               <!-- Thời gian -->
+              <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-1 dark:text-gray-300">Từ ngày</label>
+                  <input type="date" name="thoi_gian_from" class="w-full px-2 py-1.5 border border-gray-300 rounded-md shadow-sm text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
+              </div>
+              <div>
+                  <label class="block text-xs font-medium text-gray-700 mb-1 dark:text-gray-300">Đến ngày</label>
+                  <input type="date" name="thoi_gian_to" class="w-full px-2 py-1.5 border border-gray-300 rounded-md shadow-sm text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
+              </div>
+              <!-- Mã Kho -->
+              <div class="custom-filter" data-filter-column="ma_kho"><label class="block text-xs font-medium text-gray-700 mb-1 dark:text-gray-300">Mã Kho</label><div class="relative"><button type="button" class="custom-filter-toggle py-1.5"><span class="custom-filter-text truncate text-sm">Tất cả</span><svg class="custom-filter-arrow h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg></button><div class="custom-filter-panel hidden"><div class="flex gap-2 mb-2"><input type="text" class="custom-filter-search w-2/3" placeholder="Tìm kiếm..."><button class="custom-filter-apply w-1/3 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md shadow-sm hover:bg-blue-700 transition">Áp dụng</button></div><div class="custom-filter-list"></div></div></div></div>
+              <!-- Mã NX -->
+              <div class="custom-filter" data-filter-column="ma_nx"><label class="block text-xs font-medium text-gray-700 mb-1 dark:text-gray-300">Mã NX</label><div class="relative"><button type="button" class="custom-filter-toggle py-1.5"><span class="custom-filter-text truncate text-sm">Tất cả</span><svg class="custom-filter-arrow h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg></button><div class="custom-filter-panel hidden"><div class="flex gap-2 mb-2"><input type="text" class="custom-filter-search w-2/3" placeholder="Tìm kiếm..."><button class="custom-filter-apply w-1/3 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md shadow-sm hover:bg-blue-700 transition">Áp dụng</button></div><div class="custom-filter-list"></div></div></div></div>
+              <!-- Mã VT -->
+              <div class="custom-filter" data-filter-column="ma_vt"><label class="block text-xs font-medium text-gray-700 mb-1 dark:text-gray-300">Mã VT</label><div class="relative"><button type="button" class="custom-filter-toggle py-1.5"><span class="custom-filter-text truncate text-sm">Tất cả</span><svg class="custom-filter-arrow h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg></button><div class="custom-filter-panel hidden"><div class="flex gap-2 mb-2"><input type="text" class="custom-filter-search w-2/3" placeholder="Tìm kiếm..."><button class="custom-filter-apply w-1/3 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md shadow-sm hover:bg-blue-700 transition">Áp dụng</button></div><div class="custom-filter-list"></div></div></div></div>
+              <!-- LOT -->
+              <div class="custom-filter" data-filter-column="lot"><label class="block text-xs font-medium text-gray-700 mb-1 dark:text-gray-300">LOT</label><div class="relative"><button type="button" class="custom-filter-toggle py-1.5"><span class="custom-filter-text truncate text-sm">Tất cả</span><svg class="custom-filter-arrow h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg></button><div class="custom-filter-panel hidden"><div class="flex gap-2 mb-2"><input type="text" class="custom-filter-search w-2/3" placeholder="Tìm kiếm..."><button class="custom-filter-apply w-1/3 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md shadow-sm hover:bg-blue-700 transition">Áp dụng</button></div><div class="custom-filter-list"></div></div></div></div>
+              <!-- Ngành -->
+              <div class="custom-filter" data-filter-column="nganh"><label class="block text-xs font-medium text-gray-700 mb-1 dark:text-gray-300">Ngành</label><div class="relative"><button type="button" class="custom-filter-toggle py-1.5"><span class="custom-filter-text truncate text-sm">Tất cả</span><svg class="custom-filter-arrow h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg></button><div class="custom-filter-panel hidden"><div class="flex gap-2 mb-2"><input type="text" class="custom-filter-search w-2/3" placeholder="Tìm kiếm..."><button class="custom-filter-apply w-1/3 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md shadow-sm hover:bg-blue-700 transition">Áp dụng</button></div><div class="custom-filter-list"></div></div></div></div>
+              <!-- Phụ trách -->
+              <div class="custom-filter" data-filter-column="phu_trach"><label class="block text-xs font-medium text-gray-700 mb-1 dark:text-gray-300">Phụ trách</label><div class="relative"><button type="button" class="custom-filter-toggle py-1.5"><span class="custom-filter-text truncate text-sm">Tất cả</span><svg class="custom-filter-arrow h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg></button><div class="custom-filter-panel hidden"><div class="flex gap-2 mb-2"><input type="text" class="custom-filter-search w-2/3" placeholder="Tìm kiếm..."><button class="custom-filter-apply w-1/3 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md shadow-sm hover:bg-blue-700 transition">Áp dụng</button></div><div class="custom-filter-list"></div></div></div></div>
+              <div class="grid grid-cols-2 gap-2">
+                 <!-- Loại Đơn -->
+                <div class="custom-filter" data-filter-column="loai_don"><label class="block text-xs font-medium text-gray-700 mb-1 dark:text-gray-300">Loại</label><div class="relative"><button type="button" class="custom-filter-toggle py-1.5"><span class="custom-filter-text truncate text-sm">Tất cả</span><svg class="custom-filter-arrow h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg></button><div class="custom-filter-panel hidden"><div class="flex gap-2 mb-2"><button class="custom-filter-apply w-full px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md shadow-sm hover:bg-blue-700 transition">Áp dụng</button></div><div class="custom-filter-list"></div></div></div></div>
+                <!-- Trạng Thái -->
+                <div class="custom-filter" data-filter-column="trang_thai"><label class="block text-xs font-medium text-gray-700 mb-1 dark:text-gray-300">T.Thái</label><div class="relative"><button type="button" class="custom-filter-toggle py-1.5"><span class="custom-filter-text truncate text-sm">Tất cả</span><svg class="custom-filter-arrow h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg></button><div class="custom-filter-panel hidden"><div class="flex gap-2 mb-2"><button class="custom-filter-apply w-full px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md shadow-sm hover:bg-blue-700 transition">Áp dụng</button></div><div class="custom-filter-list"></div></div></div></div>
+              </div>
+            </div>
           </div>
 
         </div>
@@ -707,20 +754,24 @@
           <!-- THAY ĐỔI: Xóa divide-y -->
           <table class="min-w-full">
             <thead class="bg-gray-50">
+              <!-- THAY ĐỔI: Đã cập nhật style width cho tất cả các cột -->
               <tr>
-                <th class="th w-10"><input type="checkbox" class="select-all-checkbox" data-view="donhang"></th>
-                <th class="th">Mã kho</th>
-                <th class="th">Thời gian</th>
-                <th class="th">Mã NX</th>
-                <th class="th">User</th>
-                <th class="th">Ngành</th>
-                <th class="th">Mục đích</th>
-                <th class="th">Địa chỉ</th>
-                <th class="th">Ghi chú</th>
-                <th class="th">Order</th>
-                <th class="th">PKL</th>
-                <th class="th">Done</th>
-                <th class="th">Image</th>
+                <th class="th" style="width: 3%;"><input type="checkbox" class="select-all-checkbox" data-view="donhang"></th>
+                <th class="th" style="width: 7%;">Mã kho</th>
+                <th class="th" style="width: 7%;">Thời gian</th>
+                <th class="th" style="width: 9%;">Mã NX</th>
+                <th class="th" style="width: 6%;">User</th>
+                <th class="th" style="width: 6%;">Ngành</th>
+                <!-- THAY ĐỔI: Tăng cột Mục đích -->
+                <th class="th" style="width: 25%;">Mục đích</th>
+                <!-- THAY ĐỔI: Giảm cột Địa chỉ -->
+                <th class="th" style="width: 11%;">Địa chỉ</th>
+                <!-- THAY ĐỔI: Giảm cột Ghi chú -->
+                <th class="th" style="width: 10%;">Ghi chú</th>
+                <th class="th" style="width: 4%;">Order</th>
+                <th class="th" style="width: 4%;">PKL</th>
+                <th class="th" style="width: 4%;">Done</th>
+                <th class="th" style="width: 4%;">Image</th>
               </tr>
             </thead>
             <!-- THAY ĐỔI: Thêm class dark:bg-gray-800 dark:divide-gray-700 -->
@@ -938,11 +989,168 @@
         @apply px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition;
       }
     }
+
+    /* MỚI: CSS cho Modal Form */
+    .modal-input {
+        margin-top: 0.25rem; display: block; width: 100%;
+        padding: 0.5rem 0.75rem; border: 1px solid #d1d5db;
+        border-radius: 0.375rem; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        font-size: 0.875rem;
+    }
+    .dark .modal-input {
+        background-color: #374151; border-color: #4b5563; color: #e5e7eb;
+    }
+    .modal-input:focus {
+        outline: none; border-color: #2563eb;
+        box-shadow: 0 0 0 2px #dbeafe;
+    }
+    .dark .modal-input:focus {
+        border-color: #3b82f6; box-shadow: 0 0 0 2px #1e3a8a;
+    }
+    .modal-th {
+        padding: 0.5rem 0.5rem; text-align: left; font-size: 0.75rem;
+        font-weight: 500; color: #6b7280; text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .dark .modal-th { color: #d1d5db; }
+    .modal-td {
+        padding: 0.25rem 0.5rem; vertical-align: middle;
+        font-size: 0.875rem; color: #1f2937;
+    }
+    .dark .modal-td { color: #e5e7eb; }
+    .modal-td-input {
+        width: 100%; padding: 0.25rem; border: 1px solid #d1d5db;
+        border-radius: 0.375rem; background-color: transparent; font-size: 0.875rem;
+    }
+    .dark .modal-td-input { border-color: #4b5563; }
+    .modal-td-input:read-only { background-color: #f3f4f6; cursor: not-allowed; }
+    .dark .modal-td-input:read-only { background-color: #374151; }
   </style>
 
   <!-- THÊM MỚI: Toast Notification Container -->
   <div id="toast-container" class="fixed bottom-4 right-4 z-[100] flex flex-col gap-3">
     <!-- Toasts sẽ được thêm vào đây bằng JS -->
+  </div>
+  
+  <!-- ===== MỚI: Modal Thêm Mới/Sửa Đơn Hàng ===== -->
+  <div id="add-donhang-modal" class="fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full hidden z-40 flex items-center justify-center">
+    <div class="relative mx-auto border w-[90%] h-[90%] shadow-lg rounded-xl bg-white dark:bg-gray-800 flex flex-col">
+      <!-- Modal Header -->
+      <div class="flex justify-between items-center p-4 border-b dark:border-gray-700 flex-shrink-0">
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Tạo Đơn Hàng Mới</h3>
+        <button id="donhang-modal-close" class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="flex flex-1 p-4 overflow-hidden gap-4">
+        <!-- Left Panel: General Info -->
+        <div class="w-1/3 flex-shrink-0 flex flex-col gap-3 border-r pr-4 dark:border-gray-700 overflow-y-auto">
+          <h4 class="text-lg font-medium text-gray-800 dark:text-gray-200">Thông Tin Chung</h4>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Thời Gian</label>
+              <input type="date" id="donhang-modal-thoi_gian" class="modal-input">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Loại Đơn</label>
+              <select id="donhang-modal-loai_don" class="modal-input">
+                <option value="Xuat">Xuất</option>
+                <option value="Nhap">Nhập</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Mã Kho</label>
+              <input type="text" id="donhang-modal-ma_kho" class="modal-input">
+            </div>
+            <div>
+              <label id="donhang-modal-label-ma_nx" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Mã Xuất</label>
+              <input type="text" id="donhang-modal-ma_nx" class="modal-input">
+            </div>
+            <div class="col-span-1">
+               <label id="donhang-modal-label-user" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Xuất Cho</label>
+               <input type="text" id="donhang-modal-user" class="modal-input">
+            </div>
+            <div class="col-span-1">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Ngành</label>
+                <!-- THAY ĐỔI: Thêm list="nganh-options" -->
+                <input type="text" id="donhang-modal-nganh" class="modal-input" list="nganh-options">
+                <!-- MỚI: Datalist cho Ngành -->
+                <datalist id="nganh-options">
+                  <!-- JS sẽ điền các <option> vào đây -->
+                </datalist>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Mục Đích</label>
+            <textarea id="donhang-modal-muc_dich" rows="2" class="modal-input"></textarea>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Thông Tin Nhận Hàng (Địa chỉ)</label>
+            <textarea id="donhang-modal-dia_chi" rows="2" class="modal-input"></textarea>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Ghi Chú</label>
+            <textarea id="donhang-modal-ghi_chu" rows="2" class="modal-input"></textarea>
+          </div>
+          <div class="grid grid-cols-2 gap-4 mt-auto pt-2">
+               <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Order Link</label>
+                  <input type="text" id="donhang-modal-order" class="modal-input">
+               </div>
+               <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">PKL Link</label>
+                  <input type="text" id="donhang-modal-pkl" class="modal-input">
+               </div>
+               <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Done Link</label>
+                  <input type="text" id="donhang-modal-done" class="modal-input">
+               </div>
+               <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Image Link</label>
+                  <input type="text" id="donhang-modal-image" class="modal-input">
+               </div>
+          </div>
+        </div>
+        <!-- Right Panel: Product List -->
+        <div class="w-2/3 flex-grow flex flex-col">
+          <h4 class="text-lg font-medium text-gray-800 dark:text-gray-200 mb-2">Danh Sách Sản Phẩm</h4>
+          <div class="flex-1 overflow-auto border rounded-lg dark:border-gray-700">
+            <table class="min-w-full">
+              <thead class="bg-gray-100 dark:bg-gray-700 sticky top-0 z-10">
+                <tr>
+                  <th class="modal-th" style="width: 3%;">STT</th>
+                  <th class="modal-th" style="width: 11%;">Mã VT</th>
+                  <th class="modal-th" style="width: 24%;">Tên VT</th>
+                  <th class="modal-th" style="width: 11%;">LOT</th>
+                  <th class="modal-th" style="width: 8%;">Date</th>
+                  <th class="modal-th" style="width: 6%;">Yêu Cầu</th>
+                  <th class="modal-th" id="donhang-modal-header-so_luong" style="width: 6%;">Xuất</th>
+                  <th class="modal-th" style="width: 8%;">Tồn Sau</th>
+                  <th class="modal-th" style="width: 12%;">Mã Vạch</th>
+                  <th class="modal-th" style="width: 8%;">Loại</th>
+                  <th class="modal-th" style="width: 3%;">Xóa</th>
+                </tr>
+              </thead>
+              <tbody id="donhang-modal-products-body" class="divide-y dark:divide-gray-700">
+                <!-- JS populates this -->
+              </tbody>
+            </table>
+          </div>
+           <button id="donhang-modal-add-product" class="mt-2 w-full px-4 py-2 bg-blue-100 text-blue-800 rounded-lg shadow-sm hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-200 dark:hover:bg-blue-800 transition flex items-center justify-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+              Thêm Sản Phẩm
+          </button>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="flex items-center justify-end p-4 border-t dark:border-gray-700 gap-3 flex-shrink-0">
+        <button id="donhang-modal-cancel" class="btn-cancel">Hủy</button>
+        <button id="donhang-modal-save" class="btn-save">Lưu Đơn Hàng</button>
+      </div>
+    </div>
   </div>
 
 
@@ -957,11 +1165,15 @@
     let currentView = 'sanpham';
     let selectedItem = { view: null, id: null };
     let debounceTimer;
-    // MỚI: Trạng thái chỉnh sửa nội tuyến cho từng view
-    let currentEditState = {};
+    // Trạng thái chỉnh sửa nội tuyến
+    let currentEditState = { view: null, id: null, mode: null }; // mode: 'add' or 'edit'
     let sanphamFiltersPopulated = false; // MỚI: Cờ để chỉ tải bộ lọc 1 lần
     let tonkhoFiltersPopulated = false; // MỚI: Cờ cho bộ lọc Tồn Kho
+    let donhangFiltersPopulated = false; // MỚI
+    let chitietFiltersPopulated = false; // MỚI
     let sanphamDataForLookup = []; // MỚI: Cache sản phẩm cho Tồn Kho
+    let nganhDataCache = []; // MỚI: Cache Ngành cho modal Đơn Hàng
+    let donhangModalState = { mode: 'add', originalMaNx: null }; // MỚI
 
     // MỚI: Biến lưu trữ dữ liệu gốc và trạng thái bộ lọc custom
     let sanphamDataCache = []; // Lưu trữ tất cả sản phẩm
@@ -979,6 +1191,28 @@
       tinh_trang: new Set(),
       nganh: new Set(),
       phu_trach: new Set()
+    };
+    // MỚI: State cho bộ lọc Đơn Hàng
+    let donhangFilterState = {
+      thoi_gian_from: '',
+      thoi_gian_to: '',
+      ma_kho: new Set(),
+      ma_nx: new Set(),
+      loai_don: new Set(),
+      trang_thai: new Set()
+    };
+    // MỚI: State cho bộ lọc Chi Tiết
+    let chitietFilterState = {
+      thoi_gian_from: '',
+      thoi_gian_to: '',
+      ma_kho: new Set(),
+      ma_nx: new Set(),
+      ma_vt: new Set(),
+      lot: new Set(),
+      nganh: new Set(),
+      phu_trach: new Set(),
+      loai_don: new Set(),
+      trang_thai: new Set()
     };
 
 
@@ -1016,12 +1250,27 @@
     // MỚI: Lấy DOM cho bộ lọc custom (sẽ được gắn listener sau)
     let customFilters = [];
 
-    // Modals & Forms (Đã xóa các modal form)
+    // Modals & Forms
     const confirmModal = document.getElementById('confirm-modal');
     const confirmMessage = document.getElementById('confirm-message');
     const confirmOkButton = document.getElementById('confirm-ok');
     const confirmCancelButton = document.getElementById('confirm-cancel');
     let confirmCallback = null;
+
+    // MỚI: DOM cho Modal Đơn Hàng
+    const donhangModal = {
+        modal: document.getElementById('add-donhang-modal'),
+        closeButton: document.getElementById('donhang-modal-close'),
+        cancelButton: document.getElementById('donhang-modal-cancel'),
+        saveButton: document.getElementById('donhang-modal-save'),
+        addProductButton: document.getElementById('donhang-modal-add-product'),
+        productsBody: document.getElementById('donhang-modal-products-body'),
+        loaiDonSelect: document.getElementById('donhang-modal-loai_don'),
+        labelMaNx: document.getElementById('donhang-modal-label-ma_nx'),
+        labelUser: document.getElementById('donhang-modal-label-user'),
+        headerSoLuong: document.getElementById('donhang-modal-header-so_luong'),
+        nganhInput: document.getElementById('donhang-modal-nganh'),
+    };
 
     // Table bodies
     const sanphamTableBody = document.getElementById('sanpham-table-body');
@@ -1057,12 +1306,7 @@
      * Hiển thị một view (tab) cụ thể
      */
     function showView(viewId) {
-      if (currentView === viewId) return; // Không làm gì nếu đã ở view hiện tại
-
-      // MỚI: Chụp lại trạng thái của view sắp rời đi
-      if (currentEditState[currentView]) {
-        captureEditState(currentView);
-      }
+      if (currentEditState.mode) return; // Không chuyển view khi đang edit
       
       currentView = viewId;
       views.forEach(view => view.classList.remove('active'));
@@ -1074,39 +1318,37 @@
       // MỚI: Reset phân trang khi chuyển view
       pagination.page = 1;
       
-      // MỚI: Cập nhật trạng thái nút Lưu/Hủy dựa trên view mới
-      if (currentEditState[currentView]) {
-        showInlineEditControls();
-      } else {
-        hideInlineEditControls();
-      }
+      hideInlineEditControls(); // Luôn reset trạng thái edit
 
-      // Xử lý hiển thị nút Tải Excel
+      // MỚI: Xử lý hiển thị nút Tải Excel
       if (viewId === 'donhang') {
         toolbar.excel.style.display = 'none';
       } else {
         toolbar.excel.style.display = 'flex';
       }
 
-      // Xử lý hiển thị bộ lọc
-      filterPanel.classList.add('hidden'); 
-      toolbarToggleFilterText.textContent = 'Hiện bộ lọc'; 
+      // MỚI: Xử lý hiển thị bộ lọc
+      filterPanel.classList.add('hidden'); // 1. Luôn ẩn bảng lọc khi chuyển view
+      toolbarToggleFilterText.textContent = 'Hiện bộ lọc'; // 2. Reset text nút
 
+      // 3. Ẩn tất cả các tùy chọn lọc
       document.querySelectorAll('.filter-view-options').forEach(f => f.classList.add('hidden'));
+
       const filterOptions = document.getElementById(`filter-${viewId}`);
 
-      if (filterOptions && viewId !== 'chitiet') {
-        filterOptions.classList.remove('hidden'); 
-        toolbarToggleFilter.style.display = 'flex'; 
+      // 4. Hiển thị nút "Hiện bộ lọc" VÀ tùy chọn lọc nếu nó tồn tại
+      if (filterOptions) {
+        filterOptions.classList.remove('hidden'); // Hiển thị tùy chọn (ví dụ: filter-sanpham)
+        toolbarToggleFilter.style.display = 'flex'; // Hiển thị nút "Hiện bộ lọc"
 
-        if (viewId === 'sanpham' && !sanphamFiltersPopulated) {
-          populateSanphamFilters();
-        }
-        if (viewId === 'tonkho' && !tonkhoFiltersPopulated) {
-          populateTonkhoFilters();
-        }
+        // MỚI: Tải dữ liệu cho dropdowns nếu chưa tải
+        if (viewId === 'sanpham' && !sanphamFiltersPopulated) populateSanphamFilters();
+        if (viewId === 'tonkho' && !tonkhoFiltersPopulated) populateTonkhoFilters();
+        if (viewId === 'donhang' && !donhangFiltersPopulated) populateDonhangFilters();
+        if (viewId === 'chitiet' && !chitietFiltersPopulated) populateChitietFilters();
+
       } else {
-        toolbarToggleFilter.style.display = 'none'; 
+        toolbarToggleFilter.style.display = 'none'; // Ẩn nút "Hiện bộ lọc"
       }
 
       loadDataForCurrentView();
@@ -1115,22 +1357,12 @@
     /**
      * Tải dữ liệu dựa trên view hiện tại
      */
-    async function loadDataForCurrentView() {
-      // MỚI: Xóa selection khi tải lại dữ liệu, trừ khi đang edit
-      if (!currentEditState[currentView]) {
-         clearSelection();
-      }
-
+    function loadDataForCurrentView() {
       switch (currentView) {
-        case 'sanpham': await loadSanpham(); break;
-        case 'tonkho': await loadTonkho(); break;
-        case 'donhang': await loadDonhang(); break;
-        case 'chitiet': await loadChitiet(); break;
-      }
-      
-      // MỚI: Sau khi tải dữ liệu gốc, phục hồi trạng thái edit
-      if (currentEditState[currentView]) {
-        await restoreEditState(currentView);
+        case 'sanpham': loadSanpham(); break;
+        case 'tonkho': loadTonkho(); break;
+        case 'donhang': loadDonhang(); break;
+        case 'chitiet': loadChitiet(); break;
       }
     }
 
@@ -1138,77 +1370,54 @@
      * Xử lý sự kiện cho các nút toolbar (Đã refactor)
      */
     function handleToolbarAdd() {
-        // Khởi tạo state cho view hiện tại nếu chưa có
-        if (!currentEditState[currentView]) {
-            currentEditState[currentView] = { mode: 'add', data: {} };
-        }
-        // Luôn đảm bảo mode là 'add'
-        currentEditState[currentView].mode = 'add';
-        
-        showInlineEditControls();
-        showToast('Đang ở chế độ thêm mới. Nhấn "Lưu" hoặc "Hủy" để thoát.', 'warning', 5000);
-        
-        const newId = `new-${crypto.randomUUID()}`;
-        // Thêm dữ liệu rỗng vào state
-        currentEditState[currentView].data[newId] = { tempId: newId };
-        
-        let newRow;
-        switch (currentView) {
-            case 'sanpham':
-                newRow = createNewSanphamRow(newId);
-                break;
-            case 'tonkho':
-                newRow = createNewTonkhoRow(newId);
-                break;
-            case 'donhang':
-                // Thêm dữ liệu mặc định vào state
-                currentEditState[currentView].data[newId].thoi_gian = new Date().toISOString().slice(0, 10);
-                newRow = createNewDonhangRow(newId, currentEditState[currentView].data[newId]);
-                break;
-        }
+      if (currentEditState.mode) return; 
 
-        // Focus vào ô đầu tiên
-        if (newRow) {
-            const firstInput = newRow.querySelector('input:not([readonly]), button.inline-custom-select-toggle');
-            if (firstInput) {
-                if (firstInput.tagName === 'BUTTON') firstInput.click();
-                else firstInput.focus();
-            }
-        }
+      // MỚI: Mở modal cho Đơn Hàng
+      if (currentView === 'donhang') {
+        openDonhangModal('add');
+        return;
+      }
+      
+      // Logic cũ cho các view khác
+      if (currentEditState.mode !== 'add') {
+        showToast('Đang ở chế độ thêm mới. Nhấn "Lưu" hoặc "Hủy" để thoát.', 'warning', 5000);
+        showInlineEditControls();
+        currentEditState.view = currentView;
+        currentEditState.mode = 'add';
+      }
+
+      switch (currentView) {
+        case 'sanpham': createNewSanphamRow(); break;
+        case 'tonkho': createNewTonkhoRow(); break;
+      }
     }
 
-
     function handleToolbarEdit() {
-      if (!selectedItem.id) return;
+      if (!selectedItem.id || currentEditState.mode) return;
       const { view, id } = selectedItem;
-      
-      // Khởi tạo state cho view nếu chưa có
-      if (!currentEditState[view]) {
-        currentEditState[view] = { mode: 'edit', data: {} };
-      }
-      currentEditState[view].mode = 'edit';
-      
+      // THÊM MỚI: Toast
       showToast('Đang ở chế độ chỉnh sửa. Nhấn "Lưu" hoặc "Hủy" để thoát.', 'warning', 5000);
-      
       switch (view) {
         case 'sanpham': editSanpham(id); break;
         case 'tonkho': editTonkho(id); break;
         case 'donhang': editDonhang(id); break;
+        // case 'chitiet': (Bị ẩn)
       }
     }
 
     function handleToolbarDelete() {
-      if (!selectedItem.id) return;
+      if (!selectedItem.id || currentEditState.mode) return;
       const { view, id } = selectedItem;
       switch (view) {
         case 'sanpham': deleteSanpham(id); break;
         case 'tonkho': deleteTonkho(id); break;
         case 'donhang': deleteDonhang(id); break;
-        case 'chitiet': deleteChitiet(id); break; 
+        case 'chitiet': deleteChitiet(id); break;
       }
     }
 
     function handleToolbarSearch() {
+      if (currentEditState.mode) return; // Không tìm kiếm khi đang edit
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
         pagination.page = 1;
@@ -1218,25 +1427,35 @@
     }
 
     function handleToolbarClearFilter() {
+        if (currentEditState.mode) return;
         toolbar.search.value = '';
         
+        let stateToReset = null;
+        let filterSelector = '';
+
         if (currentView === 'sanpham') {
-            sanphamFilterState = { ma_vt: new Set(), ten_vt: new Set(), nganh: new Set(), phu_trach: new Set() };
-            document.querySelectorAll('#filter-sanpham .custom-filter').forEach(filter => {
-                const column = filter.dataset.filterColumn;
-                updateCustomFilterText(column, filter);
-                filter.querySelectorAll('.custom-filter-list input[type="checkbox"]').forEach(cb => cb.checked = false);
-                filter.querySelector('.custom-filter-search').value = '';
-                filter.querySelectorAll('.custom-filter-item').forEach(item => item.style.display = 'flex');
-            });
+            stateToReset = sanphamFilterState = { ma_vt: new Set(), ten_vt: new Set(), nganh: new Set(), phu_trach: new Set() };
+            filterSelector = '#filter-sanpham';
         } else if (currentView === 'tonkho') {
-            tonkhoFilterState = { ma_vt: new Set(), lot: new Set(), ton_cuoi: new Set(), tinh_trang: new Set(), nganh: new Set(), phu_trach: new Set() };
-            document.querySelectorAll('#filter-tonkho .custom-filter').forEach(filter => {
+            stateToReset = tonkhoFilterState = { ma_vt: new Set(), lot: new Set(), ton_cuoi: new Set(), tinh_trang: new Set(), nganh: new Set(), phu_trach: new Set() };
+            filterSelector = '#filter-tonkho';
+        } else if (currentView === 'donhang') {
+            stateToReset = donhangFilterState = { thoi_gian_from: '', thoi_gian_to: '', ma_kho: new Set(), ma_nx: new Set(), loai_don: new Set(), trang_thai: new Set() };
+            filterSelector = '#filter-donhang';
+            setDefaultDateFilters('donhang');
+        } else if (currentView === 'chitiet') {
+            stateToReset = chitietFilterState = { thoi_gian_from: '', thoi_gian_to: '', ma_kho: new Set(), ma_nx: new Set(), ma_vt: new Set(), lot: new Set(), nganh: new Set(), phu_trach: new Set(), loai_don: new Set(), trang_thai: new Set() };
+            filterSelector = '#filter-chitiet';
+            setDefaultDateFilters('chitiet');
+        }
+
+        if (stateToReset && filterSelector) {
+            document.querySelectorAll(`${filterSelector} .custom-filter`).forEach(filter => {
                 const column = filter.dataset.filterColumn;
                 updateCustomFilterText(column, filter);
                 filter.querySelectorAll('.custom-filter-list input[type="checkbox"]').forEach(cb => cb.checked = false);
                 const search = filter.querySelector('.custom-filter-search');
-                if (search) search.value = ''; // Tồn cuối không có search
+                if (search) search.value = ''; 
                 filter.querySelectorAll('.custom-filter-item').forEach(item => item.style.display = 'flex');
             });
         }
@@ -1252,9 +1471,12 @@
      * Gắn listener cho các checkbox
      */
     function attachCheckboxListeners(view) {
+      // Listener cho từng checkbox hàng
       document.querySelectorAll(`#${view}-table-body .row-checkbox`).forEach(cb => {
         cb.addEventListener('click', (e) => handleCheckboxClick(e, view));
       });
+
+      // Listener cho checkbox "chọn tất cả"
       const selectAll = document.querySelector(`.select-all-checkbox[data-view="${view}"]`);
       if (selectAll) {
         selectAll.addEventListener('click', (e) => {
@@ -1270,19 +1492,19 @@
      * MỚI: Xử lý khi click vào TR (toàn bộ hàng)
      */
     function toggleRowSelection(view, id, event) {
-      if (currentEditState[view]) return; // Không chọn khi đang edit ở view đó
+      if (currentEditState.mode) return; 
 
       if (event.target.closest('input, a, button, select')) return;
 
       const checkbox = document.querySelector(`.row-checkbox[data-view="${view}"][data-id="${id}"]`);
       if (checkbox) {
-        checkbox.click(); 
+        checkbox.click();
       }
     }
 
     function handleCheckboxClick(event, view) {
-      if (currentEditState[view]) {
-        event.target.checked = !event.target.checked; // Ngăn thay đổi khi đang edit
+      if (currentEditState.mode) {
+        event.target.checked = !event.target.checked;
         return;
       }
 
@@ -1308,12 +1530,15 @@
       selectedItem.id = id;
 
       const newRow = document.getElementById(`${view}-row-${id}`);
-      if (newRow) newRow.classList.add('selected');
-      
+      if (newRow) {
+        newRow.classList.add('selected');
+      }
       const newCb = document.querySelector(`.row-checkbox[data-id="${id}"]`);
-      if (newCb) newCb.checked = true;
-      
-      if (!currentEditState[view]) {
+      if (newCb) {
+        newCb.checked = true;
+      }
+
+      if (!currentEditState.mode) {
         toolbar.edit.disabled = false;
         toolbar.delete.disabled = false;
       }
@@ -1322,8 +1547,9 @@
     function clearSelection() {
       if (selectedItem.view && selectedItem.id) {
         const oldRow = document.getElementById(`${selectedItem.view}-row-${selectedItem.id}`);
-        if (oldRow) oldRow.classList.remove('selected');
-        
+        if (oldRow) {
+          oldRow.classList.remove('selected');
+        }
         const oldCb = document.querySelector(`.row-checkbox[data-id="${selectedItem.id}"]`);
         if (oldCb) oldCb.checked = false;
       }
@@ -1355,7 +1581,9 @@
       confirmModal.classList.remove('hidden');
     }
     confirmOkButton.addEventListener('click', () => {
-      if (confirmCallback) confirmCallback();
+      if (confirmCallback) {
+        confirmCallback();
+      }
       confirmCallback = null;
       confirmModal.classList.add('hidden');
     });
@@ -1385,12 +1613,16 @@
       toast.innerHTML = `${iconSvg}<span>${message}</span>`;
       toastContainer.appendChild(toast);
 
-      setTimeout(() => { toast.classList.add('show'); }, 10);
+      setTimeout(() => {
+        toast.classList.add('show');
+      }, 10);
 
       setTimeout(() => {
         toast.classList.remove('show');
         toast.classList.add('hide');
-        toast.addEventListener('transitionend', () => toast.remove());
+        toast.addEventListener('transitionend', () => {
+          toast.remove();
+        });
       }, duration);
     }
 
@@ -1419,7 +1651,7 @@
 
     // ===== 7. CRUD cho SẢN PHẨM (SANPHAM) =====
     async function loadSanpham() {
-      sanphamTableBody.innerHTML = `<tr><td colspan="5" class="td-center">Đang tải dữ liệu...</td></tr>`;
+      clearSelection();
       const searchTerm = toolbar.search.value.toLowerCase();
 
       const filterMaVt = Array.from(sanphamFilterState.ma_vt);
@@ -1429,7 +1661,7 @@
 
       try {
         let query = supabase.from('SANPHAM').select('*');
-        let countQuery = supabase.from('SANPHAM').select('*', { count: 'exact', head: true }); 
+        let countQuery = supabase.from('SANPHAM').select('*', { count: 'exact', head: true });
 
         if (searchTerm) {
           const searchFilter = `ma_vt.ilike.%${searchTerm}%,ten_vt.ilike.%${searchTerm}%,nganh.ilike.%${searchTerm}%,phu_trach.ilike.%${searchTerm}%`;
@@ -1437,16 +1669,28 @@
           countQuery = countQuery.or(searchFilter);
         }
 
-        if (filterMaVt.length > 0) { query = query.in('ma_vt', filterMaVt); countQuery = countQuery.in('ma_vt', filterMaVt); }
-        if (filterTenVt.length > 0) { query = query.in('ten_vt', filterTenVt); countQuery = countQuery.in('ten_vt', filterTenVt); }
-        if (filterNganh.length > 0) { query = query.in('nganh', filterNganh); countQuery = countQuery.in('nganh', filterNganh); }
-        if (filterPhuTrach.length > 0) { query = query.in('phu_trach', filterPhuTrach); countQuery = countQuery.in('phu_trach', filterPhuTrach); }
+        if (filterMaVt.length > 0) { 
+          query = query.in('ma_vt', filterMaVt); 
+          countQuery = countQuery.in('ma_vt', filterMaVt);
+        }
+        if (filterTenVt.length > 0) { 
+          query = query.in('ten_vt', filterTenVt); 
+          countQuery = countQuery.in('ten_vt', filterTenVt);
+        }
+        if (filterNganh.length > 0) { 
+          query = query.in('nganh', filterNganh); 
+          countQuery = countQuery.in('nganh', filterNganh);
+        }
+        if (filterPhuTrach.length > 0) { 
+          query = query.in('phu_trach', filterPhuTrach); 
+          countQuery = countQuery.in('phu_trach', filterPhuTrach);
+        }
 
         const { count, error: countError } = await countQuery;
         if (countError) throw countError;
         
         pagination.totalItems = count || 0;
-        updatePaginationUI(); 
+        updatePaginationUI();
 
         const from = (pagination.page - 1) * pagination.limit;
         const to = from + pagination.limit - 1;
@@ -1455,7 +1699,7 @@
         let { data, error } = await query.order('ma_vt');
         if (error) throw error;
 
-        if (data.length === 0 && !currentEditState.sanpham) {
+        if (data.length === 0) {
           sanphamTableBody.innerHTML = `<tr><td colspan="5" class="td-center">Không tìm thấy dữ liệu.</td></tr>`;
           return;
         }
@@ -1479,16 +1723,16 @@
       updateLastSyncTime();
     }
 
-    async function editSanpham(id) {
+    async function editSanpham(ma_vt) {
       try {
-        const { data, error } = await supabase.from('SANPHAM').select('*').eq('ma_vt', id).single();
+        let { data, error } = await supabase.from('SANPHAM').select('*').eq('ma_vt', ma_vt).single();
         if (error) throw error;
-        
-        currentEditState.sanpham.data[id] = data;
 
-        const row = document.getElementById(`sanpham-row-${id}`);
+        const row = document.getElementById(`sanpham-row-${ma_vt}`);
         row.innerHTML = createEditableRowContents('sanpham', data, true);
         row.setAttribute('data-editing', 'true');
+
+        currentEditState = { view: 'sanpham', id: ma_vt, mode: 'edit' };
         showInlineEditControls();
       } catch (error) {
         console.error('Lỗi lấy dữ liệu sửa:', error);
@@ -1496,31 +1740,26 @@
       }
     }
 
-    function createNewSanphamRow(newId) {
+    function createNewSanphamRow() {
       const tableBody = document.getElementById('sanpham-table-body');
+      const newId = `new-${crypto.randomUUID()}`;
       const rowHtml = `<tr id="sanpham-row-${newId}" data-editing="true">${createEditableRowContents('sanpham', {}, false)}</tr>`;
       tableBody.insertAdjacentHTML('afterbegin', rowHtml);
-      return document.getElementById(`sanpham-row-${newId}`);
+      const newRow = document.getElementById(`sanpham-row-${newId}`);
+      newRow.querySelector('input[name="ma_vt"]').focus();
+      return newRow;
     }
 
     async function saveSanpham(data, mode, id) {
       const cleanData = {
-        ma_vt: data.ma_vt, 
+        ma_vt: data.ma_vt,
         ten_vt: data.ten_vt,
         nganh: data.nganh || null,
         phu_trach: data.phu_trach || null
       };
 
-      if (!cleanData.ten_vt) {
-        showConfirm('Lỗi: Tên VT không được để trống.', () => {}, true);
-        return false; 
-      }
-      if (!cleanData.nganh) {
-        showConfirm('Lỗi: Ngành không được để trống.', () => {}, true);
-        return false;
-      }
-      if (!cleanData.phu_trach) {
-        showConfirm('Lỗi: Phụ trách không được để trống.', () => {}, true);
+      if (!cleanData.ten_vt || !cleanData.nganh || !cleanData.phu_trach) {
+        showConfirm('Lỗi: Tên VT, Ngành, và Phụ trách không được để trống.', () => {}, true);
         return false;
       }
 
@@ -1534,30 +1773,25 @@
           .from('SANPHAM')
           .select('ma_vt')
           .eq('ma_vt', cleanData.ma_vt)
-          .maybeSingle(); 
+          .maybeSingle();
 
-        if (checkError) throw checkError; 
+        if (checkError) throw checkError;
 
         if (existing) {
-          showConfirm(`Lỗi: Mã VT '${cleanData.ma_vt}' đã tồn tại. Vui lòng chọn Mã VT khác.`, () => {}, true);
+          showConfirm(`Lỗi: Mã VT '${cleanData.ma_vt}' đã tồn tại.`, () => {}, true);
           return false;
         }
       }
 
       let error;
       if (mode === 'edit') {
-        const { error: updateError } = await supabase.from('SANPHAM').update({
-          ma_vt: cleanData.ma_vt,
-          ten_vt: cleanData.ten_vt,
-          nganh: cleanData.nganh,
-          phu_trach: cleanData.phu_trach
-        }).eq('ma_vt', id);
+        const { error: updateError } = await supabase.from('SANPHAM').update(cleanData).eq('ma_vt', id);
         error = updateError;
       } else {
         const { error: insertError } = await supabase.from('SANPHAM').insert([cleanData]);
         error = insertError;
       }
-      if (error) throw error; 
+      if (error) throw error;
       return true;
     }
 
@@ -1567,7 +1801,7 @@
           const { error } = await supabase.from('SANPHAM').delete().eq('ma_vt', ma_vt);
           if (error) throw error;
           showToast(`Đã xóa sản phẩm '${ma_vt}'!`, 'success');
-          loadDataForCurrentView();
+          loadSanpham();
         } catch (error) {
           console.error('Lỗi xóa sản phẩm:', error);
           showToast(`Lỗi khi xóa: ${error.message}`, 'error');
@@ -1580,7 +1814,7 @@
       if (!dateString) return '';
       try {
         const date = new Date(dateString.includes('/') ? dateString.split('/').reverse().join('-') : dateString);
-        if (isNaN(date.getTime())) return dateString; 
+        if (isNaN(date.getTime())) return dateString;
         const day = String(date.getDate()).padStart(2, '0');
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const year = date.getFullYear();
@@ -1600,7 +1834,7 @@
     }
 
     async function loadTonkho() {
-        tonkhoTableBody.innerHTML = `<tr><td colspan="14" class="td-center">Đang tải dữ liệu...</td></tr>`;
+        clearSelection();
         const searchTerm = toolbar.search.value.toLowerCase();
         try {
             const { data: chiTietData, error: chiTietError } = await supabase.from('CHITIET').select('ma_vach, ma_kho, so_luong');
@@ -1649,12 +1883,7 @@
 
             let { data, error } = await query.order('ma_vach');
             if (error) throw error;
-
-            if (data.length === 0 && !currentEditState.tonkho) {
-                tonkhoTableBody.innerHTML = `<tr><td colspan="14" class="td-center">Chưa có dữ liệu.</td></tr>`;
-                return;
-            }
-
+            
             const finalData = data.map(item => {
                 const ton_dau = Number(item.ton_dau) || 0;
                 const aggregates = aggregatedDetails[item.ma_vach] || { nhap: 0, xuat: 0 };
@@ -1662,18 +1891,19 @@
                 const xuat = aggregates.xuat;
                 const ton_cuoi = ton_dau + nhap - xuat;
                 return { ...item, nhap, xuat, ton_cuoi };
-            }).filter(item => { 
+            }).filter(item => {
                 const tonCuoiFilter = tonkhoFilterState.ton_cuoi;
                 if (tonCuoiFilter.size === 0 || tonCuoiFilter.has('Tất cả')) return true;
                 if (tonCuoiFilter.has('Còn hàng')) return item.ton_cuoi > 0;
                 if (tonCuoiFilter.has('Hết hàng')) return item.ton_cuoi <= 0;
                 return false;
             });
-
-            if (finalData.length === 0 && !currentEditState.tonkho) {
-                tonkhoTableBody.innerHTML = `<tr><td colspan="14" class="td-center">Không có dữ liệu phù hợp với bộ lọc Tồn Cuối.</td></tr>`;
+            
+            if (finalData.length === 0) {
+                tonkhoTableBody.innerHTML = `<tr><td colspan="14" class="td-center">Không có dữ liệu phù hợp.</td></tr>`;
                 return;
             }
+
 
             tonkhoTableBody.innerHTML = finalData.map(item => {
                 const productInfo = sanphamDataForLookup.find(p => p.ma_vt === item.ma_vt) || {};
@@ -1682,7 +1912,7 @@
                     <td class="td"><input type="checkbox" class="row-checkbox" data-view="tonkho" data-id="${item.ma_vach}"></td>
                     <td class="td text-sm font-medium text-gray-900 dark:text-gray-100">${item.ma_vach}</td>
                     <td class="td text-sm text-gray-600 dark:text-gray-300">${item.ma_vt || ''}</td>
-                    <td class="td text-sm text-gray-600 dark:text-gray-300">${productInfo.ten_vt || ''}</td>
+                    <td class="td text-sm text-gray-600 dark:text-gray-300">${productInfo.ten_vt || item.ten_vt || ''}</td>
                     <td class="td text-sm text-gray-600 dark:text-gray-300">${item.lot || ''}</td>
                     <td class="td text-sm text-gray-600 dark:text-gray-300">${formatDate(item.date)}</td>
                     <td class="td text-sm text-gray-600 dark:text-gray-300">${item.ton_dau}</td>
@@ -1691,8 +1921,8 @@
                     <td class="td text-sm font-bold text-gray-800 dark:text-gray-100">${item.ton_cuoi}</td>
                     <td class="td text-sm ${getStatusClass(item.tinh_trang)}">${item.tinh_trang || ''}</td>
                     <td class="td text-sm text-gray-600 dark:text-gray-300">${item.tray || ''}</td>
-                    <td class="td text-sm text-gray-600 dark:text-gray-300">${productInfo.nganh || ''}</td>
-                    <td class="td text-sm text-gray-600 dark:text-gray-300">${productInfo.phu_trach || ''}</td>
+                    <td class="td text-sm text-gray-600 dark:text-gray-300">${productInfo.nganh || item.nganh || ''}</td>
+                    <td class="td text-sm text-gray-600 dark:text-gray-300">${productInfo.phu_trach || item.phu_trach || ''}</td>
                 </tr>
                 `}).join('');
             attachCheckboxListeners('tonkho');
@@ -1708,14 +1938,31 @@
     async function editTonkho(ma_vach) {
       await loadSanphamForLookup();
       try {
-        const { data, error } = await supabase.from('TONKHO').select('*').eq('ma_vach', ma_vach).single();
+        let { data, error } = await supabase.from('TONKHO').select('*').eq('ma_vach', ma_vach).single();
         if (error) throw error;
-        
-        currentEditState.tonkho.data[ma_vach] = data;
+
+        // MỚI: Tính toán Nhập/Xuất/Tồn Cuối
+        const { data: chiTietData, error: chiTietError } = await supabase.from('CHITIET').select('ma_kho, so_luong').eq('ma_vach', ma_vach);
+        if (chiTietError) throw chiTietError;
+
+        const aggregates = (chiTietData || []).reduce((acc, detail) => {
+            const soLuong = Number(detail.so_luong) || 0;
+            if (String(detail.ma_kho).toUpperCase().includes('IN')) acc.nhap += soLuong;
+            if (String(detail.ma_kho).toUpperCase().includes('OUT')) acc.xuat += soLuong;
+            return acc;
+        }, { nhap: 0, xuat: 0 });
+
+        const ton_dau = Number(data.ton_dau) || 0;
+        data.nhap = aggregates.nhap; // Thêm vào data
+        data.xuat = aggregates.xuat; // Thêm vào data
+        data.ton_cuoi = ton_dau + aggregates.nhap - aggregates.xuat; // Thêm vào data
+        // KẾT THÚC MỚI
 
         const row = document.getElementById(`tonkho-row-${ma_vach}`);
         row.innerHTML = createEditableRowContents('tonkho', data, true);
         row.setAttribute('data-editing', 'true');
+
+        currentEditState = { view: 'tonkho', id: ma_vach, mode: 'edit' };
         showInlineEditControls();
       } catch (error) {
         console.error('Lỗi lấy dữ liệu sửa:', error);
@@ -1723,34 +1970,45 @@
       }
     }
 
-    async function createNewTonkhoRow(newId) {
+    async function createNewTonkhoRow() {
       await loadSanphamForLookup();
       const tableBody = document.getElementById('tonkho-table-body');
+      const newId = `new-${crypto.randomUUID()}`;
       const rowHtml = `<tr id="tonkho-row-${newId}" data-editing="true">${createEditableRowContents('tonkho', {}, false)}</tr>`;
       tableBody.insertAdjacentHTML('afterbegin', rowHtml);
-      return document.getElementById(`tonkho-row-${newId}`);
+      const newRow = document.getElementById(`tonkho-row-${newId}`);
+      newRow.querySelector('.inline-custom-select-toggle').click();
+      return newRow;
     }
 
     async function saveTonkho(data, mode, id) {
-        if (!data.ma_vt || !data.lot || !data.date || data.ton_dau === '' || data.ton_dau === null) {
-            showConfirm('Lỗi: Mã VT, LOT, Date, và Tồn Đầu là các trường bắt buộc.', () => {}, true);
+        if (!data.ma_vt || data.ton_dau === '' || data.ton_dau === null) {
+            showConfirm('Lỗi: Mã VT và Tồn Đầu là các trường bắt buộc.', () => {}, true);
             return false;
         }
 
+        let parsedDate = null;
+        let isoDate = null;
+        let datePart = ''; // MỚI
         const dateValue = data.date;
-        if (!/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateValue)) {
-            showConfirm('Lỗi: Định dạng Date không hợp lệ. Vui lòng sử dụng dd/mm/yyyy.', () => {}, true);
-            return false;
-        }
-        const dateParts = dateValue.split('/');
-        const day = parseInt(dateParts[0], 10);
-        const month = parseInt(dateParts[1], 10);
-        const year = parseInt(dateParts[2], 10);
-        const parsedDate = new Date(year, month - 1, day);
+        if (dateValue) {
+            if (!/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateValue)) {
+                showConfirm('Lỗi: Định dạng Date không hợp lệ. Vui lòng sử dụng dd/mm/yyyy.', () => {}, true);
+                return false;
+            }
+            const dateParts = dateValue.split('/');
+            const day = parseInt(dateParts[0], 10);
+            const month = parseInt(dateParts[1], 10);
+            const year = parseInt(dateParts[2], 10);
+            parsedDate = new Date(year, month - 1, day);
 
-        if (parsedDate.getFullYear() !== year || parsedDate.getMonth() + 1 !== month || parsedDate.getDate() !== day) {
-            showConfirm('Lỗi: Ngày không hợp lệ. Vui lòng kiểm tra lại.', () => {}, true);
-            return false;
+            if (parsedDate.getFullYear() !== year || parsedDate.getMonth() + 1 !== month || parsedDate.getDate() !== day) {
+                showConfirm('Lỗi: Ngày không hợp lệ. Vui lòng kiểm tra lại.', () => {}, true);
+                return false;
+            }
+            isoDate = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+            // MỚI: Tạo datePart cho ma_vach
+            datePart = `${String(day).padStart(2,'0')}.${String(month).padStart(2,'0')}.${year}`;
         }
 
         const selectedProduct = sanphamDataForLookup.find(p => p.ma_vt === data.ma_vt);
@@ -1759,9 +2017,18 @@
             return false;
         }
         
-        const formattedDateForBarcode = `${String(day).padStart(2,'0')}.${String(month).padStart(2,'0')}.${year}`;
-        const generatedMaVach = `${data.ma_vt}${data.lot}${formattedDateForBarcode}`;
+        // THAY ĐỔI: Logic tạo Mã Vạch
+        const maVtPart = data.ma_vt || '';
+        const lotPart = data.lot || ''; // Trống nếu không có
+        // datePart đã được tạo ở trên
+        const generatedMaVach = `${maVtPart}${lotPart}${datePart}`;
+
         
+        if (!data.ma_vt) {
+             showConfirm(`Lỗi: Không thể tạo Mã Vạch. Cần có Mã VT.`, () => {}, true);
+            return false;
+        }
+
         let query = supabase.from('TONKHO').select('ma_vach').eq('ma_vach', generatedMaVach);
         if (mode === 'edit') {
             query = query.neq('ma_vach', id);
@@ -1776,31 +2043,37 @@
             return false;
         }
 
-        const isoDate = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
         const cleanData = {
             ma_vach: generatedMaVach,
             ma_vt: data.ma_vt,
             ten_vt: selectedProduct.ten_vt,
             nganh: selectedProduct.nganh,
             phu_trach: selectedProduct.phu_trach,
-            lot: data.lot,
+            lot: data.lot || null,
             date: isoDate,
             ton_dau: Number(data.ton_dau) || 0,
             tray: data.tray || null,
         };
         
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const threeMonthsFromNow = new Date();
-        threeMonthsFromNow.setMonth(threeMonthsFromNow.getMonth() + 3);
+        if (data.tinh_trang && (data.tinh_trang === "Hàng Hư" || data.tinh_trang === "Đang Sử Dụng")) {
+            cleanData.tinh_trang = data.tinh_trang;
+        } else if (parsedDate) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const threeMonthsFromNow = new Date();
+            threeMonthsFromNow.setMonth(threeMonthsFromNow.getMonth() + 3);
 
-        if (parsedDate < today) {
-            cleanData.tinh_trang = "Hết Date";
-        } else if (parsedDate <= threeMonthsFromNow) {
-            cleanData.tinh_trang = "Cận Date";
+            if (parsedDate < today) {
+                cleanData.tinh_trang = "Hết Date";
+            } else if (parsedDate <= threeMonthsFromNow) {
+                cleanData.tinh_trang = "Cận Date";
+            } else {
+                cleanData.tinh_trang = null;
+            }
         } else {
-            cleanData.tinh_trang = data.tinh_trang || null;
+             cleanData.tinh_trang = null;
         }
+
 
         let error;
         if (mode === 'edit') {
@@ -1821,7 +2094,7 @@
           const { error } = await supabase.from('TONKHO').delete().eq('ma_vach', ma_vach);
           if (error) throw error;
           showToast(`Đã xóa tồn kho '${ma_vach}'!`, 'success');
-          loadDataForCurrentView();
+          loadTonkho();
         } catch (error) {
           console.error('Lỗi xóa tồn kho:', error);
           showToast(`Lỗi khi xóa: ${error.message}`, 'error');
@@ -1831,9 +2104,21 @@
 
 
     // ===== 9. CRUD cho ĐƠN HÀNG (DONHANG) =====
+    function createLinkIcon(url) {
+        if (!url || typeof url !== 'string' || !url.trim()) {
+            return '';
+        }
+        return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="flex justify-center items-center text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
+              <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z" />
+            </svg>
+        </a>`;
+    }
+
 
     async function loadDonhang() {
-      donhangTableBody.innerHTML = `<tr><td colspan="13" class="td-center">Đang tải dữ liệu...</td></tr>`;
+      clearSelection();
       const searchTerm = toolbar.search.value.toLowerCase();
       try {
         let query = supabase.from('DONHANG').select('*');
@@ -1844,6 +2129,23 @@
           query = query.or(searchFilter);
           countQuery = countQuery.or(searchFilter);
         }
+
+        const { thoi_gian_from, thoi_gian_to, ma_kho, ma_nx, loai_don, trang_thai } = donhangFilterState;
+        if (thoi_gian_from) { query.gte('thoi_gian', `${thoi_gian_from}T00:00:00`); countQuery.gte('thoi_gian', `${thoi_gian_from}T00:00:00`); }
+        if (thoi_gian_to) { query.lte('thoi_gian', `${thoi_gian_to}T23:59:59`); countQuery.lte('thoi_gian', `${thoi_gian_to}T23:59:59`); }
+        if (ma_kho.size > 0) { query.in('ma_kho', Array.from(ma_kho)); countQuery.in('ma_kho', Array.from(ma_kho)); }
+        if (ma_nx.size > 0) { query.in('ma_nx', Array.from(ma_nx)); countQuery.in('ma_nx', Array.from(ma_nx)); }
+        
+        const loaiDonFilters = [];
+        if (loai_don.has('Nhập')) loaiDonFilters.push('ma_kho.ilike.%IN%');
+        if (loai_don.has('Xuất')) loaiDonFilters.push('ma_kho.ilike.%OUT%');
+        if (loaiDonFilters.length > 0) { query.or(loaiDonFilters.join(',')); countQuery.or(loaiDonFilters.join(',')); }
+        
+        const trangThaiFilters = [];
+        if (trang_thai.has('Đang xử lý')) trangThaiFilters.push('ma_nx.like.%...%');
+        if (trang_thai.has('Đã xử lý')) trangThaiFilters.push('ma_nx.not.like.%...%');
+        if (trangThaiFilters.length > 0) { query.or(trangThaiFilters.join(',')); countQuery.or(trangThaiFilters.join(',')); }
+
 
         const { count, error: countError } = await countQuery;
         if (countError) throw countError;
@@ -1857,7 +2159,7 @@
         let { data, error } = await query.order('ma_nx');
         if (error) throw error;
 
-        if (data.length === 0 && !currentEditState.donhang) {
+        if (data.length === 0) {
           donhangTableBody.innerHTML = `<tr><td colspan="13" class="td-center">Chưa có dữ liệu.</td></tr>`;
           return;
         }
@@ -1866,17 +2168,17 @@
           <tr id="donhang-row-${item.ma_nx}" class="selectable-row hover:bg-gray-50 dark:hover:bg-gray-700" onclick="toggleRowSelection('donhang', '${item.ma_nx}', event)">
             <td class="td"><input type="checkbox" class="row-checkbox" data-view="donhang" data-id="${item.ma_nx}"></td>
             <td class="td text-sm text-gray-600 dark:text-gray-300">${item.ma_kho || ''}</td>
-            <td class="td text-sm text-gray-600 dark:text-gray-300">${item.thoi_gian ? new Date(item.thoi_gian).toLocaleDateString() : ''}</td>
+            <td class="td text-sm text-gray-600 dark:text-gray-300">${formatDate(item.thoi_gian)}</td>
             <td class="td text-sm font-medium text-gray-900 dark:text-gray-100">${item.ma_nx}</td>
             <td class="td text-sm text-gray-600 dark:text-gray-300">${item.user || ''}</td>
             <td class="td text-sm text-gray-600 dark:text-gray-300">${item.nganh || ''}</td>
             <td class="td text-sm text-gray-600 dark:text-gray-300">${item.muc_dich || ''}</td>
             <td class="td text-sm text-gray-600 dark:text-gray-300">${item.dia_chi || ''}</td>
             <td class="td text-sm text-gray-600 dark:text-gray-300">${item.ghi_chu || ''}</td>
-            <td class="td text-sm text-gray-600 dark:text-gray-300">${item.order || ''}</td>
-            <td class="td text-sm text-gray-600 dark:text-gray-300">${item.pkl || ''}</td>
-            <td class="td text-sm text-gray-600 dark:text-gray-300">${item.done ? '✔️' : '❌'}</td>
-            <td class="td text-sm text-gray-600 dark:text-gray-300">${item.image ? 'Có' : ''}</td>
+            <td class="td">${createLinkIcon(item.order)}</td>
+            <td class="td">${createLinkIcon(item.pkl)}</td>
+            <td class="td">${createLinkIcon(item.done)}</td>
+            <td class="td">${createLinkIcon(item.image)}</td>
           </tr>
         `).join('');
         attachCheckboxListeners('donhang');
@@ -1890,65 +2192,39 @@
     }
 
     async function editDonhang(ma_nx) {
-      try {
-        let { data, error } = await supabase.from('DONHANG').select('*').eq('ma_nx', ma_nx).single();
-        if (error) throw error;
-        
-        currentEditState.donhang.data[ma_nx] = data;
+        try {
+            showToast('Đang tải dữ liệu đơn hàng...', 'warning');
+            const { data: donhang, error: donhangError } = await supabase.from('DONHANG').select('*').eq('ma_nx', ma_nx).single();
+            if (donhangError) throw donhangError;
+            if (!donhang) {
+                showToast(`Không tìm thấy đơn hàng với mã: ${ma_nx}`, 'error');
+                return;
+            }
 
-        const row = document.getElementById(`donhang-row-${ma_nx}`);
-        row.innerHTML = createEditableRowContents('donhang', data, true);
-        row.setAttribute('data-editing', 'true');
-        showInlineEditControls();
-      } catch (error) {
-        console.error('Lỗi lấy dữ liệu sửa:', error);
-        showToast(`Lỗi lấy dữ liệu sửa: ${error.message}`, 'error');
-      }
-    }
+            const { data: chitiet, error: chitietError } = await supabase.from('CHITIET').select('*').eq('ma_nx', ma_nx);
+            if (chitietError) throw chitietError;
 
-    function createNewDonhangRow(newId, defaultData = {}) {
-      const tableBody = document.getElementById('donhang-table-body');
-      const rowHtml = `<tr id="donhang-row-${newId}" data-editing="true">${createEditableRowContents('donhang', defaultData, false)}</tr>`;
-      tableBody.insertAdjacentHTML('afterbegin', rowHtml);
-      return document.getElementById(`donhang-row-${newId}`);
-    }
+            await openDonhangModal('edit', { donhang, chitiet });
 
-    async function saveDonhang(data, mode, id) {
-      const cleanData = {
-        ma_nx: data.ma_nx,
-        ma_kho: data.ma_kho || null,
-        thoi_gian: data.thoi_gian || null,
-        user: data.user || null,
-        nganh: data.nganh || null,
-        muc_dich: data.muc_dich || null,
-        dia_chi: data.dia_chi || null,
-        ghi_chu: data.ghi_chu || null,
-        order: data.order || null,
-        pkl: data.pkl || null,
-        image: data.image || null,
-        done: data.done === 'on' || data.done === true,
-      };
-
-      let error;
-      if (mode === 'edit') {
-        delete cleanData.ma_nx; 
-        const { error: updateError } = await supabase.from('DONHANG').update(cleanData).eq('ma_nx', id);
-        error = updateError;
-      } else {
-        const { error: insertError } = await supabase.from('DONHANG').insert([cleanData]);
-        error = insertError;
-      }
-      if (error) throw error;
-      return true;
+        } catch (error) {
+            console.error('Lỗi tải đơn hàng để sửa:', error);
+            showToast(`Lỗi tải đơn hàng: ${error.message}`, 'error');
+        }
     }
 
     async function deleteDonhang(ma_nx) {
-      showConfirm(`Bạn có chắc muốn xóa đơn hàng '${ma_nx}' không?`, async () => {
+      showConfirm(`Bạn có chắc muốn xóa đơn hàng '${ma_nx}' và tất cả chi tiết liên quan không?`, async () => {
         try {
-          const { error } = await supabase.from('DONHANG').delete().eq('ma_nx', ma_nx);
-          if (error) throw error;
+          // Xóa chi tiết trước
+          const { error: chitietError } = await supabase.from('CHITIET').delete().eq('ma_nx', ma_nx);
+          if (chitietError) throw chitietError;
+
+          // Xóa đơn hàng
+          const { error: donhangError } = await supabase.from('DONHANG').delete().eq('ma_nx', ma_nx);
+          if (donhangError) throw donhangError;
+
           showToast(`Đã xóa đơn hàng '${ma_nx}'!`, 'success');
-          loadDataForCurrentView();
+          loadDonhang();
         } catch (error) {
           console.error('Lỗi xóa đơn hàng:', error);
           showToast(`Lỗi khi xóa: ${error.message}`, 'error');
@@ -1958,7 +2234,7 @@
 
     // ===== 10. CRUD cho CHI TIẾT (CHITIET) =====
     async function loadChitiet() {
-        chitietTableBody.innerHTML = `<tr><td colspan="17" class="td-center">Đang tải dữ liệu...</td></tr>`;
+        clearSelection();
         const searchTerm = toolbar.search.value.toLowerCase();
         try {
             let query = supabase.from('CHITIET').select('*');
@@ -1970,6 +2246,27 @@
                 countQuery = countQuery.or(searchFilter);
             }
             
+            const { thoi_gian_from, thoi_gian_to, ma_kho, ma_nx, ma_vt, lot, nganh, phu_trach, loai_don, trang_thai } = chitietFilterState;
+            if (thoi_gian_from) { query.gte('thoi_gian', `${thoi_gian_from}T00:00:00`); countQuery.gte('thoi_gian', `${thoi_gian_from}T00:00:00`); }
+            if (thoi_gian_to) { query.lte('thoi_gian', `${thoi_gian_to}T23:59:59`); countQuery.lte('thoi_gian', `${thoi_gian_to}T23:59:59`); }
+            if (ma_kho.size > 0) { query.in('ma_kho', Array.from(ma_kho)); countQuery.in('ma_kho', Array.from(ma_kho)); }
+            if (ma_nx.size > 0) { query.in('ma_nx', Array.from(ma_nx)); countQuery.in('ma_nx', Array.from(ma_nx)); }
+            if (ma_vt.size > 0) { query.in('ma_vt', Array.from(ma_vt)); countQuery.in('ma_vt', Array.from(ma_vt)); }
+            if (lot.size > 0) { query.in('lot', Array.from(lot)); countQuery.in('lot', Array.from(lot)); }
+            if (nganh.size > 0) { query.in('nganh', Array.from(nganh)); countQuery.in('nganh', Array.from(nganh)); }
+            if (phu_trach.size > 0) { query.in('phu_trach', Array.from(phu_trach)); countQuery.in('phu_trach', Array.from(phu_trach)); }
+            
+            const loaiDonFilters = [];
+            if (loai_don.has('Nhập')) loaiDonFilters.push('ma_kho.ilike.%IN%');
+            if (loai_don.has('Xuất')) loaiDonFilters.push('ma_kho.ilike.%OUT%');
+            if (loaiDonFilters.length > 0) { query.or(loaiDonFilters.join(',')); countQuery.or(loaiDonFilters.join(',')); }
+            
+            const trangThaiFilters = [];
+            if (trang_thai.has('Đang xử lý')) trangThaiFilters.push('ma_nx.like.%...%');
+            if (trang_thai.has('Đã xử lý')) trangThaiFilters.push('ma_nx.not.like.%...%');
+            if (trangThaiFilters.length > 0) { query.or(trangThaiFilters.join(',')); countQuery.or(trangThaiFilters.join(',')); }
+
+
             const { count, error: countError } = await countQuery;
             if (countError) throw countError;
             pagination.totalItems = count || 0;
@@ -1979,7 +2276,7 @@
             const to = from + pagination.limit - 1;
             query = query.range(from, to);
 
-            let { data, error } = await query.order('id');
+            let { data, error } = await query.order('id', { ascending: false });
             if (error) throw error;
 
             if (data.length === 0) {
@@ -1991,14 +2288,14 @@
             <tr id="chitiet-row-${item.id}" class="selectable-row hover:bg-gray-50 dark:hover:bg-gray-700" onclick="toggleRowSelection('chitiet', '${item.id}', event)">
                 <td class="td"><input type="checkbox" class="row-checkbox" data-view="chitiet" data-id="${item.id}"></td>
                 <td class="td text-sm font-medium text-gray-900 dark:text-gray-100">${item.id}</td>
-                <td class="td text-sm text-gray-600 dark:text-gray-300">${item.thoi_gian ? new Date(item.thoi_gian).toLocaleString('vi-VN') : ''}</td>
+                <td class="td text-sm text-gray-600 dark:text-gray-300">${formatDate(item.thoi_gian)}</td>
                 <td class="td text-sm text-gray-600 dark:text-gray-300">${item.ma_kho || ''}</td>
                 <td class="td text-sm text-gray-600 dark:text-gray-300">${item.ma_nx || ''}</td>
                 <td class="td text-sm text-gray-600 dark:text-gray-300">${item.ma_vach || ''}</td>
                 <td class="td text-sm text-gray-600 dark:text-gray-300">${item.ma_vt || ''}</td>
                 <td class="td text-sm text-gray-600 dark:text-gray-300">${item.ten_vt || ''}</td>
                 <td class="td text-sm text-gray-600 dark:text-gray-300">${item.lot || ''}</td>
-                <td class="td text-sm text-gray-600 dark:text-gray-300">${item.date || ''}</td>
+                <td class="td text-sm text-gray-600 dark:text-gray-300">${formatDate(item.date)}</td>
                 <td class="td text-sm text-gray-600 dark:text-gray-300">${item.yeu_cau || ''}</td>
                 <td class="td text-sm text-gray-600 dark:text-gray-300">${item.so_luong || 0}</td>
                 <td class="td text-sm text-gray-600 dark:text-gray-300">${item.loai || ''}</td>
@@ -2017,14 +2314,13 @@
         updateLastSyncTime();
     }
 
-
     async function deleteChitiet(id) {
       showConfirm(`Bạn có chắc muốn xóa chi tiết ID '${id}' không?`, async () => {
         try {
           const { error } = await supabase.from('CHITIET').delete().eq('id', id);
           if (error) throw error;
           showToast(`Đã xóa chi tiết ID '${id}'!`, 'success');
-          loadDataForCurrentView();
+          loadChitiet();
         } catch (error) {
           console.error('Lỗi xóa chi tiết:', error);
           showToast(`Lỗi khi xóa: ${error.message}`, 'error');
@@ -2101,6 +2397,72 @@
         }
     }
 
+    async function populateDonhangFilters() {
+      if (donhangFiltersPopulated) return;
+      console.log('Đang tải dữ liệu cho bộ lọc Đơn Hàng...');
+      try {
+        const [maKhos, maNxs] = await Promise.all([
+          getUniqueColumnValues('DONHANG', 'ma_kho'),
+          getUniqueColumnValues('DONHANG', 'ma_nx')
+        ]);
+        const filters = document.querySelectorAll('#filter-donhang .custom-filter');
+        filters.forEach(filter => {
+          const column = filter.dataset.filterColumn;
+          let items = [];
+          if (column === 'ma_kho') items = maKhos;
+          if (column === 'ma_nx') items = maNxs;
+          if (column === 'loai_don') {
+            populateCustomFilterList(filter, ['Nhập', 'Xuất'], column, donhangFilterState, false);
+          } else if (column === 'trang_thai') {
+            populateCustomFilterList(filter, ['Đang xử lý', 'Đã xử lý'], column, donhangFilterState, false);
+          } else {
+            populateCustomFilterList(filter, items, column, donhangFilterState);
+          }
+        });
+        donhangFiltersPopulated = true;
+      } catch (error) {
+        console.error('Lỗi khi tải bộ lọc Đơn Hàng:', error.message);
+        showToast(`Lỗi tải bộ lọc Đơn Hàng: ${error.message}`, 'error');
+      }
+    }
+
+    async function populateChitietFilters() {
+      if (chitietFiltersPopulated) return;
+      console.log('Đang tải dữ liệu cho bộ lọc Chi Tiết...');
+      try {
+        const [maKhos, maNxs, maVts, lots, nganhs, phuTrachs] = await Promise.all([
+          getUniqueColumnValues('CHITIET', 'ma_kho'),
+          getUniqueColumnValues('CHITIET', 'ma_nx'),
+          getUniqueColumnValues('CHITIET', 'ma_vt'),
+          getUniqueColumnValues('CHITIET', 'lot'),
+          getUniqueColumnValues('CHITIET', 'nganh'),
+          getUniqueColumnValues('CHITIET', 'phu_trach')
+        ]);
+        const filters = document.querySelectorAll('#filter-chitiet .custom-filter');
+        filters.forEach(filter => {
+          const column = filter.dataset.filterColumn;
+          let items = [];
+          if (column === 'ma_kho') items = maKhos;
+          if (column === 'ma_nx') items = maNxs;
+          if (column === 'ma_vt') items = maVts;
+          if (column === 'lot') items = lots;
+          if (column === 'nganh') items = nganhs;
+          if (column === 'phu_trach') items = phuTrachs;
+
+          if (column === 'loai_don') {
+            populateCustomFilterList(filter, ['Nhập', 'Xuất'], column, chitietFilterState, false);
+          } else if (column === 'trang_thai') {
+            populateCustomFilterList(filter, ['Đang xử lý', 'Đã xử lý'], column, chitietFilterState, false);
+          } else {
+            populateCustomFilterList(filter, items, column, chitietFilterState);
+          }
+        });
+        chitietFiltersPopulated = true;
+      } catch (error) {
+        console.error('Lỗi khi tải bộ lọc Chi Tiết:', error.message);
+        showToast(`Lỗi tải bộ lọc Chi Tiết: ${error.message}`, 'error');
+      }
+    }
 
     function populateCustomFilterList(filterElement, items, column, state, includeSelectAll = true) {
       const listElement = filterElement.querySelector('.custom-filter-list');
@@ -2131,18 +2493,25 @@
         }
         if (!filterElement) return;
 
-        const state = (currentView === 'sanpham') ? sanphamFilterState : tonkhoFilterState;
+        let state;
+        if (currentView === 'sanpham') state = sanphamFilterState;
+        else if (currentView === 'tonkho') state = tonkhoFilterState;
+        else if (currentView === 'donhang') state = donhangFilterState;
+        else if (currentView === 'chitiet') state = chitietFilterState;
+        else return;
+
         const textElement = filterElement.querySelector('.custom-filter-text');
         const selectedCount = state[column].size;
         
         const defaultTexts = {
             'ma_vt': 'Tất cả Mã VT', 'ten_vt': 'Tất cả Tên VT', 'nganh': 'Tất cả Ngành', 
             'phu_trach': 'Tất cả Phụ trách', 'lot': 'Tất cả LOT', 'tinh_trang': 'Tất cả Tình Trạng',
-            'ton_cuoi': 'Tất cả'
+            'ma_kho': 'Tất cả Mã Kho', 'ma_nx': 'Tất cả Mã NX',
+            'ton_cuoi': 'Tất cả', 'loai_don': 'Tất cả', 'trang_thai': 'Tất cả'
         };
 
         if (selectedCount === 0) {
-            textElement.textContent = defaultTexts[column] || `Tất cả ${column}`;
+            textElement.textContent = defaultTexts[column] || `Tất cả`;
         } else if (selectedCount === 1) {
             textElement.textContent = state[column].values().next().value;
         } else {
@@ -2153,7 +2522,7 @@
 
     // ===== 11. HÀM HELPER MỚI CHO INLINE EDIT VÀ SYNC =====
     async function loadSanphamForLookup() {
-        if (sanphamDataForLookup.length > 0) return;
+        if (sanphamDataForLookup.length > 0) return; // Chỉ tải 1 lần
         try {
             let allProducts = [];
             let page = 0;
@@ -2182,7 +2551,6 @@
         }
     }
 
-
     function handleTonkhoInputChange(element) {
         const row = element.closest('tr');
         if (!row) return;
@@ -2196,6 +2564,13 @@
         const maVachInput = row.querySelector('input[name="ma_vach"]');
         const tinhTrangCell = row.querySelector('.tinh-trang-cell');
         
+        // MỚI: Lấy input Tồn Đầu và Tồn Cuối
+        const tonDauInput = row.querySelector('input[name="ton_dau"]');
+        const tonCuoiInput = row.querySelector('input[name="ton_cuoi"]'); 
+        const nhapInput = row.querySelector('input[name="nhap"]'); 
+        const xuatInput = row.querySelector('input[name="xuat"]'); 
+
+
         if (element.name === 'ma_vt') {
             const selectedProduct = sanphamDataForLookup.find(p => p.ma_vt === maVtInput.value);
             if (selectedProduct) {
@@ -2209,68 +2584,78 @@
             }
         }
         
+        // MỚI: Cập nhật Tồn Cuối khi Tồn Đầu thay đổi
+        if (element.name === 'ton_dau') {
+            const ton_dau = Number(tonDauInput.value) || 0;
+            const nhap = Number(nhapInput.value) || 0;
+            const xuat = Number(xuatInput.value) || 0;
+            tonCuoiInput.value = ton_dau + nhap - xuat;
+        }
+        
         let selectedDate = null;
+        let datePart = ''; // MỚI: Khởi tạo datePart
         const dateValue = dateInput.value;
         if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateValue)) {
             const parts = dateValue.split('/');
             selectedDate = new Date(parts[2], parts[1] - 1, parts[0]);
             if (selectedDate.getFullYear() != parts[2] || selectedDate.getMonth() + 1 != parts[1] || selectedDate.getDate() != parts[0]) {
                  selectedDate = null;
+            } else {
+                // THAY ĐỔI: Format là dd.mm.yyyy
+                datePart = `${String(parts[0]).padStart(2,'0')}.${String(parts[1]).padStart(2,'0')}.${parts[2]}`;
             }
         }
 
         if (element.name === 'date' || element.name === 'ma_vt') { 
             let tinhTrangInputHTML = '';
+            const currentTinhTrang = tinhTrangCell.querySelector('select, input')?.value || '';
+
+            let canSelectOtherOptions = true;
             if (selectedDate) {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const threeMonthsFromNow = new Date();
-                threeMonthsFromNow.setMonth(threeMonthsFromNow.getMonth() + 3);
+                const today = new Date(); today.setHours(0, 0, 0, 0);
+                const threeMonthsFromNow = new Date(); threeMonthsFromNow.setMonth(threeMonthsFromNow.getMonth() + 3);
 
                 if (selectedDate < today) {
                     tinhTrangInputHTML = `<input type="text" name="tinh_trang" value="Hết Date" class="inline-input bg-gray-input" readonly>`;
+                    canSelectOtherOptions = false;
                 } else if (selectedDate <= threeMonthsFromNow) {
                     tinhTrangInputHTML = `<input type="text" name="tinh_trang" value="Cận Date" class="inline-input bg-gray-input" readonly>`;
-                } else {
-                    tinhTrangInputHTML = `
-                        <select name="tinh_trang" class="inline-input">
-                            <option value=""></option>
-                            <option value="Đang Sử Dụng">Đang Sử Dụng</option>
-                            <option value="Hàng Hư">Hàng Hư</option>
-                        </select>
-                    `;
+                    canSelectOtherOptions = false;
                 }
-            } else {
-                tinhTrangInputHTML = `<input type="text" name="tinh_trang" value="" class="inline-input bg-gray-input" readonly placeholder="Chọn ngày">`;
             }
+            
+            if (canSelectOtherOptions) {
+                 const isDangSuDung = currentTinhTrang === 'Đang Sử Dụng';
+                 const isHangHu = currentTinhTrang === 'Hàng Hư';
+                 tinhTrangInputHTML = `
+                    <select name="tinh_trang" class="inline-input">
+                        <option value=""></option>
+                        <option value="Đang Sử Dụng" ${isDangSuDung ? 'selected' : ''}>Đang Sử Dụng</option>
+                        <option value="Hàng Hư" ${isHangHu ? 'selected' : ''}>Hàng Hư</option>
+                    </select>`;
+            }
+
             if (tinhTrangCell) {
               tinhTrangCell.innerHTML = tinhTrangInputHTML;
             }
         }
         
-        const maVt = maVtInput.value;
-        const lot = lotInput.value;
-        if (maVt && lot && selectedDate) {
-            const day = String(selectedDate.getDate()).padStart(2, '0');
-            const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-            const year = selectedDate.getFullYear();
-            const formattedDate = `${day}.${month}.${year}`;
-            maVachInput.value = `${maVt}${lot}${formattedDate}`;
-        } else {
-            maVachInput.value = '';
-        }
+        // THAY ĐỔI: Logic tạo Mã Vạch mới
+        const maVtPart = maVtInput.value || '';
+        const lotPart = lotInput.value || ''; // THAY ĐỔI: Trống nếu không có
+        // datePart đã được tạo ở trên
+        
+        maVachInput.value = `${maVtPart}${lotPart}${datePart}`;
     }
 
-
-    function handleSync() {
-        if (Object.keys(currentEditState).length > 0) {
+    async function handleSync() {
+        if (currentEditState.mode) {
             showToast('Không thể đồng bộ khi đang chỉnh sửa!', 'warning');
             return;
         }
-
-        console.log(`Bắt đầu đồng bộ thủ công cho view: ${currentView}`);
-        showToast(`Đang đồng bộ dữ liệu ${currentView}...`, 'warning');
-        loadDataForCurrentView();
+        showToast('Đang đồng bộ...', 'warning', 5000);
+        await loadDataForCurrentView();
+        showToast('Đã đồng bộ thành công!', 'success');
     }
 
     function updateLastSyncTime() {
@@ -2281,9 +2666,6 @@
             second: '2-digit' 
         });
         lastSyncTimeSpan.textContent = `Lúc: ${timeString}`;
-        if (window.appLoaded) {
-            showToast('Đồng bộ dữ liệu thành công!', 'success');
-        }
     }
 
     function handleFontSizeChange() {
@@ -2294,6 +2676,7 @@
     function showInlineEditControls() {
       toolbar.save.hidden = false;
       toolbar.cancel.hidden = false;
+
       toolbar.add.disabled = true;
       toolbar.edit.disabled = true;
       toolbar.delete.disabled = true;
@@ -2301,56 +2684,78 @@
       toolbar.search.disabled = true;
       toolbar.clearFilter.disabled = true;
       toolbar.sync.disabled = true;
+
+      navLinks.forEach(link => link.style.pointerEvents = 'none');
     }
 
     function hideInlineEditControls() {
       toolbar.save.hidden = true;
       toolbar.cancel.hidden = true;
+
       toolbar.add.disabled = false;
       toolbar.edit.disabled = !selectedItem.id;
       toolbar.delete.disabled = !selectedItem.id;
+
       toolbar.excel.disabled = false;
       toolbar.search.disabled = false;
       toolbar.clearFilter.disabled = false;
       toolbar.sync.disabled = false;
+
+      navLinks.forEach(link => link.style.pointerEvents = 'auto');
+
+      currentEditState = { view: null, id: null, mode: null };
     }
 
     async function handleToolbarSave() {
-      const state = currentEditState[currentView];
-      if (!state) return;
+      const { view, id, mode } = currentEditState;
+      if (!view) return;
+
+      const editRows = document.querySelectorAll('tr[data-editing="true"]');
+      if (editRows.length === 0) {
+        hideInlineEditControls();
+        return;
+      }
 
       try {
-        let allSavesSuccessful = true; 
-        showToast('Đang lưu...', 'warning');
+        let allSavesSuccessful = true;
 
-        for (const [rowId, rowData] of Object.entries(state.data)) {
-            let saveResult = true;
-            const saveId = (state.mode === 'edit') ? rowId : null;
-
-            switch (currentView) {
-                case 'sanpham': 
-                    saveResult = await saveSanpham(rowData, state.mode, saveId); 
-                    break;
-                case 'tonkho': 
-                    saveResult = await saveTonkho(rowData, state.mode, saveId); 
-                    break;
-                case 'donhang': 
-                    saveResult = await saveDonhang(rowData, state.mode, saveId); 
-                    break;
+        for (const editRow of editRows) {
+          const data = {};
+          const inputs = editRow.querySelectorAll('input, textarea, select');
+          inputs.forEach(input => {
+            const name = input.name;
+            if (name) {
+              data[name] = (input.type === 'checkbox') ? input.checked : input.value;
             }
+          });
+
+          const rowId = editRow.id.split('-row-')[1];
+          const saveId = (mode === 'edit') ? rowId : null;
+          let saveResult = true;
+
+          showToast('Đang lưu...', 'warning');
+
+          switch (view) {
+            case 'sanpham': 
+              saveResult = await saveSanpham(data, mode, saveId); 
+              break;
+            case 'tonkho': 
+              saveResult = await saveTonkho(data, mode, saveId); 
+              break;
+          }
           
-            if (!saveResult) {
-                allSavesSuccessful = false;
-                break; 
-            }
+          if (!saveResult) {
+            allSavesSuccessful = false;
+            break; 
+          }
         }
 
-        if (allSavesSuccessful) {
-            delete currentEditState[currentView]; // Xóa state của view hiện tại
-            hideInlineEditControls();
-            showToast('Lưu thành công!', 'success');
-            loadDataForCurrentView();
+         if (allSavesSuccessful) {
+          hideInlineEditControls();
+          showToast('Lưu thành công!', 'success');
+          loadDataForCurrentView();
         }
+
       } catch (error) {
         console.error('Lỗi lưu dữ liệu:', error);
         showToast(`Lỗi khi lưu: ${error.message}`, 'error');
@@ -2358,19 +2763,21 @@
     }
 
     function handleToolbarCancel() {
-        if (currentEditState[currentView]) {
-            delete currentEditState[currentView]; // Xóa state của view hiện tại
-            hideInlineEditControls();
-            loadDataForCurrentView(); // Tải lại để loại bỏ các dòng edit
-            showToast('Đã hủy thao tác.', 'warning');
-        }
+      const mode = currentEditState.mode;
+      hideInlineEditControls();
+
+      if (mode === 'edit') {
+        loadDataForCurrentView();
+      } else if (mode === 'add') {
+        document.querySelectorAll('tr[data-editing="true"]').forEach(row => row.remove());
+      }
+      showToast('Đã hủy thao tác.', 'warning');
     }
 
     function createEditableRowContents(view, data = {}, isEdit = false) {
       const val = (key) => data[key] || '';
       const num = (key) => data[key] || 0;
       const date = (key) => (data[key] ? data[key].slice(0, 10) : '');
-      const check = (key) => (data[key] ? 'checked' : '');
 
       switch (view) {
         case 'sanpham':
@@ -2382,29 +2789,40 @@
             <td class="td px-6 py-2"><input type="text" name="phu_trach" value="${val('phu_trach')}" class="inline-input"></td>
           `;
         case 'tonkho': {
-            const tonDauValue = num('ton_dau');
             let tinhTrangInputHTML = '';
             const selectedDate = data.date ? new Date(data.date) : null;
+            const currentTinhTrang = val('tinh_trang');
+            const isDangSuDung = currentTinhTrang === 'Đang Sử Dụng';
+            const isHangHu = currentTinhTrang === 'Hàng Hư';
+            
+            let canSelectOtherOptions = true;
             if (selectedDate) {
                 const today = new Date(); today.setHours(0, 0, 0, 0);
                 const threeMonthsFromNow = new Date(); threeMonthsFromNow.setMonth(threeMonthsFromNow.getMonth() + 3);
                 if (selectedDate < today) {
                     tinhTrangInputHTML = `<input type="text" name="tinh_trang" value="Hết Date" class="inline-input bg-gray-input" readonly>`;
+                    canSelectOtherOptions = false;
                 } else if (selectedDate <= threeMonthsFromNow) {
                     tinhTrangInputHTML = `<input type="text" name="tinh_trang" value="Cận Date" class="inline-input bg-gray-input" readonly>`;
-                } else {
-                    const isDangSuDung = val('tinh_trang') === 'Đang Sử Dụng'; const isHangHu = val('tinh_trang') === 'Hàng Hư';
-                    tinhTrangInputHTML = `
-                        <select name="tinh_trang" class="inline-input">
-                            <option value=""></option>
-                            <option value="Đang Sử Dụng" ${isDangSuDung ? 'selected' : ''}>Đang Sử Dụng</option>
-                            <option value="Hàng Hư" ${isHangHu ? 'selected' : ''}>Hàng Hư</option>
-                        </select>`;
+                    canSelectOtherOptions = false;
                 }
-            } else {
-                tinhTrangInputHTML = `<input type="text" name="tinh_trang" value="" class="inline-input bg-gray-input" readonly placeholder="Chọn ngày">`;
             }
             
+            if (canSelectOtherOptions) {
+                 tinhTrangInputHTML = `
+                    <select name="tinh_trang" class="inline-input">
+                        <option value=""></option>
+                        <option value="Đang Sử Dụng" ${isDangSuDung ? 'selected' : ''}>Đang Sử Dụng</option>
+                        <option value="Hàng Hư" ${isHangHu ? 'selected' : ''}>Hàng Hư</option>
+                    </select>`;
+            }
+            
+            // MỚI: Lấy giá trị nhap, xuat, ton_cuoi từ data
+            const nhap = data.nhap || 0;
+            const xuat = data.xuat || 0;
+            const ton_cuoi = data.ton_cuoi !== undefined ? data.ton_cuoi : num('ton_dau'); // Fallback về ton_dau nếu chưa có
+
+
             const maVtSelectorHTML = `
               <div class="inline-custom-select relative">
                 <input type="hidden" name="ma_vt" value="${val('ma_vt')}">
@@ -2424,408 +2842,619 @@
                 <td class="td px-6 py-2"><input type="text" name="ma_vach" value="${val('ma_vach')}" class="inline-input bg-gray-input" readonly required placeholder="Tự động tạo"></td>
                 <td class="td px-6 py-2">${maVtSelectorHTML}</td>
                 <td class="td px-6 py-2"><input type="text" name="ten_vt" value="${val('ten_vt')}" class="inline-input bg-gray-input" readonly></td>
-                <td class="td px-6 py-2"><input type="text" name="lot" value="${val('lot')}" class="inline-input" required oninput="handleTonkhoInputChange(this)"></td>
-                <td class="td px-6 py-2"><input type="text" name="date" value="${formatDate(data.date)}" placeholder="dd/mm/yyyy" class="inline-input" required oninput="handleTonkhoInputChange(this)"></td>
-                <td class="td px-6 py-2"><input type="number" name="ton_dau" value="${tonDauValue}" class="inline-input" required></td>
-                <td class="td px-6 py-2"><input type="text" value="Tự động" class="inline-input bg-gray-input" readonly></td>
-                <td class="td px-6 py-2"><input type="text" value="Tự động" class="inline-input bg-gray-input" readonly></td>
-                <td class="td px-6 py-2"><input type="text" value="${tonDauValue}" class="inline-input bg-gray-input" readonly></td>
+                <td class="td px-6 py-2"><input type="text" name="lot" value="${val('lot')}" class="inline-input" oninput="handleTonkhoInputChange(this)"></td>
+                <td class="td px-6 py-2"><input type="text" name="date" value="${formatDate(data.date)}" placeholder="dd/mm/yyyy" class="inline-input" oninput="handleTonkhoInputChange(this)"></td>
+                <td class="td px-6 py-2"><input type="number" name="ton_dau" value="${num('ton_dau')}" class="inline-input" required oninput="handleTonkhoInputChange(this)"></td>
+                
+                <!-- THAY ĐỔI: Thêm name và class, cập nhật value -->
+                <td class="td px-6 py-2"><input type="text" name="nhap" value="${nhap}" class="inline-input-text bg-gray-input text-center text-nhap" readonly></td>
+                <td class="td px-6 py-2"><input type="text" name="xuat" value="${xuat}" class="inline-input-text bg-gray-input text-center text-xuat" readonly></td>
+                <td class="td px-6 py-2"><input type="text" name="ton_cuoi" value="${ton_cuoi}" class="inline-input-text bg-gray-input text-center" readonly></td>
+
                 <td class="td px-6 py-2 tinh-trang-cell">${tinhTrangInputHTML}</td>
                 <td class="td px-6 py-2"><input type="text" name="tray" value="${val('tray')}" class="inline-input"></td>
                 <td class="td px-6 py-2"><input type="text" name="nganh" value="${val('nganh')}" class="inline-input bg-gray-input" readonly></td>
                 <td class="td px-6 py-2"><input type="text" name="phu_trach" value="${val('phu_trach')}" class="inline-input bg-gray-input" readonly></td>
             `;
         }
-        case 'donhang':
-          return `
-            <td class="td px-6 py-2"><input type="checkbox" class="row-checkbox" disabled></td>
-            <td class="td px-6 py-2"><input type="text" name="ma_kho" value="${val('ma_kho')}" class="inline-input"></td>
-            <td class="td px-6 py-2"><input type="date" name="thoi_gian" value="${date('thoi_gian')}" class="inline-input"></td>
-            <td class="td px-6 py-2"><input type="text" name="ma_nx" value="${val('ma_nx')}" class="inline-input" required></td>
-            <td class="td px-6 py-2"><input type="text" name="user" value="${val('user')}" class="inline-input"></td>
-            <td class="td px-6 py-2"><input type="text" name="nganh" value="${val('nganh')}" class="inline-input"></td>
-            <td class="td px-6 py-2"><input type="text" name="muc_dich" value="${val('muc_dich')}" class="inline-input"></td>
-            <td class="td px-6 py-2"><input type="text" name="dia_chi" value="${val('dia_chi')}" class="inline-input"></td>
-            <td class="td px-6 py-2"><input type="text" name="ghi_chu" value="${val('ghi_chu')}" class="inline-input"></td>
-            <td class="td px-6 py-2"><input type="text" name="order" value="${val('order')}" class="inline-input"></td>
-            <td class="td px-6 py-2"><input type="text" name="pkl" value="${val('pkl')}" class="inline-input"></td>
-            <td class="td px-6 py-2"><input type="checkbox" name="done" ${check('done')} class="h-4 w-4"></td>
-            <td class="td px-6 py-2"><input type="text" name="image" value="${val('image')}" class="inline-input"></td>
-          `;
         default: return '';
       }
     } 
 
-    // ===== 11.5. LOGIC TẢI EXCEL =====
-    function buildFilteredQuery(view) {
-      const searchTerm = toolbar.search.value.toLowerCase();
-      let query = supabase.from(view.toUpperCase()).select('*');
+    // ===============================================
+    // ===== 11.B LOGIC FOR DON HANG MODAL (MỚI) =====
+    // ===============================================
 
-      if (searchTerm) {
-        let searchFilter = '';
-        switch (view) {
-          case 'sanpham':
-            searchFilter = `ma_vt.ilike.%${searchTerm}%,ten_vt.ilike.%${searchTerm}%,nganh.ilike.%${searchTerm}%,phu_trach.ilike.%${searchTerm}%`;
-            break;
-          case 'tonkho':
-            searchFilter = `ma_vach.ilike.%${searchTerm}%,ma_vt.ilike.%${searchTerm}%,ten_vt.ilike.%${searchTerm}%,lot.ilike.%${searchTerm}%,tinh_trang.ilike.%${searchTerm}%`;
-            break;
-          case 'chitiet':
-            searchFilter = `ma-kho.ilike.%${searchTerm}%,ma_nx.ilike.%${searchTerm}%,ma_vt.ilike.%${searchTerm}%,ten_vt.ilike.%${searchTerm}%,user.ilike.%${searchTerm}%`;
-            break;
-        }
-        if (searchFilter) {
-          query = query.or(searchFilter);
-        }
-      }
-
-      if (view === 'sanpham') {
-        const { ma_vt, ten_vt, nganh, phu_trach } = sanphamFilterState;
-        if (ma_vt.size > 0) { query = query.in('ma_vt', Array.from(ma_vt)); }
-        if (ten_vt.size > 0) { query = query.in('ten_vt', Array.from(ten_vt)); }
-        if (nganh.size > 0) { query = query.in('nganh', Array.from(nganh)); }
-        if (phu_trach.size > 0) { query = query.in('phu_trach', Array.from(phu_trach)); }
-      }
-      
-      return query;
+    let modalMaVtList = []; // Cache list of Ma VT for the modal
+    
+    function generateUniqueId(length = 6) {
+        return Math.floor(100000 + Math.random() * 900000).toString();
     }
 
-    async function handleDownloadExcel() {
-      if (Object.keys(currentEditState).length > 0) return;
-      
-      const originalText = toolbar.excel.innerHTML;
-      const icon = originalText.substring(0, originalText.indexOf('</svg>') + 6);
-      
-      toolbar.excel.disabled = true;
-      toolbar.excel.innerHTML = `${icon} Đang tải...`;
-      showToast('Đang chuẩn bị tệp Excel...', 'warning');
+    function updateDonhangModalCodes() {
+        if (donhangModalState.mode !== 'add') return; // Only auto-generate for new orders
 
-      try {
-        let data, error;
-        let headers = [];
-        let mappedData = [];
-        let filename = `${currentView.toUpperCase()}.xlsx`;
+        const loaiDon = document.getElementById('donhang-modal-loai_don').value;
+        const nganh = document.getElementById('donhang-modal-nganh').value || '';
+        const maKhoInput = document.getElementById('donhang-modal-ma_kho');
+        const maNxInput = document.getElementById('donhang-modal-ma_nx');
 
-        let query = buildFilteredQuery(currentView);
+        const randomDigits = generateUniqueId(6);
+        const nganhFormatted = nganh.toUpperCase().replace(/\s+/g, '');
 
-        try { ({ data, error } = await query.order('ma_vt')); } 
-        catch(e) { ({ data, error } = await query); }
-        if (error) throw error;
+        if (loaiDon === 'Xuat') {
+            maKhoInput.value = `OUT.JNJ.${randomDigits}`;
+            maNxInput.value = `DO-2025-${nganhFormatted}-`;
+        } else { // Nhap
+            maKhoInput.value = `IN.JNJ.${randomDigits}`;
+            maNxInput.value = `RO-2025-${nganhFormatted}-`;
+        }
+    }
 
-        if (data.length === 0) {
-          showConfirm('Không có dữ liệu để tải.', () => {}, true);
-          return;
+    async function openDonhangModal(mode = 'add', data = null) {
+        donhangModalState.mode = mode;
+        donhangModalState.originalMaNx = data ? data.donhang.ma_nx : null;
+
+        try {
+            donhangModal.saveButton.disabled = true;
+
+            if (nganhDataCache.length === 0) {
+                const { data, error } = await supabase.from('SANPHAM').select('nganh');
+                if (error) throw error;
+                nganhDataCache = [...new Set(data.map(item => item.nganh).filter(Boolean))].sort();
+                const datalist = document.getElementById('nganh-options');
+                datalist.innerHTML = nganhDataCache.map(nganh => `<option value="${nganh}"></option>`).join('');
+            }
+            
+            if (modalMaVtList.length === 0) {
+                 const { data, error } = await supabase.from('TONKHO').select('ma_vt');
+                if (error) throw error;
+                modalMaVtList = [...new Set(data.map(item => item.ma_vt).filter(Boolean))].sort();
+            }
+
+            const modalTitle = document.querySelector('#add-donhang-modal h3');
+            const saveButton = document.getElementById('donhang-modal-save');
+            
+            donhangModal.productsBody.innerHTML = '';
+
+            if (mode === 'edit') {
+                modalTitle.textContent = 'Chỉnh Sửa Đơn Hàng';
+                saveButton.textContent = 'Cập Nhật Đơn Hàng';
+
+                const { donhang, chitiet } = data;
+                // Populate general info
+                document.getElementById('donhang-modal-thoi_gian').value = donhang.thoi_gian ? donhang.thoi_gian.split('T')[0] : '';
+                document.getElementById('donhang-modal-loai_don').value = (donhang.ma_kho || '').toUpperCase().includes('OUT') ? 'Xuat' : 'Nhap';
+                document.getElementById('donhang-modal-ma_kho').value = donhang.ma_kho;
+                document.getElementById('donhang-modal-ma_nx').value = donhang.ma_nx;
+                document.getElementById('donhang-modal-user').value = donhang.user;
+                document.getElementById('donhang-modal-nganh').value = donhang.nganh;
+                document.getElementById('donhang-modal-muc_dich').value = donhang.muc_dich;
+                document.getElementById('donhang-modal-dia_chi').value = donhang.dia_chi;
+                document.getElementById('donhang-modal-ghi_chu').value = donhang.ghi_chu;
+                document.getElementById('donhang-modal-order').value = donhang.order;
+                document.getElementById('donhang-modal-pkl').value = donhang.pkl;
+                document.getElementById('donhang-modal-done').value = donhang.done;
+                document.getElementById('donhang-modal-image').value = donhang.image;
+
+                // Populate product list
+                if (chitiet && chitiet.length > 0) {
+                    for (const product of chitiet) {
+                        await addProductRowToModal(product);
+                    }
+                } else {
+                    addProductRowToModal();
+                }
+
+            } else { // mode 'add'
+                modalTitle.textContent = 'Tạo Đơn Hàng Mới';
+                saveButton.textContent = 'Lưu Đơn Hàng';
+                donhangModal.modal.querySelectorAll('input, textarea, select').forEach(el => {
+                    if (el.tagName !== 'SELECT') el.value = '';
+                });
+                donhangModal.loaiDonSelect.value = 'Xuat';
+                document.getElementById('donhang-modal-thoi_gian').value = new Date().toISOString().split('T')[0];
+                updateDonhangModalCodes(); // Generate initial codes
+                addProductRowToModal();
+            }
+            
+            updateDonhangModalLabels();
+            donhangModal.modal.classList.remove('hidden');
+
+        } catch (error) {
+            console.error('Lỗi mở modal đơn hàng:', error);
+            showToast(`Không thể mở form đơn hàng: ${error.message}`, 'error');
+        } finally {
+            donhangModal.saveButton.disabled = false;
+        }
+    }
+
+
+    function closeDonhangModal() {
+        donhangModal.modal.classList.add('hidden');
+    }
+
+    function updateDonhangModalLabels() {
+        const isExport = donhangModal.loaiDonSelect.value === 'Xuat';
+        donhangModal.labelMaNx.textContent = isExport ? 'Mã Xuất' : 'Mã Nhập';
+        donhangModal.labelUser.textContent = isExport ? 'Xuất Cho' : 'Nhập Từ';
+        donhangModal.headerSoLuong.textContent = isExport ? 'Xuất' : 'Nhập';
+        
+        // Update Tồn Sau for all existing rows as the calculation logic changes
+        donhangModal.productsBody.querySelectorAll('tr').forEach(row => {
+            const soLuongInput = row.querySelector('input[name="so_luong"]');
+            if (soLuongInput) {
+                handleModalProductChange({ target: soLuongInput });
+            }
+        });
+    }
+
+    async function addProductRowToModal(productData = null) {
+        const rowCount = donhangModal.productsBody.children.length;
+        const newRow = document.createElement('tr');
+        newRow.className = 'product-row';
+
+        const maVtOptions = modalMaVtList.map(ma_vt => `<option value="${ma_vt}" ${productData && productData.ma_vt === ma_vt ? 'selected' : ''}>${ma_vt}</option>`).join('');
+
+        newRow.innerHTML = `
+            <td class="modal-td text-center">${rowCount + 1}</td>
+            <td class="modal-td">
+                <select name="ma_vt" class="modal-td-input">
+                    <option value="">Chọn VT</option>
+                    ${maVtOptions}
+                </select>
+            </td>
+            <td class="modal-td"><input type="text" name="ten_vt" class="modal-td-input" readonly value="${productData?.ten_vt || ''}"></td>
+            <td class="modal-td">
+                <select name="lot" class="modal-td-input" ${!productData?.ma_vt ? 'disabled' : ''}>
+                    <option value="">Chọn LOT</option>
+                </select>
+            </td>
+            <td class="modal-td"><input type="text" name="date" class="modal-td-input" readonly value="${productData ? formatDate(productData.date) : ''}"></td>
+            <td class="modal-td"><input type="number" name="yeu_cau" min="1" class="modal-td-input" value="${productData?.yeu_cau || ''}"></td>
+            <td class="modal-td"><input type="number" name="so_luong" min="0" class="modal-td-input" value="${productData?.so_luong || ''}"></td>
+            <td class="modal-td ton-sau-cell"><input type="text" name="ton_sau" class="modal-td-input" readonly></td>
+            <td class="modal-td"><input type="text" name="ma_vach" class="modal-td-input" value="${productData?.ma_vach || ''}"></td>
+            <td class="modal-td">
+                <select name="loai" class="modal-td-input">
+                    <option value="Tiêu Hao" ${productData?.loai === 'Tiêu Hao' ? 'selected' : ''}>Tiêu Hao</option>
+                    <option value="Trưng Bày" ${productData?.loai === 'Trưng Bày' ? 'selected' : ''}>Trưng Bày</option>
+                </select>
+            </td>
+            <td class="modal-td text-center">
+                <button type="button" class="delete-product-row text-red-500 hover:text-red-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                </button>
+            </td>
+        `;
+        donhangModal.productsBody.appendChild(newRow);
+
+        if (productData && productData.ma_vt) {
+            const lotSelect = newRow.querySelector('select[name="lot"]');
+            const { data: lotData, error: lotError } = await supabase.from('TONKHO').select('lot').eq('ma_vt', productData.ma_vt);
+            if (lotError) console.error(lotError);
+            else {
+                const uniqueLots = [...new Set(lotData.map(item => item.lot))].filter(Boolean).sort();
+                lotSelect.innerHTML += uniqueLots.map(lot => `<option value="${lot}" ${productData.lot === lot ? 'selected' : ''}>${lot}</option>`).join('');
+                lotSelect.disabled = false;
+            }
+            const maVtSelect = newRow.querySelector('select[name="ma_vt"]');
+            await handleModalProductChange({ target: maVtSelect });
+            await handleModalProductChange({ target: lotSelect });
+        }
+    }
+
+    function deleteModalProductRow(button) {
+        button.closest('tr').remove();
+        // Re-index STT
+        donhangModal.productsBody.querySelectorAll('tr').forEach((r, index) => {
+            r.cells[0].textContent = index + 1;
+        });
+    }
+
+    async function handleModalProductChange(event) {
+        const input = event.target;
+        if (!input) return;
+        const row = input.closest('tr');
+        if (!row) return;
+
+        const maVtSelect = row.querySelector('select[name="ma_vt"]');
+        const tenVtInput = row.querySelector('input[name="ten_vt"]');
+        const lotSelect = row.querySelector('select[name="lot"]');
+        const dateInput = row.querySelector('input[name="date"]');
+        const soLuongInput = row.querySelector('input[name="so_luong"]');
+        const tonSauInput = row.querySelector('input[name="ton_sau"]');
+        const maVachInput = row.querySelector('input[name="ma_vach"]');
+
+        let triggerBarcodeUpdate = false; 
+
+        if (input.name === 'ma_vt') {
+            triggerBarcodeUpdate = true;
+            const selectedMaVt = maVtSelect.value;
+            tenVtInput.value = '';
+            lotSelect.innerHTML = '<option value="">Chọn LOT</option>';
+            lotSelect.disabled = true;
+            dateInput.value = '';
+            tonSauInput.value = '';
+            row.dataset.currentStock = '0';
+            row.dataset.phuTrach = '';
+            row.dataset.nganh = '';
+
+            if (selectedMaVt) {
+                try {
+                    const { data: sanphamData, error: spError } = await supabase.from('SANPHAM').select('ten_vt, phu_trach, nganh').eq('ma_vt', selectedMaVt).single();
+                    if (spError) throw spError;
+                    if (sanphamData) {
+                        tenVtInput.value = sanphamData.ten_vt;
+                        row.dataset.phuTrach = sanphamData.phu_trach || '';
+                        row.dataset.nganh = sanphamData.nganh || '';
+                    }
+
+                    const { data: lotData, error: lotError } = await supabase.from('TONKHO').select('lot').eq('ma_vt', selectedMaVt);
+                    if (lotError) throw lotError;
+
+                    const uniqueLots = [...new Set(lotData.map(item => item.lot))].filter(Boolean).sort();
+                    lotSelect.innerHTML += uniqueLots.map(lot => `<option value="${lot}">${lot}</option>`).join('');
+                    lotSelect.disabled = false;
+                } catch (error) {
+                    console.error("Lỗi tải dữ liệu cho Mã VT:", error);
+                    showToast(`Lỗi tải dữ liệu cho Mã VT ${selectedMaVt}`, 'error');
+                }
+            }
         }
 
-        switch (currentView) {
-          case 'sanpham':
-            headers = ['Mã VT', 'Tên VT', 'Ngành', 'Phụ trách'];
-            mappedData = data.map(item => [item.ma_vt, item.ten_vt, item.nganh, item.phu_trach]);
-            break;
+        if (input.name === 'lot') {
+            triggerBarcodeUpdate = true;
+            const selectedMaVt = maVtSelect.value;
+            const selectedLot = lotSelect.value;
+            dateInput.value = '';
+            tonSauInput.value = '';
+            row.dataset.currentStock = '0';
+
+            if (selectedMaVt && selectedLot) {
+                try {
+                    const { data: tonkhoItem, error: tonkhoError } = await supabase
+                        .from('TONKHO').select('ton_dau, date').eq('ma_vt', selectedMaVt).eq('lot', selectedLot).maybeSingle();
+
+                    if (tonkhoError) throw tonkhoError;
+                    if (!tonkhoItem) { showToast(`Không tìm thấy tồn kho cho LOT ${selectedLot}`, 'warning'); return; }
+                    
+                    const dateForBarcodeCalc = formatDate(tonkhoItem.date);
+                    let potentialMaVach = '';
+                    if (dateForBarcodeCalc) {
+                        const dateParts = dateForBarcodeCalc.split('/');
+                        const datePart = `${dateParts[0]}.${dateParts[1]}.${dateParts[2]}`; // dd.mm.yyyy
+                        potentialMaVach = `${selectedMaVt}${selectedLot}${datePart}`;
+                    } else {
+                        potentialMaVach = `${selectedMaVt}${selectedLot}`;
+                    }
+                    const { data: chiTietData, error: chiTietError } = await supabase.from('CHITIET').select('ma_kho, so_luong').eq('ma_vach', potentialMaVach);
+                    if (chiTietError) throw chiTietError;
+
+                    const aggregates = (chiTietData || []).reduce((acc, detail) => {
+                        const soLuong = Number(detail.so_luong) || 0;
+                        if (String(detail.ma_kho).toUpperCase().includes('IN')) acc.nhap += soLuong;
+                        if (String(detail.ma_kho).toUpperCase().includes('OUT')) acc.xuat += soLuong;
+                        return acc;
+                    }, { nhap: 0, xuat: 0 });
+
+                    const currentStock = (tonkhoItem.ton_dau || 0) + aggregates.nhap - aggregates.xuat;
+                    row.dataset.currentStock = currentStock;
+
+                    const formattedDate = formatDate(tonkhoItem.date);
+                    dateInput.value = formattedDate;
+
+                    handleModalProductChange({ target: soLuongInput }); 
+
+                } catch(error) {
+                    console.error("Lỗi tải dữ liệu cho LOT:", error);
+                    showToast(`Lỗi tải dữ liệu cho LOT ${selectedLot}: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        if (triggerBarcodeUpdate) {
+            const selectedMaVt = maVtSelect.value;
+            const selectedLot = lotSelect.value;
+            const formattedDate = dateInput.value; 
+
+            let generatedBarcode = '';
+            maVachInput.value = ''; 
+            maVachInput.classList.remove('border-green-500', 'border-red-500'); 
+
+            if (selectedMaVt) {
+                const lotPart = selectedLot || '';
+                let datePart = ''; 
+
+                if (formattedDate && /^\d{2}\/\d{2}\/\d{4}$/.test(formattedDate)) {
+                    const dateParts = formattedDate.split('/');
+                    datePart = `${dateParts[0]}.${dateParts[1]}.${dateParts[2]}`;
+                }
+
+                generatedBarcode = `${selectedMaVt}${lotPart}${datePart}`;
+                maVachInput.value = generatedBarcode;
+
+                try {
+                    const { data: existingBarcode, error: barcodeError } = await supabase
+                        .from('TONKHO')
+                        .select('ma_vach')
+                        .eq('ma_vach', generatedBarcode)
+                        .maybeSingle();
+
+                    if (barcodeError) {
+                        console.error("Lỗi kiểm tra mã vạch:", barcodeError);
+                        maVachInput.classList.add('border-yellow-500');
+                    } else {
+                        if (existingBarcode) {
+                            maVachInput.classList.add('border-green-500');
+                            maVachInput.classList.remove('border-red-500');
+                        } else {
+                            maVachInput.classList.add('border-red-500');
+                            maVachInput.classList.remove('border-green-500');
+                        }
+                    }
+                } catch (error) {
+                     console.error("Exception khi kiểm tra mã vạch:", error);
+                     maVachInput.classList.add('border-yellow-500');
+                }
+            }
+        }
+
+        if (['so_luong', 'yeu_cau'].includes(input.name)) {
+            const soLuong = parseInt(soLuongInput.value, 10) || 0;
+            const currentStock = parseInt(row.dataset.currentStock || '0', 10);
+            const isExport = donhangModal.loaiDonSelect.value === 'Xuat';
             
-          case 'tonkho':
-            headers = ['Mã vạch', 'Mã VT', 'Tên VT', 'Lot', 'Date', 'Tồn đầu', 'Nhập', 'Xuất', 'Tồn cuối', 'Tình trạng', 'Tray', 'Ngành', 'Phụ trách'];
-            await loadSanphamForLookup();
-            mappedData = data.map(item => {
-              const ton_dau = Number(item.ton_dau) || 0;
-              const nhap = Number(item.nhap) || 0;
-              const xuat = Number(item.xuat) || 0;
-              const ton_cuoi = ton_dau + nhap - xuat;
-              const productInfo = sanphamDataForLookup.find(p => p.ma_vt === item.ma_vt) || {};
-              return [item.ma_vach, item.ma_vt, productInfo.ten_vt || item.ten_vt, item.lot, formatDate(item.date), ton_dau, nhap, xuat, ton_cuoi, item.tinh_trang, item.tray, productInfo.nganh || item.nganh, productInfo.phu_trach || item.phu_trach];
-            });
-            break;
-            
-          case 'chitiet':
-            headers = ['ID', 'Thời gian', 'Mã kho', 'Mã NX', 'Mã vạch', 'Mã VT', 'Tên VT', 'Lot', 'Date', 'Yêu cầu', 'Số lượng', 'Loại', 'User', 'Mục đích', 'Ngành', 'Phụ trách'];
-            mappedData = data.map(item => [item.id, item.thoi_gian, item.ma_kho, item.ma_nx, item.ma_vach, item.ma_vt, item.ten_vt, item.lot, item.date, item.yeu_cau, item.so_luong, item.loai, item.user, item.muc_dich, item.nganh, item.phu_trach]);
-            break;
-            
-          default:
-            console.warn('View không hỗ trợ Tải Excel:', currentView);
+            soLuongInput.classList.toggle('border-red-500', isExport && soLuong > currentStock);
+            tonSauInput.value = isExport ? (currentStock - soLuong) : (currentStock + soLuong);
+        }
+    }
+
+    function convertDateForDB(dateString) { // dd/mm/yyyy to yyyy-mm-dd
+        if (!dateString || !/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) return null;
+        const [day, month, year] = dateString.split('/');
+        return `${year}-${month}-${day}`;
+    }
+
+    async function saveDonhang() {
+        const donhangData = {
+            thoi_gian: document.getElementById('donhang-modal-thoi_gian').value,
+            ma_kho: document.getElementById('donhang-modal-ma_kho').value,
+            ma_nx: document.getElementById('donhang-modal-ma_nx').value,
+            user: document.getElementById('donhang-modal-user').value,
+            nganh: document.getElementById('donhang-modal-nganh').value,
+            muc_dich: document.getElementById('donhang-modal-muc_dich').value,
+            dia_chi: document.getElementById('donhang-modal-dia_chi').value,
+            ghi_chu: document.getElementById('donhang-modal-ghi_chu').value,
+            order: document.getElementById('donhang-modal-order').value || null,
+            pkl: document.getElementById('donhang-modal-pkl').value || null,
+            done: document.getElementById('donhang-modal-done').value || null,
+            image: document.getElementById('donhang-modal-image').value || null,
+        };
+
+        for (const key of ['thoi_gian', 'ma_kho', 'ma_nx']) {
+            if (!donhangData[key]) {
+                showToast(`Lỗi: Vui lòng điền ${key}.`, 'error');
+                return;
+            }
+        }
+
+        const productRows = donhangModal.productsBody.querySelectorAll('tr');
+        if (productRows.length === 0) {
+            showToast('Lỗi: Phải có ít nhất một sản phẩm.', 'error');
             return;
         }
 
-        const ws_data = [headers, ...mappedData];
-        const ws = XLSX.utils.aoa_to_sheet(ws_data);
-        
-        const colWidths = headers.map(h => ({ wch: h.length }));
-        mappedData.forEach(row => {
-            row.forEach((cell, i) => {
-                const len = cell ? String(cell).length : 10;
-                if (!colWidths[i] || colWidths[i].wch < len) {
-                    colWidths[i] = { wch: len + 2 };
-                }
+        const chitietDataList = [];
+        for (const [index, row] of productRows.entries()) {
+            const soLuongInput = row.querySelector('[name="so_luong"]');
+            const soLuong = parseInt(soLuongInput.value, 10);
+            if (isNaN(soLuong) || soLuong <= 0) {
+                 showToast(`Lỗi ở sản phẩm STT ${index + 1}: Số lượng phải lớn hơn 0.`, 'error');
+                 return;
+            }
+            if(soLuongInput.classList.contains('border-red-500')){
+                 showToast(`Lỗi ở sản phẩm STT ${index + 1}: Số lượng không hợp lệ.`, 'error');
+                 return;
+            }
+             if(!row.querySelector('[name="ma_vt"]').value) {
+                showToast(`Lỗi ở sản phẩm STT ${index + 1}: Vui lòng chọn Mã VT.`, 'error');
+                return;
+            }
+
+            chitietDataList.push({
+                thoi_gian: donhangData.thoi_gian,
+                ma_kho: donhangData.ma_kho,
+                ma_nx: donhangData.ma_nx,
+                user: donhangData.user,
+                muc_dich: donhangData.muc_dich,
+                phu_trach: row.dataset.phuTrach || null,
+                nganh: row.dataset.nganh || null,
+                ma_vt: row.querySelector('[name="ma_vt"]').value,
+                ten_vt: row.querySelector('[name="ten_vt"]').value,
+                lot: row.querySelector('[name="lot"]').value,
+                date: convertDateForDB(row.querySelector('[name="date"]').value),
+                yeu_cau: parseInt(row.querySelector('[name="yeu_cau"]').value, 10) || null,
+                so_luong: soLuong,
+                ma_vach: row.querySelector('[name="ma_vach"]').value,
+                loai: row.querySelector('[name="loai"]').value,
             });
-        });
-        colWidths.forEach(w => { if (w.wch > 50) w.wch = 50; });
-        ws['!cols'] = colWidths;
-        
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, currentView);
+        }
 
-        XLSX.writeFile(wb, filename);
-        showToast('Tải Excel thành công!', 'success');
+        try {
+            donhangModal.saveButton.disabled = true;
+            showToast('Đang lưu đơn hàng...', 'warning');
+            
+            if (donhangModalState.mode === 'edit') {
+                const { error: donhangError } = await supabase.from('DONHANG').update(donhangData).eq('ma_nx', donhangModalState.originalMaNx);
+                if (donhangError) throw donhangError;
 
-      } catch (error) {
-        console.error('Lỗi khi tải Excel:', error);
-        showToast(`Lỗi tải Excel: ${error.message}`, 'error');
-      } finally {
-        toolbar.excel.disabled = false;
-        toolbar.excel.innerHTML = originalText;
-      }
+                const { error: deleteError } = await supabase.from('CHITIET').delete().eq('ma_nx', donhangModalState.originalMaNx);
+                if (deleteError) throw deleteError;
+                
+                if (chitietDataList.length > 0) {
+                    const { error: chitietError } = await supabase.from('CHITIET').insert(chitietDataList);
+                    if (chitietError) throw chitietError;
+                }
+                showToast('Cập nhật đơn hàng thành công!', 'success');
+
+            } else { // ADD mode
+                const { error: donhangError } = await supabase.from('DONHANG').insert([donhangData]);
+                if (donhangError) throw donhangError;
+
+                if (chitietDataList.length > 0) {
+                  const { error: chitietError } = await supabase.from('CHITIET').insert(chitietDataList);
+                  if (chitietError) {
+                      await supabase.from('DONHANG').delete().eq('ma_nx', donhangData.ma_nx); // Rollback
+                      throw chitietError;
+                  }
+                }
+                showToast('Tạo đơn hàng thành công!', 'success');
+            }
+
+            closeDonhangModal();
+            loadDonhang();
+            if (currentView === 'tonkho' || currentView === 'chitiet') {
+              loadDataForCurrentView(); // Reload if other views are affected
+            }
+
+        } catch(error) {
+            console.error("Lỗi lưu đơn hàng:", error);
+            showToast(`Lỗi lưu đơn hàng: ${error.message}`, 'error');
+        } finally {
+             donhangModal.saveButton.disabled = false;
+        }
     }
 
 
-    // ===== 12. Khởi chạy & Real-time =====
-    
-    function setupRealtimeListeners() {
-      console.log('Setting up Supabase real-time listeners...');
-      
-      const handleRealtimeChange = (payload, viewName) => {
-        console.log('Realtime change received for', viewName, payload);
-        
-        if (viewName === 'sanpham') {
-          sanphamDataForLookup = [];
-          sanphamFiltersPopulated = false;
-          // Nếu đang xem Tồn Kho, phải tải lại Tồn Kho
-          if (currentView === 'tonkho') {
-            showToast(`Phát hiện thay đổi ở Sản Phẩm, đang cập nhật Tồn Kho...`, 'warning');
-            loadDataForCurrentView();
-          }
-        }
-        
-        if (viewName === 'chitiet' && currentView === 'tonkho') {
-          showToast(`Phát hiện thay đổi ở Chi Tiết, đang cập nhật Tồn Kho...`, 'warning');
-          loadDataForCurrentView();
-        }
-
-        if (currentView === viewName) {
-          console.log(`Reloading data for active view: ${viewName}`);
-          showToast(`Phát hiện thay đổi, đang cập nhật ${viewName}...`, 'warning');
-          loadDataForCurrentView();
-        }
-      };
-
-      supabase.channel('public:SANPHAM')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'SANPHAM' }, 
-          (payload) => handleRealtimeChange(payload, 'sanpham'))
-        .subscribe((status) => {
-          if (status === 'SUBSCRIBED') {
-            console.log('Successfully subscribed to SANPHAM changes!');
-          }
+    // ===== 12. Gắn Event Listeners =====
+    function init() {
+      // Navigation
+      navLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          showView(e.target.dataset.view);
         });
+      });
 
-      supabase.channel('public:TONKHO')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'TONKHO' }, 
-          (payload) => handleRealtimeChange(payload, 'tonkho'))
-        .subscribe();
-
-      supabase.channel('public:DONHANG')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'DONHANG' }, 
-          (payload) => handleRealtimeChange(payload, 'donhang'))
-        .subscribe();
-      
-      supabase.channel('public:CHITIET')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'CHITIET' }, 
-          (payload) => handleRealtimeChange(payload, 'chitiet'))
-        .subscribe();
-    }
-
-    window.appLoaded = false;
-
-    window.addEventListener('DOMContentLoaded', () => {
+      // Toolbar
+      toolbar.search.addEventListener('input', handleToolbarSearch);
+      toolbar.clearFilter.addEventListener('click', handleToolbarClearFilter);
       toolbar.add.addEventListener('click', handleToolbarAdd);
       toolbar.edit.addEventListener('click', handleToolbarEdit);
       toolbar.delete.addEventListener('click', handleToolbarDelete);
-      toolbar.search.addEventListener('input', handleToolbarSearch);
-      toolbar.clearFilter.addEventListener('click', handleToolbarClearFilter);
       toolbar.save.addEventListener('click', handleToolbarSave);
       toolbar.cancel.addEventListener('click', handleToolbarCancel);
       toolbar.sync.addEventListener('click', handleSync);
-
+      
+      // Toolbar filter panel toggle
       toolbarToggleFilter.addEventListener('click', () => {
-        const isHidden = filterPanel.classList.toggle('hidden');
-        toolbarToggleFilterText.textContent = isHidden ? 'Hiện bộ lọc' : 'Ẩn bộ lọc';
+        filterPanel.classList.toggle('hidden');
+        toolbarToggleFilterText.textContent = filterPanel.classList.contains('hidden') ? 'Hiện bộ lọc' : 'Ẩn bộ lọc';
       });
 
-      document.getElementById('filter-panel').addEventListener('click', async (e) => {
-          const toggle = e.target.closest('.custom-filter-toggle');
-          if (toggle) {
-              const panel = toggle.nextElementSibling;
-              document.querySelectorAll('.custom-filter-panel').forEach(p => {
-                  if (p !== panel) p.classList.add('hidden');
-              });
-              panel.classList.toggle('hidden');
-          }
+      // Date Range Filters
+      document.querySelectorAll('input[type="date"]').forEach(input => {
+        input.addEventListener('change', (e) => {
+            const panel = e.target.closest('.filter-view-options');
+            let state;
+            if (panel.id === 'filter-donhang') state = donhangFilterState;
+            else if (panel.id === 'filter-chitiet') state = chitietFilterState;
 
-          const applyButton = e.target.closest('.custom-filter-apply');
-          if (applyButton) {
-              applyButton.closest('.custom-filter-panel').classList.add('hidden');
-              filterPanel.classList.add('hidden');
-              toolbarToggleFilterText.textContent = 'Hiện bộ lọc';
+            if (state) {
+              state[e.target.name] = e.target.value;
               pagination.page = 1;
-              paginationControls.pageInput.value = 1;
               loadDataForCurrentView();
-          }
-
-          const item = e.target.closest('.custom-filter-item');
-          if (item) {
-              const checkbox = item.querySelector('input[type="checkbox"]');
-              if (checkbox && !e.target.isSameNode(checkbox) && !e.target.isSameNode(item.querySelector('label'))) {
-                  checkbox.checked = !checkbox.checked;
-                  checkbox.dispatchEvent(new Event('change', { bubbles: true }));
-              }
-          }
+            }
+        });
       });
 
-      document.getElementById('filter-panel').addEventListener('input', (e) => {
-          const searchInput = e.target.closest('.custom-filter-search');
-          if (searchInput) {
-              const searchTerm = searchInput.value.toLowerCase();
-              const list = searchInput.parentElement.nextElementSibling;
-              list.querySelectorAll('.custom-filter-item').forEach(item => {
-                  const label = item.querySelector('label')?.textContent.toLowerCase();
-                  if (label && label !== '(chọn tất cả)') {
-                      item.style.display = label.includes(searchTerm) ? 'flex' : 'none';
-                  }
-              });
-          }
-      });
-      
-      document.getElementById('filter-panel').addEventListener('change', (e) => {
-          const checkbox = e.target.closest('.custom-filter-list input[type="checkbox"]');
-          if (!checkbox) return;
-          
-          const column = checkbox.dataset.column;
-          const filterState = (currentView === 'sanpham') ? sanphamFilterState : tonkhoFilterState;
-          const list = checkbox.closest('.custom-filter-list');
 
-          if (checkbox.classList.contains('custom-filter-select-all')) {
-              const isChecked = checkbox.checked;
-              list.querySelectorAll('.custom-filter-checkbox').forEach(cb => {
-                  if (cb.closest('.custom-filter-item').style.display !== 'none') {
-                      cb.checked = isChecked;
-                      if (isChecked) filterState[column].add(cb.value);
-                      else filterState[column].delete(cb.value);
-                  }
-              });
-          } else {
-              if (checkbox.checked) filterState[column].add(checkbox.value);
-              else filterState[column].delete(checkbox.value);
-              
-              const selectAll = list.querySelector('.custom-filter-select-all');
-              if (selectAll) {
-                const allCheckboxes = Array.from(list.querySelectorAll('.custom-filter-checkbox'));
-                const allVisibleCheckboxes = allCheckboxes.filter(cb => cb.closest('.custom-filter-item').style.display !== 'none');
-                const checkedVisibleCheckboxes = allVisibleCheckboxes.filter(cb => cb.checked);
-                selectAll.checked = allVisibleCheckboxes.length > 0 && allVisibleCheckboxes.length === checkedVisibleCheckboxes.length;
-              }
-          }
-          updateCustomFilterText(column, checkbox.closest('.custom-filter'));
-      });
-      
-
-      tonkhoTableBody.addEventListener('click', (e) => {
-          const toggle = e.target.closest('.inline-custom-select-toggle');
-          if (toggle) {
-              document.querySelectorAll('.inline-custom-select-panel').forEach(p => {
-                  if (p !== toggle.nextElementSibling) p.classList.add('hidden');
-              });
-              const panel = toggle.nextElementSibling;
-              panel.classList.toggle('hidden');
-              if (!panel.classList.contains('hidden')) {
-                  panel.querySelector('.inline-custom-select-search').focus();
-              }
-              return;
-          }
-
-          const item = e.target.closest('.inline-custom-select-item');
-          if (item) {
-              const selectedValue = item.dataset.value;
-              const cell = item.closest('td');
-              const hiddenInput = cell.querySelector('input[name="ma_vt"]');
-              const toggleText = cell.querySelector('.inline-custom-select-toggle span');
-              
-              hiddenInput.value = selectedValue;
-              toggleText.textContent = selectedValue;
-              item.closest('.inline-custom-select-panel').classList.add('hidden');
-              
-              handleTonkhoInputChange(hiddenInput);
-              return;
-          }
-      });
-
-      tonkhoTableBody.addEventListener('input', (e) => {
-          const searchInput = e.target.closest('.inline-custom-select-search');
-          if (searchInput) {
-              const searchTerm = searchInput.value.toLowerCase();
-              const list = searchInput.nextElementSibling;
-              list.querySelectorAll('.inline-custom-select-item').forEach(item => {
-                  const value = item.dataset.value.toLowerCase();
-                  item.style.display = value.includes(searchTerm) ? 'block' : 'none';
-              });
-          }
-      });
-      
-
+      // Custom Filter Listeners
       document.addEventListener('click', (e) => {
-        if (!e.target.closest('.custom-filter') && !e.target.closest('.inline-custom-select')) {
-          document.querySelectorAll('.custom-filter-panel, .inline-custom-select-panel').forEach(panel => {
-            panel.classList.add('hidden');
+        // Toggle Panel
+        const toggle = e.target.closest('.custom-filter-toggle');
+        if (toggle) {
+          const panel = toggle.nextElementSibling;
+          const isHidden = panel.classList.contains('hidden');
+          document.querySelectorAll('.custom-filter-panel').forEach(p => p.classList.add('hidden'));
+          if (isHidden) panel.classList.remove('hidden');
+          return;
+        }
+        // Close all if clicking outside
+        if (!e.target.closest('.custom-filter')) {
+           document.querySelectorAll('.custom-filter-panel').forEach(p => p.classList.add('hidden'));
+        }
+      });
+      
+      document.addEventListener('click', e => {
+        // Handle "Apply" button
+        if (e.target.classList.contains('custom-filter-apply')) {
+          e.target.closest('.custom-filter-panel').classList.add('hidden');
+          pagination.page = 1;
+          loadDataForCurrentView();
+        }
+
+        // Handle "Select All"
+        if (e.target.classList.contains('custom-filter-select-all')) {
+            const list = e.target.closest('.custom-filter-list');
+            const column = e.target.dataset.column;
+            list.querySelectorAll('.custom-filter-checkbox').forEach(cb => {
+                if (cb.closest('.custom-filter-item').style.display !== 'none') {
+                    cb.checked = e.target.checked;
+                    let state = (currentView === 'sanpham') ? sanphamFilterState : (currentView === 'tonkho') ? tonkhoFilterState : (currentView === 'donhang') ? donhangFilterState : chitietFilterState;
+                    if (cb.checked) state[column].add(cb.value);
+                    else state[column].delete(cb.value);
+                }
+            });
+            updateCustomFilterText(column);
+        }
+
+        // Handle individual checkbox
+        if (e.target.classList.contains('custom-filter-checkbox')) {
+            const checkbox = e.target;
+            const column = checkbox.dataset.column;
+            let state = (currentView === 'sanpham') ? sanphamFilterState : (currentView === 'tonkho') ? tonkhoFilterState : (currentView === 'donhang') ? donhangFilterState : chitietFilterState;
+            if (checkbox.checked) {
+                state[column].add(checkbox.value);
+            } else {
+                state[column].delete(checkbox.value);
+            }
+            updateCustomFilterText(column);
+        }
+      });
+
+      document.addEventListener('input', e => {
+        // Handle search inside filter panel
+        if (e.target.classList.contains('custom-filter-search')) {
+          const searchTerm = e.target.value.toLowerCase();
+          const list = e.target.closest('.custom-filter-panel').querySelector('.custom-filter-list');
+          list.querySelectorAll('.custom-filter-item').forEach(item => {
+            const label = item.querySelector('label');
+            if (label && label.textContent.toLowerCase().includes(searchTerm)) {
+              item.style.display = 'flex';
+            } else if (label) {
+              item.style.display = 'none';
+            }
           });
         }
-        if (!e.target.closest('#settings-menu')) {
-          settingsPopover.classList.add('hidden');
-        }
       });
 
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && currentEditState[currentView]) {
-          handleToolbarCancel();
-        }
-      });
-
-      settingsToggleButton.addEventListener('click', (e) => {
-        e.stopPropagation();
-        settingsPopover.classList.toggle('hidden');
-      });
-
-      darkModeToggle.addEventListener('click', () => {
-        const isDarkMode = document.documentElement.classList.toggle('dark');
-        localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
-        darkModeToggle.setAttribute('aria-checked', isDarkMode);
-        darkModeToggleKnob.classList.toggle('translate-x-5', isDarkMode);
-        showToast(isDarkMode ? 'Đã bật chế độ tối.' : 'Đã tắt chế độ tối.', 'success');
-      });
-
-      if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        document.documentElement.classList.add('dark');
-        darkModeToggle.setAttribute('aria-checked', 'true');
-        darkModeToggleKnob.classList.add('translate-x-5');
-      }
-
-      fontSizeSelect.addEventListener('change', handleFontSizeChange);
-
-      setupRealtimeListeners();
-
+      // Pagination
       paginationControls.limitSelect.addEventListener('change', () => {
-        pagination.page = 1;
-        paginationControls.pageInput.value = 1;
         pagination.limit = parseInt(paginationControls.limitSelect.value, 10);
+        pagination.page = 1;
         loadDataForCurrentView();
       });
       paginationControls.pageInput.addEventListener('change', () => {
         let newPage = parseInt(paginationControls.pageInput.value, 10);
-        if (isNaN(newPage) || newPage < 1) newPage = 1;
-        else if (newPage > pagination.totalPages) newPage = pagination.totalPages;
-        pagination.page = newPage;
-        paginationControls.pageInput.value = newPage;
-        loadDataForCurrentView();
+        if (newPage > 0 && newPage <= pagination.totalPages) {
+          pagination.page = newPage;
+          loadDataForCurrentView();
+        } else {
+           paginationControls.pageInput.value = pagination.page; // Reset to valid page
+        }
       });
-       paginationControls.pageInput.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') e.target.blur();
-        });
       paginationControls.prevButton.addEventListener('click', () => {
         if (pagination.page > 1) {
           pagination.page--;
@@ -2839,129 +3468,167 @@
         }
       });
 
-      document.addEventListener('paste', handlePaste);
-      toolbar.excel.addEventListener('click', handleDownloadExcel);
-      document.body.addEventListener('input', captureEditStateOnInput); // MỚI
-
-      showView('sanpham');
-      handleFontSizeChange();
-      
-      window.appLoaded = true;
-    });
-
-    // ===== MỚI: Các hàm helper cho trạng thái edit liên-view =====
-    function captureEditStateOnInput(e) {
-        const row = e.target.closest('tr[data-editing="true"]');
-        if (!row || !currentEditState[currentView]) return;
-
-        const rowId = row.id.split('-row-')[1];
-        if (!currentEditState[currentView].data[rowId]) {
-            currentEditState[currentView].data[rowId] = {};
-        }
-
-        const inputs = row.querySelectorAll('input, textarea, select');
-        inputs.forEach(input => {
-            const name = input.name;
-            if (name) {
-                currentEditState[currentView].data[rowId][name] = (input.type === 'checkbox') ? input.checked : input.value;
-            }
-        });
-    }
-
-    function captureEditState(view) {
-        const state = currentEditState[view];
-        if (!state) return;
-
-        document.querySelectorAll(`#view-${view} tr[data-editing="true"]`).forEach(row => {
-            const rowId = row.id.split('-row-')[1];
-            if (!state.data[rowId]) state.data[rowId] = {};
-            
-            const inputs = row.querySelectorAll('input, textarea, select');
-            inputs.forEach(input => {
-                const name = input.name;
-                if (name) {
-                    state.data[rowId][name] = (input.type === 'checkbox') ? input.checked : input.value;
-                }
-            });
-        });
-    }
-
-    async function restoreEditState(view) {
-        const state = currentEditState[view];
-        if (!state) return;
-        
-        if (state.mode === 'add') {
-            const tableBody = document.getElementById(`${view}-table-body`);
-            const dataToRestore = Object.values(state.data).reverse();
-            for (const rowData of dataToRestore) {
-                const rowHtml = `<tr id="${view}-row-${rowData.tempId}" data-editing="true">${createEditableRowContents(view, rowData, false)}</tr>`;
-                tableBody.insertAdjacentHTML('afterbegin', rowHtml);
-            }
-        } else if (state.mode === 'edit') {
-            await loadSanphamForLookup(); // Ensure lookup data is ready for Tồn Kho
-            for (const [id, rowData] of Object.entries(state.data)) {
-                 const row = document.getElementById(`${view}-row-${id}`);
-                 if (row) {
-                     row.innerHTML = createEditableRowContents(view, rowData, true);
-                     row.setAttribute('data-editing', 'true');
-                 }
-            }
-        }
-    }
-
-
-    function handlePaste(e) {
-      const state = currentEditState[currentView];
-      if (!state || state.mode !== 'add') return;
-      const targetElement = e.target;
-      if (!targetElement.classList.contains('inline-input') || targetElement.readOnly) return;
-
-      e.preventDefault();
-
-      const clipboardData = (e.clipboardData || window.clipboardData).getData('text/plain');
-      const pastedRows = clipboardData.trim().split('\n').map(r => r.split('\t'));
-      if (pastedRows.length === 0) return;
-
-      const startInput = targetElement;
-      const startRow = startInput.closest('tr');
-      const startCellIndex = startInput.closest('td').cellIndex;
-      let allEditRows = Array.from(document.querySelectorAll(`#${currentView}-table-body tr[data-editing="true"]`));
-      let startRowIndex = allEditRows.indexOf(startRow);
-      if (startRowIndex === -1) return;
-
-      pastedRows.forEach((rowData, r_idx) => {
-        const targetRowIndex = startRowIndex + r_idx;
-        let targetRow = allEditRows[targetRowIndex];
-
-        if (!targetRow) {
-          const newId = `new-${crypto.randomUUID()}`;
-          state.data[newId] = { tempId: newId };
-          if (currentView === 'sanpham') targetRow = createNewSanphamRow(newId);
-          else if (currentView === 'tonkho') targetRow = createNewTonkhoRow(newId);
-          // Add other views if they support paste-add
-          if (targetRow) allEditRows.push(targetRow);
-        }
-        
-        if (!targetRow) return;
-
-        const targetInputs = targetRow.querySelectorAll('td .inline-input, td .inline-custom-select input[type=hidden]');
-        rowData.forEach((cellData, c_idx) => {
-          const targetInputIndex = (startCellIndex - 1) + c_idx;
-          const currentInput = targetInputs[targetInputIndex];
-          if (currentInput && !currentInput.readOnly) {
-            currentInput.value = cellData.trim();
-            currentInput.dispatchEvent(new Event('input', { bubbles: true }));
-            currentInput.dispatchEvent(new Event('blur', { bubbles: true }));
-
-            // Special handling for custom select in Tồn Kho
-            if(currentView === 'tonkho' && currentInput.name === 'ma_vt') {
-                const toggle = currentInput.closest('.inline-custom-select').querySelector('.inline-custom-select-toggle span');
-                if (toggle) toggle.textContent = cellData.trim();
-            }
-          }
-        });
+      // Excel Export
+      toolbar.excel.addEventListener('click', () => {
+          if (currentView === 'sanpham') exportToExcel('SANPHAM');
+          if (currentView === 'tonkho') exportToExcel('TONKHO');
+          if (currentView === 'chitiet') exportToExcel('CHITIET');
       });
+
+      // Settings Popover & Dark Mode
+      settingsToggleButton.addEventListener('click', (e) => {
+        e.stopPropagation();
+        settingsPopover.classList.toggle('hidden');
+      });
+      document.addEventListener('click', (e) => {
+        if (!settingsMenu.contains(e.target)) {
+          settingsPopover.classList.add('hidden');
+        }
+      });
+      fontSizeSelect.addEventListener('change', handleFontSizeChange);
+      darkModeToggle.addEventListener('click', toggleDarkMode);
+      
+      // Donhang Modal
+      donhangModal.closeButton.addEventListener('click', closeDonhangModal);
+      donhangModal.cancelButton.addEventListener('click', closeDonhangModal);
+      donhangModal.saveButton.addEventListener('click', saveDonhang);
+      donhangModal.addProductButton.addEventListener('click', () => addProductRowToModal());
+      donhangModal.loaiDonSelect.addEventListener('change', () => {
+          updateDonhangModalLabels();
+          updateDonhangModalCodes();
+      });
+      donhangModal.nganhInput.addEventListener('input', updateDonhangModalCodes);
+
+      // Event delegation for donhang modal product list
+      donhangModal.productsBody.addEventListener('click', (e) => {
+          if (e.target.closest('.delete-product-row')) {
+              deleteModalProductRow(e.target.closest('.delete-product-row'));
+          }
+      });
+       donhangModal.productsBody.addEventListener('change', handleModalProductChange);
+       donhangModal.productsBody.addEventListener('input', handleModalProductChange);
+
+
+      // Inline edit for Ton Kho (custom select)
+      document.addEventListener('click', e => {
+        const toggle = e.target.closest('.inline-custom-select-toggle');
+        if (toggle) {
+            const panel = toggle.nextElementSibling;
+            if (panel) panel.classList.toggle('hidden');
+            return;
+        }
+
+        const item = e.target.closest('.inline-custom-select-item');
+        if (item) {
+            const panel = item.closest('.inline-custom-select-panel');
+            const toggle = panel.previousElementSibling;
+            const hiddenInput = toggle.previousElementSibling;
+            const value = item.dataset.value;
+            
+            hiddenInput.value = value;
+            toggle.querySelector('span').textContent = value;
+            panel.classList.add('hidden');
+            
+            // Trigger change handler
+            handleTonkhoInputChange(hiddenInput);
+        }
+      });
+
+       document.addEventListener('input', e => {
+        const searchInput = e.target.closest('.inline-custom-select-search');
+        if (searchInput) {
+            const searchTerm = searchInput.value.toLowerCase();
+            const list = searchInput.nextElementSibling;
+            list.querySelectorAll('.inline-custom-select-item').forEach(item => {
+                item.style.display = item.dataset.value.toLowerCase().includes(searchTerm) ? 'block' : 'none';
+            });
+        }
+      });
+
+      // Set initial state
+      showView('sanpham');
+      setDefaultDateFilters('donhang');
+      setDefaultDateFilters('chitiet');
+      checkDarkMode(); // MỚI: Kiểm tra dark mode khi tải trang
     }
+
+    function setDefaultDateFilters(view) {
+      const today = new Date();
+      const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      
+      const toDate = today.toISOString().split('T')[0];
+      const fromDate = firstDayOfMonth.toISOString().split('T')[0];
+      
+      const fromInput = document.querySelector(`#filter-${view} input[name="thoi_gian_from"]`);
+      const toInput = document.querySelector(`#filter-${view} input[name="thoi_gian_to"]`);
+
+      if (fromInput) fromInput.value = fromDate;
+      if (toInput) toInput.value = toDate;
+      
+      if (view === 'donhang') {
+        donhangFilterState.thoi_gian_from = fromDate;
+        donhangFilterState.thoi_gian_to = toDate;
+      } else if (view === 'chitiet') {
+        chitietFilterState.thoi_gian_from = fromDate;
+        chitietFilterState.thoi_gian_to = toDate;
+      }
+    }
+
+    // ===== MỚI: Dark Mode Logic =====
+    function checkDarkMode() {
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+            darkModeToggle.setAttribute('aria-checked', 'true');
+            darkModeToggleKnob.classList.add('translate-x-5');
+        } else {
+            document.documentElement.classList.remove('dark');
+            darkModeToggle.setAttribute('aria-checked', 'false');
+            darkModeToggleKnob.classList.remove('translate-x-5');
+        }
+    }
+
+    function toggleDarkMode() {
+        if (localStorage.theme === 'dark') {
+            localStorage.theme = 'light';
+        } else {
+            localStorage.theme = 'dark';
+        }
+        checkDarkMode();
+    }
+
+    async function exportToExcel(tableName) {
+        showToast('Đang chuẩn bị dữ liệu Excel...', 'warning', 5000);
+        try {
+            let allData = [];
+            let page = 0;
+            const pageSize = 1000;
+
+            while (true) {
+                const { data, error } = await supabase
+                    .from(tableName)
+                    .select('*')
+                    .range(page * pageSize, (page + 1) * pageSize - 1);
+
+                if (error) throw error;
+                allData = allData.concat(data);
+                if (data.length < pageSize) break;
+                page++;
+            }
+            
+            const worksheet = XLSX.utils.json_to_sheet(allData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, tableName);
+            XLSX.writeFile(workbook, `${tableName}_${new Date().toISOString().slice(0,10)}.xlsx`);
+            showToast('Xuất Excel thành công!', 'success');
+        } catch (error) {
+            console.error('Lỗi xuất Excel:', error);
+            showToast(`Lỗi khi xuất Excel: ${error.message}`, 'error');
+        }
+    }
+
+
+    // Khởi chạy ứng dụng
+    document.addEventListener('DOMContentLoaded', init);
 
   </script>
 </body>
