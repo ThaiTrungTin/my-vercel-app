@@ -3068,10 +3068,12 @@
 
         let triggerBarcodeUpdate = false; 
 
-        if (input.name === 'ma_vt') {
+    if (input.name === 'ma_vt') {
             triggerBarcodeUpdate = true;
             const selectedMaVt = maVtSelect.value;
             tenVtInput.value = '';
+            // Giữ lại LOT đã chọn (nếu có) trước khi làm mới danh sách
+            const previousLot = lotSelect.value;
             lotSelect.innerHTML = '<option value="">Chọn LOT</option>';
             lotSelect.disabled = true;
             dateInput.value = '';
@@ -3095,6 +3097,15 @@
 
                     const uniqueLots = [...new Set(lotData.map(item => item.lot))].filter(Boolean).sort();
                     lotSelect.innerHTML += uniqueLots.map(lot => `<option value="${lot}">${lot}</option>`).join('');
+                    // Phục hồi lựa chọn LOT trước đó nếu còn tồn tại, nếu không thì thêm vào như một lựa chọn hợp lệ
+                    if (previousLot) {
+                        if (uniqueLots.includes(previousLot)) {
+                            lotSelect.value = previousLot;
+                        } else {
+                            lotSelect.innerHTML += `<option value="${previousLot}">${previousLot}</option>`;
+                            lotSelect.value = previousLot;
+                        }
+                    }
                     lotSelect.disabled = false;
                 } catch (error) {
                     console.error("Lỗi tải dữ liệu cho Mã VT:", error);
