@@ -1194,13 +1194,20 @@ async function openDonhangModal(donhangData = null) {
         const uniqueNganh = [...new Set(data.map(item => item.nganh).filter(Boolean))];
         donhangModal.nganhDatalist.innerHTML = uniqueNganh.map(ng => `<option value="${ng}"></option>`).join('');
     }
-    if (tonkhoDataForLookup.length === 0) {
+    // SỬA LỖI: Khi chỉnh sửa đơn hàng, luôn tải lại dữ liệu tồn kho để bao gồm cả LOT có tồn = 0
+    if (tonkhoDataForLookup.length === 0 || donhangData) {
         const { data, error } = await supabase.from('TONKHO_VIEW').select('ma_vt, lot, date, ma_vach, ton_cuoi');
         if (error) {
             showToast('Lỗi tải dữ liệu tồn kho.', 'error');
             return;
         }
-        tonkhoDataForLookup = data.filter(item => item.ton_cuoi > 0); // Chỉ lấy hàng có tồn
+        if (donhangData) {
+            // Khi chỉnh sửa: tải tất cả dữ liệu (bao gồm cả tồn = 0) để giữ lại LOT đã nhập
+            tonkhoDataForLookup = data;
+        } else {
+            // Khi tạo mới: chỉ lấy hàng có tồn > 0
+            tonkhoDataForLookup = data.filter(item => item.ton_cuoi > 0);
+        }
     }
 
     // 3. Thiết lập trạng thái (Thêm mới / Chỉnh sửa)
@@ -1662,11 +1669,16 @@ function handleModalInputChange(e) {
                  maVachInput.value = selectedTonkho.ma_vach;
                  tonSauInput.value = selectedTonkho.ton_cuoi; // Ban đầu, tồn sau = tồn cuối
                  
-                 // Tự động điền số lượng
-                 soLuongInput.value = selectedTonkho.ton_cuoi;
-                 soLuongInput.max = selectedTonkho.ton_cuoi; // Set max value
-                 soLuongInput.dispatchEvent(new Event('input')); // Trigger input event để cập nhật tổng
-                 soLuongInput.select(); // Chọn toàn bộ text để dễ sửa
+                 // SỬA LỖI: Chỉ tự động điền số lượng khi tồn kho > 0 (tránh ghi đè số lượng đã nhập khi chỉnh sửa)
+                 if (selectedTonkho.ton_cuoi > 0 && soLuongInput.value === '0') {
+                     soLuongInput.value = selectedTonkho.ton_cuoi;
+                     soLuongInput.max = selectedTonkho.ton_cuoi; // Set max value
+                     soLuongInput.dispatchEvent(new Event('input')); // Trigger input event để cập nhật tổng
+                     soLuongInput.select(); // Chọn toàn bộ text để dễ sửa
+                 } else if (selectedTonkho.ton_cuoi === 0) {
+                     // Khi tồn kho = 0, không set max và không thay đổi số lượng đã nhập
+                     soLuongInput.removeAttribute('max');
+                 }
              }
         });
     }
@@ -1681,9 +1693,15 @@ function handleModalInputChange(e) {
             const tonHienTai = parseInt(tonkhoItem.ton_cuoi) || 0;
             const soLuongXuat = parseInt(input.value) || 0;
 
-            if (soLuongXuat > tonHienTai) {
+            // SỬA LỖI: Khi chỉnh sửa đơn hàng, cho phép số lượng lớn hơn tồn hiện tại 
+            // (vì có thể LOT đã được sử dụng từ trước)
+            if (soLuongXuat > tonHienTai && !currentEditingDonhangId) {
+                // Chỉ cảnh báo khi tạo đơn mới, không cảnh báo khi chỉnh sửa
                 showToast(`Số lượng xuất (${soLuongXuat}) không được lớn hơn tồn kho (${tonHienTai}).`, 'warning');
                 input.value = tonHienTai;
+            } else if (soLuongXuat > tonHienTai && currentEditingDonhangId) {
+                // Khi chỉnh sửa, chỉ hiển thị thông báo nhẹ
+                showToast(`Lưu ý: Số lượng xuất (${soLuongXuat}) lớn hơn tồn kho hiện tại (${tonHienTai}).`, 'warning', 2000);
             }
             tonSauInput.value = tonHienTai - (parseInt(input.value) || 0);
         }
