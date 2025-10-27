@@ -1025,6 +1025,50 @@
     .dark .modal-td-input { border-color: #4b5563; }
     .modal-td-input:read-only { background-color: #f3f4f6; cursor: not-allowed; }
     .dark .modal-td-input:read-only { background-color: #374151; }
+
+    /* MỚI: CSS cho Excel Grid và Drag/Drop trong Modal */
+    #donhang-modal-products-body table { border-collapse: collapse; }
+    #donhang-modal-products-body .modal-th,
+    #donhang-modal-products-body .modal-td {
+        border-right: 1px solid #d1d5db;
+        border-bottom: 1px solid #d1d5db;
+    }
+    .dark #donhang-modal-products-body .modal-th,
+    .dark #donhang-modal-products-body .modal-td {
+        border-color: #4b5563;
+    }
+    #donhang-modal-products-body .modal-th:first-child,
+    #donhang-modal-products-body .modal-td:first-child {
+        border-left: 1px solid #d1d5db;
+    }
+    .dark #donhang-modal-products-body .modal-th:first-child,
+    .dark #donhang-modal-products-body .modal-td:first-child {
+        border-left-color: #4b5563;
+    }
+    #donhang-modal-products-body .modal-th {
+       border-top: 1px solid #d1d5db;
+    }
+    .dark #donhang-modal-products-body .modal-th {
+       border-top-color: #4b5563;
+    }
+    
+    .product-row.dragging {
+      opacity: 0.5;
+      background: #e0e7ff; /* indigo-100 */
+    }
+    .dark .product-row.dragging {
+       background: #3730a3; /* indigo-800 */
+    }
+    .drag-handle {
+        cursor: grab;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #9ca3af; /* gray-400 */
+    }
+    .drag-handle:active {
+        cursor: grabbing;
+    }
   </style>
 
   <!-- THÊM MỚI: Toast Notification Container -->
@@ -1120,14 +1164,15 @@
             <table class="min-w-full">
               <thead class="bg-gray-100 dark:bg-gray-700 sticky top-0 z-10">
                 <tr>
-                  <th class="modal-th" style="width: 3%;">STT</th>
-                  <th class="modal-th" style="width: 11%;">Mã VT</th>
-                  <th class="modal-th" style="width: 24%;">Tên VT</th>
-                  <th class="modal-th" style="width: 11%;">LOT</th>
+                  <!-- THAY ĐỔI: Cập nhật header -->
+                  <th class="modal-th" style="width: 5%;">STT</th>
+                  <th class="modal-th" style="width: 10%;">Mã VT</th>
+                  <th class="modal-th" style="width: 20%;">Tên VT</th>
+                  <th class="modal-th" style="width: 15%;">Số LOT</th>
                   <th class="modal-th" style="width: 8%;">Date</th>
                   <th class="modal-th" style="width: 6%;">Yêu Cầu</th>
                   <th class="modal-th" id="donhang-modal-header-so_luong" style="width: 6%;">Xuất</th>
-                  <th class="modal-th" style="width: 8%;">Tồn Sau</th>
+                  <th class="modal-th" style="width: 7%;">Tồn Sau</th>
                   <th class="modal-th" style="width: 12%;">Mã Vạch</th>
                   <th class="modal-th" style="width: 8%;">Loại</th>
                   <th class="modal-th" style="width: 3%;">Xóa</th>
@@ -1829,7 +1874,7 @@
         if (status === 'Hết Date') return 'status-het-date';
         if (status === 'Cận Date') return 'status-can-date';
         if (status === 'Hàng Hư') return 'status-hang-hu';
-        if (status === 'Đang Sử Dụng') return 'status-binh-thuong';
+        if (status === 'Còn Sử Dụng' || status === 'Đang Sử Dụng') return 'status-binh-thuong';
         return '';
     }
 
@@ -1907,6 +1952,7 @@
 
             tonkhoTableBody.innerHTML = finalData.map(item => {
                 const productInfo = sanphamDataForLookup.find(p => p.ma_vt === item.ma_vt) || {};
+                const displayStatus = item.tinh_trang || 'Còn Sử Dụng';
                 return `
                 <tr id="tonkho-row-${item.ma_vach}" class="selectable-row hover:bg-gray-50 dark:hover:bg-gray-700" onclick="toggleRowSelection('tonkho', '${item.ma_vach}', event)">
                     <td class="td"><input type="checkbox" class="row-checkbox" data-view="tonkho" data-id="${item.ma_vach}"></td>
@@ -1919,7 +1965,7 @@
                     <td class="td text-sm text-nhap">${item.nhap}</td>
                     <td class="td text-sm text-xuat">${item.xuat}</td>
                     <td class="td text-sm font-bold text-gray-800 dark:text-gray-100">${item.ton_cuoi}</td>
-                    <td class="td text-sm ${getStatusClass(item.tinh_trang)}">${item.tinh_trang || ''}</td>
+                    <td class="td text-sm ${getStatusClass(displayStatus)}">${displayStatus}</td>
                     <td class="td text-sm text-gray-600 dark:text-gray-300">${item.tray || ''}</td>
                     <td class="td text-sm text-gray-600 dark:text-gray-300">${productInfo.nganh || item.nganh || ''}</td>
                     <td class="td text-sm text-gray-600 dark:text-gray-300">${productInfo.phu_trach || item.phu_trach || ''}</td>
@@ -2068,10 +2114,10 @@
             } else if (parsedDate <= threeMonthsFromNow) {
                 cleanData.tinh_trang = "Cận Date";
             } else {
-                cleanData.tinh_trang = null;
+                cleanData.tinh_trang = "Còn Sử Dụng";
             }
         } else {
-             cleanData.tinh_trang = null;
+             cleanData.tinh_trang = "Còn Sử Dụng";
         }
 
 
@@ -2381,7 +2427,7 @@
                 let items = [];
                 if (column === 'ma_vt') items = maVts;
                 if (column === 'lot') items = lots;
-                if (column === 'tinh_trang') items = tinhTrangs;
+                if (column === 'tinh_trang') items = [...tinhTrangs, "Còn Sử Dụng"].filter((v, i, a) => a.indexOf(v) === i).sort();;
                 if (column === 'nganh') items = nganhs;
                 if (column === 'phu_trach') items = phuTrachs;
                 if (column === 'ton_cuoi') {
@@ -2627,9 +2673,10 @@
             if (canSelectOtherOptions) {
                  const isDangSuDung = currentTinhTrang === 'Đang Sử Dụng';
                  const isHangHu = currentTinhTrang === 'Hàng Hư';
+                 const isConSuDung = currentTinhTrang === 'Còn Sử Dụng' || !currentTinhTrang;
                  tinhTrangInputHTML = `
                     <select name="tinh_trang" class="inline-input">
-                        <option value=""></option>
+                        <option value="Còn Sử Dụng" ${isConSuDung ? 'selected' : ''}>Còn Sử Dụng</option>
                         <option value="Đang Sử Dụng" ${isDangSuDung ? 'selected' : ''}>Đang Sử Dụng</option>
                         <option value="Hàng Hư" ${isHangHu ? 'selected' : ''}>Hàng Hư</option>
                     </select>`;
@@ -2794,6 +2841,7 @@
             const currentTinhTrang = val('tinh_trang');
             const isDangSuDung = currentTinhTrang === 'Đang Sử Dụng';
             const isHangHu = currentTinhTrang === 'Hàng Hư';
+            const isConSuDung = currentTinhTrang === 'Còn Sử Dụng' || !currentTinhTrang;
             
             let canSelectOtherOptions = true;
             if (selectedDate) {
@@ -2811,7 +2859,7 @@
             if (canSelectOtherOptions) {
                  tinhTrangInputHTML = `
                     <select name="tinh_trang" class="inline-input">
-                        <option value=""></option>
+                        <option value="Còn Sử Dụng" ${isConSuDung ? 'selected' : ''}>Còn Sử Dụng</option>
                         <option value="Đang Sử Dụng" ${isDangSuDung ? 'selected' : ''}>Đang Sử Dụng</option>
                         <option value="Hàng Hư" ${isHangHu ? 'selected' : ''}>Hàng Hư</option>
                     </select>`;
@@ -2993,28 +3041,35 @@
         const rowCount = donhangModal.productsBody.children.length;
         const newRow = document.createElement('tr');
         newRow.className = 'product-row';
+        newRow.draggable = true;
 
         const maVtOptions = modalMaVtList.map(ma_vt => `<option value="${ma_vt}" ${productData && productData.ma_vt === ma_vt ? 'selected' : ''}>${ma_vt}</option>`).join('');
 
         newRow.innerHTML = `
-            <td class="modal-td text-center">${rowCount + 1}</td>
+            <td class="modal-td text-center">
+              <div class="drag-handle">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" /></svg>
+                <span class="stt-number ml-1">${rowCount + 1}</span>
+              </div>
+            </td>
             <td class="modal-td">
                 <select name="ma_vt" class="modal-td-input">
                     <option value="">Chọn VT</option>
                     ${maVtOptions}
                 </select>
+                <input type="hidden" name="lot" value="${productData?.lot || ''}">
             </td>
             <td class="modal-td"><input type="text" name="ten_vt" class="modal-td-input" readonly value="${productData?.ten_vt || ''}"></td>
             <td class="modal-td">
-                <select name="lot" class="modal-td-input" ${!productData?.ma_vt ? 'disabled' : ''}>
+                <select name="lot_select" class="modal-td-input" disabled>
                     <option value="">Chọn LOT</option>
                 </select>
             </td>
-            <td class="modal-td"><input type="text" name="date" class="modal-td-input" readonly value="${productData ? formatDate(productData.date) : ''}"></td>
+            <td class="modal-td"><input type="text" name="date" class="modal-td-input" readonly></td>
             <td class="modal-td"><input type="number" name="yeu_cau" min="1" class="modal-td-input" value="${productData?.yeu_cau || ''}"></td>
             <td class="modal-td"><input type="number" name="so_luong" min="0" class="modal-td-input" value="${productData?.so_luong || ''}"></td>
             <td class="modal-td ton-sau-cell"><input type="text" name="ton_sau" class="modal-td-input" readonly></td>
-            <td class="modal-td"><input type="text" name="ma_vach" class="modal-td-input" value="${productData?.ma_vach || ''}"></td>
+            <td class="modal-td"><input type="text" name="ma_vach" class="modal-td-input" readonly></td>
             <td class="modal-td">
                 <select name="loai" class="modal-td-input">
                     <option value="Tiêu Hao" ${productData?.loai === 'Tiêu Hao' ? 'selected' : ''}>Tiêu Hao</option>
@@ -3030,52 +3085,48 @@
         donhangModal.productsBody.appendChild(newRow);
 
         if (productData && productData.ma_vt) {
-            const lotSelect = newRow.querySelector('select[name="lot"]');
-            const { data: lotData, error: lotError } = await supabase.from('TONKHO').select('lot').eq('ma_vt', productData.ma_vt);
-            if (lotError) console.error(lotError);
-            else {
-                const uniqueLots = [...new Set(lotData.map(item => item.lot))].filter(Boolean).sort();
-                lotSelect.innerHTML += uniqueLots.map(lot => `<option value="${lot}" ${productData.lot === lot ? 'selected' : ''}>${lot}</option>`).join('');
-                lotSelect.disabled = false;
-            }
             const maVtSelect = newRow.querySelector('select[name="ma_vt"]');
-            await handleModalProductChange({ target: maVtSelect });
-            await handleModalProductChange({ target: lotSelect });
+            await handleModalProductChange({ target: maVtSelect }, productData);
         }
+    }
+
+    function reindexModalRows() {
+        donhangModal.productsBody.querySelectorAll('tr.product-row').forEach((row, index) => {
+            const stt = row.querySelector('.stt-number');
+            if (stt) stt.textContent = index + 1;
+        });
     }
 
     function deleteModalProductRow(button) {
         button.closest('tr').remove();
-        // Re-index STT
-        donhangModal.productsBody.querySelectorAll('tr').forEach((r, index) => {
-            r.cells[0].textContent = index + 1;
-        });
+        reindexModalRows();
     }
 
-    async function handleModalProductChange(event) {
+    async function handleModalProductChange(event, productToSelect = null) {
         const input = event.target;
         if (!input) return;
         const row = input.closest('tr');
         if (!row) return;
-
+    
         const maVtSelect = row.querySelector('select[name="ma_vt"]');
         const tenVtInput = row.querySelector('input[name="ten_vt"]');
-        const lotSelect = row.querySelector('select[name="lot"]');
+        const lotSelect = row.querySelector('select[name="lot_select"]');
+        const hiddenLotInput = row.querySelector('input[name="lot"]');
         const dateInput = row.querySelector('input[name="date"]');
         const soLuongInput = row.querySelector('input[name="so_luong"]');
         const tonSauInput = row.querySelector('input[name="ton_sau"]');
         const maVachInput = row.querySelector('input[name="ma_vach"]');
 
-        let triggerBarcodeUpdate = false; 
-
         if (input.name === 'ma_vt') {
-            triggerBarcodeUpdate = true;
             const selectedMaVt = maVtSelect.value;
+            // Clear all dependent fields
             tenVtInput.value = '';
             lotSelect.innerHTML = '<option value="">Chọn LOT</option>';
             lotSelect.disabled = true;
             dateInput.value = '';
             tonSauInput.value = '';
+            maVachInput.value = '';
+            hiddenLotInput.value = '';
             row.dataset.currentStock = '0';
             row.dataset.phuTrach = '';
             row.dataset.nganh = '';
@@ -3090,12 +3141,47 @@
                         row.dataset.nganh = sanphamData.nganh || '';
                     }
 
-                    const { data: lotData, error: lotError } = await supabase.from('TONKHO').select('lot').eq('ma_vt', selectedMaVt);
-                    if (lotError) throw lotError;
+                    // Complex query to get all inventory and transaction data
+                    const { data: tonkhoItems, error: tonkhoError } = await supabase.from('TONKHO').select('ma_vach, lot, date, ton_dau, tinh_trang').eq('ma_vt', selectedMaVt);
+                    if (tonkhoError) throw tonkhoError;
+                    
+                    if (tonkhoItems.length > 0) {
+                        const maVachs = tonkhoItems.map(item => item.ma_vach);
+                        const { data: chiTietData, error: chiTietError } = await supabase.from('CHITIET').select('ma_vach, ma_kho, so_luong').in('ma_vach', maVachs);
+                        if (chiTietError) throw chiTietError;
 
-                    const uniqueLots = [...new Set(lotData.map(item => item.lot))].filter(Boolean).sort();
-                    lotSelect.innerHTML += uniqueLots.map(lot => `<option value="${lot}">${lot}</option>`).join('');
-                    lotSelect.disabled = false;
+                        const aggregatedDetails = {};
+                        for (const detail of chiTietData) {
+                            if (!aggregatedDetails[detail.ma_vach]) {
+                                aggregatedDetails[detail.ma_vach] = { nhap: 0, xuat: 0 };
+                            }
+                            const soLuong = Number(detail.so_luong) || 0;
+                            if (String(detail.ma_kho).toUpperCase().includes('IN')) aggregatedDetails[detail.ma_vach].nhap += soLuong;
+                            if (String(detail.ma_kho).toUpperCase().includes('OUT')) aggregatedDetails[detail.ma_vach].xuat += soLuong;
+                        }
+
+                        const lotOptionsData = tonkhoItems.map(item => {
+                            const aggregates = aggregatedDetails[item.ma_vach] || { nhap: 0, xuat: 0 };
+                            const ton_cuoi = (item.ton_dau || 0) + aggregates.nhap - aggregates.xuat;
+                            const displayStatus = item.tinh_trang || 'Còn Sử Dụng';
+                            const formattedDate = formatDate(item.date);
+                            const displayString = `${item.lot} Date: ${formattedDate} Tồn: ${ton_cuoi} ${displayStatus}`;
+                            return {
+                                ma_vach: item.ma_vach, lot: item.lot, date: formattedDate,
+                                stock: ton_cuoi, display: displayString
+                            };
+                        });
+                        
+                        lotSelect.innerHTML += lotOptionsData.map(d => `
+                            <option value="${d.ma_vach}" data-lot="${d.lot}" data-date="${d.date}" data-stock="${d.stock}">${d.display}</option>
+                        `).join('');
+                        lotSelect.disabled = false;
+                        
+                        if (productToSelect && productToSelect.ma_vach) {
+                            lotSelect.value = productToSelect.ma_vach;
+                            await handleModalProductChange({ target: lotSelect });
+                        }
+                    }
                 } catch (error) {
                     console.error("Lỗi tải dữ liệu cho Mã VT:", error);
                     showToast(`Lỗi tải dữ liệu cho Mã VT ${selectedMaVt}`, 'error');
@@ -3103,101 +3189,21 @@
             }
         }
 
-        if (input.name === 'lot') {
-            triggerBarcodeUpdate = true;
-            const selectedMaVt = maVtSelect.value;
-            const selectedLot = lotSelect.value;
-            dateInput.value = '';
-            tonSauInput.value = '';
-            row.dataset.currentStock = '0';
-
-            if (selectedMaVt && selectedLot) {
-                try {
-                    const { data: tonkhoItem, error: tonkhoError } = await supabase
-                        .from('TONKHO').select('ton_dau, date').eq('ma_vt', selectedMaVt).eq('lot', selectedLot).maybeSingle();
-
-                    if (tonkhoError) throw tonkhoError;
-                    if (!tonkhoItem) { showToast(`Không tìm thấy tồn kho cho LOT ${selectedLot}`, 'warning'); return; }
-                    
-                    const dateForBarcodeCalc = formatDate(tonkhoItem.date);
-                    let potentialMaVach = '';
-                    if (dateForBarcodeCalc) {
-                        const dateParts = dateForBarcodeCalc.split('/');
-                        const datePart = `${dateParts[0]}.${dateParts[1]}.${dateParts[2]}`; // dd.mm.yyyy
-                        potentialMaVach = `${selectedMaVt}${selectedLot}${datePart}`;
-                    } else {
-                        potentialMaVach = `${selectedMaVt}${selectedLot}`;
-                    }
-                    const { data: chiTietData, error: chiTietError } = await supabase.from('CHITIET').select('ma_kho, so_luong').eq('ma_vach', potentialMaVach);
-                    if (chiTietError) throw chiTietError;
-
-                    const aggregates = (chiTietData || []).reduce((acc, detail) => {
-                        const soLuong = Number(detail.so_luong) || 0;
-                        if (String(detail.ma_kho).toUpperCase().includes('IN')) acc.nhap += soLuong;
-                        if (String(detail.ma_kho).toUpperCase().includes('OUT')) acc.xuat += soLuong;
-                        return acc;
-                    }, { nhap: 0, xuat: 0 });
-
-                    const currentStock = (tonkhoItem.ton_dau || 0) + aggregates.nhap - aggregates.xuat;
-                    row.dataset.currentStock = currentStock;
-
-                    const formattedDate = formatDate(tonkhoItem.date);
-                    dateInput.value = formattedDate;
-
-                    handleModalProductChange({ target: soLuongInput }); 
-
-                } catch(error) {
-                    console.error("Lỗi tải dữ liệu cho LOT:", error);
-                    showToast(`Lỗi tải dữ liệu cho LOT ${selectedLot}: ${error.message}`, 'error');
-                }
+        if (input.name === 'lot_select') {
+            const selectedOption = lotSelect.options[lotSelect.selectedIndex];
+            if (selectedOption && selectedOption.value) {
+                hiddenLotInput.value = selectedOption.dataset.lot || '';
+                dateInput.value = selectedOption.dataset.date || '';
+                maVachInput.value = selectedOption.value || '';
+                row.dataset.currentStock = selectedOption.dataset.stock || '0';
+            } else {
+                hiddenLotInput.value = '';
+                dateInput.value = '';
+                maVachInput.value = '';
+                row.dataset.currentStock = '0';
             }
-        }
-
-        if (triggerBarcodeUpdate) {
-            const selectedMaVt = maVtSelect.value;
-            const selectedLot = lotSelect.value;
-            const formattedDate = dateInput.value; 
-
-            let generatedBarcode = '';
-            maVachInput.value = ''; 
-            maVachInput.classList.remove('border-green-500', 'border-red-500'); 
-
-            if (selectedMaVt) {
-                const lotPart = selectedLot || '';
-                let datePart = ''; 
-
-                if (formattedDate && /^\d{2}\/\d{2}\/\d{4}$/.test(formattedDate)) {
-                    const dateParts = formattedDate.split('/');
-                    datePart = `${dateParts[0]}.${dateParts[1]}.${dateParts[2]}`;
-                }
-
-                generatedBarcode = `${selectedMaVt}${lotPart}${datePart}`;
-                maVachInput.value = generatedBarcode;
-
-                try {
-                    const { data: existingBarcode, error: barcodeError } = await supabase
-                        .from('TONKHO')
-                        .select('ma_vach')
-                        .eq('ma_vach', generatedBarcode)
-                        .maybeSingle();
-
-                    if (barcodeError) {
-                        console.error("Lỗi kiểm tra mã vạch:", barcodeError);
-                        maVachInput.classList.add('border-yellow-500');
-                    } else {
-                        if (existingBarcode) {
-                            maVachInput.classList.add('border-green-500');
-                            maVachInput.classList.remove('border-red-500');
-                        } else {
-                            maVachInput.classList.add('border-red-500');
-                            maVachInput.classList.remove('border-green-500');
-                        }
-                    }
-                } catch (error) {
-                     console.error("Exception khi kiểm tra mã vạch:", error);
-                     maVachInput.classList.add('border-yellow-500');
-                }
-            }
+            // Trigger calculation for so_luong
+            handleModalProductChange({ target: soLuongInput });
         }
 
         if (['so_luong', 'yeu_cau'].includes(input.name)) {
@@ -3254,10 +3260,10 @@
                  return;
             }
             if(soLuongInput.classList.contains('border-red-500')){
-                 showToast(`Lỗi ở sản phẩm STT ${index + 1}: Số lượng không hợp lệ.`, 'error');
+                 showToast(`Lỗi ở sản phẩm STT ${index + 1}: Số lượng xuất vượt tồn kho.`, 'error');
                  return;
             }
-             if(!row.querySelector('[name="ma_vt"]').value) {
+            if(!row.querySelector('[name="ma_vt"]').value) {
                 showToast(`Lỗi ở sản phẩm STT ${index + 1}: Vui lòng chọn Mã VT.`, 'error');
                 return;
             }

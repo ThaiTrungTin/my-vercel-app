@@ -1,63 +1,25 @@
-ở Tất cả các view ví dụ tôi đang làm gì ( ví dụ thêm , sửa ) thì vẫn có thể chuyển tab qua view khác và sau đó quay lại thì vẫn còn nguyên hành động đó
-Trong view Tồn Kho
-các cột Tên VT, Ngành, Phụ Trách luôn luôn phải lookup từ cột Mã VT sang cột Mã VT của bảng SANPHAM để cập nhật dữ liệu thay đổi mới nhất
-form nhạp và sửa của 2 cột Nhập và Xuất cứ tô xám là được cho nó đẹp mắt
-Bộ lọc phải có tính phụ thuộc ( giống view Sản Phẩm)
-Trong bộ lọc : chỉ cần click vào điều kiện là tự đọng sẽ tick box)
-ở view Đơn Hàng . nút Thêm mới ( sửa sẽ mở form )
+ở 4 view ; đều có bộ lọc, tôi muốn bạn chỉnh sửa các bộ lọc thành bộ lọc có điều kiện 
 
-Khi thêm mới sẽ mở ra 1 của sổ ( chiều ngang chiếm 90% app chính) Chia ra bên trái ( Thông Tin Chung) . bên Phải ( Danh Sách Sản Phẩm / sẽ ghi vào bảng CHITIET)
+vi dụ Mã VT A có Phụ trách là A , B , Mã VT C có Phục Trách là D 
 
-Thông Tin Chung ( ghi vào DONHANG) (rộng 33%)
+Khi lọc Mã VT A thì bên bộ lọc Phụ trách chỉ hiển thị A và B đẻ lọc
 
-Hàng 1 :
-
-Thời Gian : ghi vào cột Thời Gian
-
-Loại Đơn ( cột ảo chỉ để tham chiếu) : Xuất / Nhập
-
-Mã Kho : ( Mã Kho)
-
-Mã NX : ( ghi vào cột Mã NX) ( nếu Loại là Xuất Tiêu đề và Mã Xuất / Loại là nhập sẽ là Mã Nhập )
+Ở các tick box trong bộ lọc , chỉ cần ấn vào dữ liệu sẽ tick box
 
 
 
-Hàng 2 :
+Thứ 3 . ẩn các nút : Thêm mới , xóa , sửa , lưu , hủy ở view Chi Tiết , ẩn luôn cột id của view chi tiết 
 
-User ( ghi vào User) (nếu Loại là Xuất Tiêu đề và Xuất Cho / Loại là nhập sẽ là Nhập Từ)
 
-Ngành : ghi vào Ngành
 
-Hàng 3 : Mục Đích -> Mục Đích ( Longtext . dữ liệu có thể xuống dòng
+thứ 4 : Duẽ liệu ở View Đơn Hàng và Chi Tiết hãy sắp xếp theo thứ tự giảm giần của Thời Gian : (hôm này sẽ nằm trên hôm qua )
 
-Hàng 4 : Thông Tin Nhận Hàng -> Thông Tin Nhận Hàng ( Longtext . dữ liệu có thể xuống dòng
+Thứ 5 : kích thước các cột ở Chi Tiết 
 
-Hàng 5 : Ghi Chú -> Ghi Chú ( Longtext . dữ liệu có thể xuống dòng
+Thời gian,Mã kho,Mã NX,Mã vạch,Mã VT,,Lot,Date,Yêu cầu,Số lượng,Loại,User,Ngành,Phụ trách sẽ vừa với dữ liệu 
 
-Hàng 6 : 4 cột Order PKL Done Image
+còn lại sẽ chia 10 phần ,Mục đích 6 phần Tên VT 4 phần
 
-Danh sách sản phẩm (67% tỉ lệ cửa sổ). ghi vào view Chi Tiết
 
-Kích thước của các Cột
 
-width: 3%; } /* STT /
-
-{ width: 11%; } / Mã VT / : Sẽ lấy các Mã VT có trong Tồn Kho (TONKHO) (ghi vào cột MÃ VT)
-
-{ width: 24%; } / Tên VT / Từ Mã VT tham chiếu sang SANPHAM để lấy ( ghi vào cột Mã VT)
-
-{ width: 11%; } / LOT / : chỉ lấy các LOT cửa Mã VT tương ứng trong Tồn Kho ( ghi vào LOT)
-
-{ width: 8%; } / Date / : từ LOT tham chiếu sang Tồn Kho ( ghi vào Date)
-
-{ width: 6%; } / Yêu Cầu / ( tự đi( ghi vào yêu cầu)
-
-{ width: 6%; } / Xuất (nếu Loại đơnlà xuất , Nhập nếu loại đơn là Nhập /( tự điền . =< Yêu Cầu) ( ghi vào Số lượng)
-
-{ width: 8%; } / Tồn Sau Xuất/ ( cột ảo : sẽ lấy số Tồn Kho - Xuất / tồn kho + Nhập
-
-{ width: 12%; }/ Mã vạch / có cấu trúc giiongs mã vạch của Sản Phẩm , nếu tạo ra trùng với mã ở Sản Phẩm sẽ xanh , khác sẽ đỏ ( ghi vào Mã Vạch)
-
-{ width: 8%; } / Loại / (chọn Tiêu Hao/ Trưng Bày)( ghi vào cột Loại)
-
-{ width: 3%; text-align: center;} / Xóa */ nút xóa hàng
+chỉnh nhanh trong canvas. giữ lại chức năng cũ
