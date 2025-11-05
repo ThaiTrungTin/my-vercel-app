@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phiếu In Đơn Hàng</title>
+    <link rel="icon" type="image/png" href="https://images.seeklogo.com/logo-png/50/1/johnson-johnson-logo-png_seeklogo-500414.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <style>
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printable-area, #printable-area * {
+                visibility: visible;
+            }
+            #printable-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+        body {
+            background-color: #f0f2f5;
+        }
+        #printable-area {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 15mm;
+            margin: 10mm auto;
+            border: 1px #D1D1D1 solid;
+            background: white;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="font-sans">
+
+    <div id="toolbar" class="no-print bg-white p-4 shadow-md sticky top-0 z-50 flex items-center justify-center gap-3">
+        <button id="print-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">In Phiếu</button>
+        <button id="pdf-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Xuất PDF</button>
+        <button id="excel-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Xuất Excel</button>
+        <div class="border-l pl-3 ml-3">
+             <label class="flex items-center space-x-2 cursor-pointer">
+                <input type="checkbox" id="signature-toggle" class="form-checkbox h-5 w-5 text-blue-600 rounded">
+                <span class="text-gray-700 font-medium">Hiện chữ ký</span>
+            </label>
+        </div>
+    </div>
+    
+    <div id="loading-state" class="text-center p-10">
+        <p class="text-gray-600">Đang tải dữ liệu đơn hàng...</p>
+    </div>
+    
+    <div id="error-state" class="hidden text-center p-10 bg-red-100 text-red-700 w-1/2 mx-auto mt-10 rounded-lg">
+        <p class="font-bold">Không thể tải đơn hàng</p>
+        <p id="error-message">Mã đơn hàng không hợp lệ hoặc không tồn tại.</p>
+    </div>
+
+    <div id="printable-area" class="hidden">
+        <div class="flex justify-between items-start mb-6">
+            <div class="text-left">
+                <h1 class="text-2xl font-bold" id="header-logo">JNJ</h1>
+                <p class="text-sm">Warehouse Management</p>
+            </div>
+            <div id="qrcode" class="w-24 h-24"></div>
+        </div>
+        <h2 id="phieu-title" class="text-3xl font-bold text-center mb-8">PHIẾU XUẤT/NHẬP KHO</h2>
+        
+        <div class="grid grid-cols-2 gap-x-8 gap-y-2 mb-8 text-sm">
+            <div><strong>Ngày:</strong> <span id="info-ngay"></span></div>
+            <div><strong>Mã số:</strong> <span id="info-ma-so" class="font-mono"></span></div>
+            <div><strong>Người yêu cầu:</strong> <span id="info-yeu-cau"></span></div>
+            <div><strong>Mã NX:</strong> <span id="info-ma-nx" class="font-mono"></span></div>
+            <div class="col-span-2"><strong>Mục đích:</strong> <span id="info-muc-dich"></span></div>
+            <div class="col-span-2"><strong>Ghi chú:</strong> <span id="info-ghi-chu"></span></div>
+        </div>
+
+        <table class="w-full border-collapse text-sm mb-8">
+            <thead>
+                <tr class="bg-gray-100">
+                    <th class="border p-2 text-center font-bold" style="width: 5%;">STT</th>
+                    <th class="border p-2 text-left font-bold" style="width: 15%;">Mã VT</th>
+                    <th class="border p-2 text-left font-bold" style="width: 55%;">Tên Vật Tư</th>
+                    <th class="border p-2 text-center font-bold" style="width: 10%;">ĐVT</th>
+                    <th class="border p-2 text-center font-bold" style="width: 15%;">Số Lượng</th>
+                </tr>
+            </thead>
+            <tbody id="chi-tiet-table-body">
+            </tbody>
+            <tfoot>
+                <tr class="bg-gray-100 font-bold">
+                    <td colspan="4" class="border p-2 text-right">TỔNG CỘNG:</td>
+                    <td id="total-sl" class="border p-2 text-center"></td>
+                </tr>
+            </tfoot>
+        </table>
+        
+        <div id="signature-section" class="hidden pt-12">
+            <div class="flex justify-around text-center text-sm">
+                <div>
+                    <p class="font-bold">Người Lập Phiếu</p>
+                    <p class="italic mt-1">(Ký, ghi rõ họ tên)</p>
+                    <div class="mt-20" id="sig-yeu-cau"></div>
+                </div>
+                <div>
+                    <p class="font-bold">Thủ Kho</p>
+                    <p class="italic mt-1">(Ký, ghi rõ họ tên)</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        const { createClient } = supabase;
+        const SUPABASE_URL = "https://uefydnefprcannlviimp.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVlZnlkbmVmcHJjYW5ubHZpaW1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwNTcwMDUsImV4cCI6MjA3NjYzMzAwNX0.X274J_1_crUknJEOT1WWUD1h0HM9WdYScDW2eWWsiLk";
+        const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let donHangData = null;
+        let chiTietData = [];
+
+        function sanitizeFileName(fileName) {
+            if (!fileName) return 'file';
+            // Bỏ dấu, chuyển thành chữ thường, thay khoảng trắng bằng gạch ngang, loại bỏ ký tự đặc biệt
+            return fileName
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase()
+                .trim()
+                .replace(/\s+/g, '-')
+                .replace(/[^\w-]+/g, '');
+        }
+
+        async function fetchAndRenderData() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const ma_kho = urlParams.get('ma_kho');
+
+            if (!ma_kho) {
+                document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('error-state').classList.remove('hidden');
+                return;
+            }
+
+            try {
+                const { data: dhData, error: dhError } = await sb.from('don_hang').select('*').eq('ma_kho', ma_kho).single();
+                if (dhError || !dhData) throw new Error(dhError?.message || 'Không tìm thấy đơn hàng.');
+                
+                donHangData = dhData;
+                
+                const { data: ctData, error: ctError } = await sb.from('chi_tiet').select('*').eq('ma_kho', ma_kho);
+                if (ctError) throw new Error(ctError.message);
+                
+                chiTietData = ctData;
+
+                // Render data
+                const isXuat = donHangData.ma_kho.startsWith('OUT');
+                document.getElementById('phieu-title').textContent = isXuat ? 'PHIẾU XUẤT KHO' : 'PHIẾU NHẬP KHO';
+
+                const date = new Date(donHangData.thoi_gian);
+                document.getElementById('info-ngay').textContent = `Ngày ${date.getDate()} tháng ${date.getMonth() + 1} năm ${date.getFullYear()}`;
+                document.getElementById('info-ma-so').textContent = donHangData.ma_kho;
+                document.getElementById('info-yeu-cau').textContent = donHangData.yeu_cau;
+                document.getElementById('info-ma-nx').textContent = donHangData.ma_nx;
+                document.getElementById('info-muc-dich').textContent = donHangData.muc_dich || 'Không có';
+                document.getElementById('info-ghi-chu').textContent = donHangData.ghi_chu || 'Không có';
+                document.getElementById('sig-yeu-cau').textContent = donHangData.yeu_cau;
+
+                const tableBody = document.getElementById('chi-tiet-table-body');
+                let totalSl = 0;
+                tableBody.innerHTML = chiTietData.map((item, index) => {
+                    const sl = isXuat ? item.xuat : item.nhap;
+                    totalSl += sl;
+                    return `
+                        <tr>
+                            <td class="border p-2 text-center">${index + 1}</td>
+                            <td class="border p-2">${item.ma_vt}</td>
+                            <td class="border p-2">${item.ten_vt}</td>
+                            <td class="border p-2 text-center">Cái</td>
+                            <td class="border p-2 text-center">${sl}</td>
+                        </tr>
+                    `;
+                }).join('');
+                document.getElementById('total-sl').textContent = totalSl;
+
+                new QRCode(document.getElementById("qrcode"), {
+                    text: window.location.href,
+                    width: 96,
+                    height: 96,
+                });
+
+                document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('printable-area').classList.remove('hidden');
+
+            } catch (error) {
+                console.error(error);
+                document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('error-message').textContent = error.message;
+                document.getElementById('error-state').classList.remove('hidden');
+            }
+        }
+        
+        function getDynamicFilename(extension) {
+            const typeText = donHangData.ma_kho.startsWith('OUT') ? 'ThucXuat' : 'ThucNhap';
+            const mucDich = sanitizeFileName(donHangData.muc_dich);
+            const yeuCau = sanitizeFileName(donHangData.yeu_cau);
+            return `${typeText}-${mucDich}-${yeuCau}.${extension}`;
+        }
+        
+        async function handlePdfExport() {
+            const printableArea = document.getElementById('printable-area');
+            const signatureSection = document.getElementById('signature-section');
+            const isSignatureVisible = document.getElementById('signature-toggle').checked;
+            
+            signatureSection.style.display = isSignatureVisible ? 'block' : 'none';
+
+            const canvas = await html2canvas(printableArea, { scale: 3 });
+            const imgData = canvas.toDataURL('image/png');
+            
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({
+                orientation: 'p',
+                unit: 'mm',
+                format: 'a4'
+            });
+            
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const canvasWidth = canvas.width;
+            const canvasHeight = canvas.height;
+            const ratio = canvasWidth / canvasHeight;
+            const imgHeight = pdfWidth / ratio;
+            
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
+            pdf.save(getDynamicFilename('pdf'));
+            
+            signatureSection.style.display = 'none'; // hide it again by default
+            if(isSignatureVisible) signatureSection.classList.remove('hidden'); // respect original state
+        }
+        
+        function handleExcelExport() {
+            if (!donHangData || chiTietData.length === 0) return;
+            
+            const isXuat = donHangData.ma_kho.startsWith('OUT');
+            const title = isXuat ? 'PHIẾU XUẤT KHO' : 'PHIẾU NHẬP KHO';
+            const date = new Date(donHangData.thoi_gian);
+
+            const headerData = [
+                [title],
+                [], // Empty row
+                ["Người yêu cầu:", donHangData.yeu_cau, "", "Mã NX:", donHangData.ma_nx],
+                ["Mục đích:", donHangData.muc_dich, "", "Ngày:", `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`],
+                [], // Empty row
+            ];
+            
+            const tableHeader = ["STT", "Mã VT", "Tên Vật Tư", "ĐVT", "Số Lượng"];
+            let totalSl = 0;
+            const tableData = chiTietData.map((item, index) => {
+                const sl = isXuat ? item.xuat : item.nhap;
+                totalSl += sl;
+                return [index + 1, item.ma_vt, item.ten_vt, "Cái", sl];
+            });
+
+            const footerData = [
+                [],
+                ["", "", "", "TỔNG CỘNG:", totalSl],
+                [],
+                ["", "Người Lập Phiếu", "", "Thủ Kho"],
+                ["", "(Ký, ghi rõ họ tên)", "", "(Ký, ghi rõ họ tên)"],
+                [],[],[], // spacing
+                ["", donHangData.yeu_cau]
+            ];
+            
+            const finalData = headerData.concat([tableHeader], tableData, footerData);
+            
+            const ws = XLSX.utils.aoa_to_sheet(finalData);
+            
+            // Merging and styling
+            ws['!merges'] = [
+                { s: { r: 0, c: 0 }, e: { r: 0, c: 4 } }, // Title
+                { s: { r: 3, c: 1 }, e: { r: 3, c: 2 } }  // Muc dich value
+            ];
+            
+            // Column widths
+            ws['!cols'] = [
+                { wch: 5 }, { wch: 15 }, { wch: 50 }, { wch: 8 }, { wch: 10 }
+            ];
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "PhieuXuatNhap");
+            XLSX.writeFile(wb, getDynamicFilename('xlsx'));
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchAndRenderData();
+            document.getElementById('print-btn').addEventListener('click', () => window.print());
+            document.getElementById('pdf-btn').addEventListener('click', handlePdfExport);
+            document.getElementById('excel-btn').addEventListener('click', handleExcelExport);
+            document.getElementById('signature-toggle').addEventListener('change', (e) => {
+                document.getElementById('signature-section').classList.toggle('hidden', !e.target.checked);
+            });
+        });
+    </script>
+</body>
+</html>
