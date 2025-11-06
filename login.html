@@ -123,20 +123,6 @@
 
         </div>
 
-        <div id="app-container" class="hidden w-full max-w-lg text-center">
-            <div class="bg-white p-8 rounded-lg shadow-md">
-                <div class="flex justify-center mb-4">
-                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTqynYNg47oA46x0qg7yA28QtHrT2kPgD3WTA&s" alt="Logo" class="rounded-full h-20 w-20">
-                </div>
-                <h1 class="text-3xl font-bold text-gray-800 mb-4">Chào mừng!</h1> 
-                <div id="user-info" class="text-left space-y-2 text-gray-700">
-                </div>
-                <button id="logout-btn" class="mt-6 w-full bg-red-500 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-200">
-                    Đăng xuất
-                </button>
-            </div>
-        </div>
-
     </div>
 
     <script type="module">
@@ -156,9 +142,7 @@
         
         const showRegisterBtn = document.getElementById('show-register-btn');
         const showLoginBtn = document.getElementById('show-login-btn');
-        const logoutBtn = document.getElementById('logout-btn');
         
-        const userInfoDiv = document.getElementById('user-info');
         const messageContainer = document.getElementById('message-container');
 
         function showMessage(message, isError = true) {
@@ -173,7 +157,6 @@
         }
 
         function showAuthView() {
-            appContainer.classList.add('hidden');
             loadingContainer.classList.add('hidden');
             
             registerForm.classList.add('hidden');
@@ -247,7 +230,7 @@
                         gmail: gmail, 
                         ho_ten: ho_ten, 
                         mat_khau: mat_khau, 
-                        phan_quyen: 'User'
+                        phan_quyen: 'View'
                     }
                 ])
                 .select()
@@ -264,13 +247,6 @@
                 sessionStorage.setItem('loggedInUser', JSON.stringify(newUser));
                 showAppView(newUser);
             }
-        }
-
-        function handleLogout() {
-            sessionStorage.removeItem('loggedInUser');
-            showMessage('Đã đăng xuất.', false);
-            showAuthView();
-            setTimeout(() => showMessage(''), 1000);
         }
 
         function checkSession() {
@@ -303,8 +279,6 @@
         loginForm.addEventListener('submit', handleLogin);
         registerForm.addEventListener('submit', handleRegister);
         
-        logoutBtn.addEventListener('click', handleLogout);
-
         document.addEventListener('DOMContentLoaded', () => {
             checkSession();
 

@@ -1,3 +1,4 @@
+
 import { sb, cache, viewStates, showLoading, showToast, showConfirm, debounce, renderPagination, sanitizeFileName, filterButtonDefaultTexts, PLACEHOLDER_IMAGE_URL, currentUser } from './app.js';
 
 let selectedSanPhamImageFile = null;
@@ -5,6 +6,10 @@ let selectedSanPhamImageFile = null;
 function buildSanPhamQuery() {
     const state = viewStates['view-san-pham'];
     let query = sb.from('san_pham').select('*', { count: 'exact' });
+
+    if (currentUser.phan_quyen === 'View') {
+        query = query.eq('phu_trach', currentUser.ho_ten);
+    }
 
     if (state.searchTerm) query = query.or(`ma_vt.ilike.%${state.searchTerm}%,ten_vt.ilike.%${state.searchTerm}%,nganh.ilike.%${state.searchTerm}%,phu_trach.ilike.%${state.searchTerm}%`);
     if (state.filters.ma_vt?.length > 0) query = query.in('ma_vt', state.filters.ma_vt);
@@ -177,6 +182,7 @@ async function handleSaveSanPham(e) {
         if (error) throw error;
         showToast(`Lưu sản phẩm thành công!`, 'success');
         document.getElementById('san-pham-modal').classList.add('hidden');
+        fetchSanPham(isEdit ? viewStates['view-san-pham'].currentPage : 1, false);
     } catch (error) {
         if (error.code === '23505') showToast(`Mã vật tư "${sanPhamData.ma_vt}" đã tồn tại.`, 'error');
         else showToast(`Lỗi: ${error.message}`, 'error');
@@ -188,12 +194,26 @@ async function handleSaveSanPham(e) {
 async function handleDeleteMultipleSanPham() {
     const selectedIds = [...viewStates['view-san-pham'].selected];
     if (selectedIds.length === 0) return;
-    
-    const confirmed = await showConfirm(`Bạn có chắc muốn xóa ${selectedIds.length} sản phẩm?`);
-    if (!confirmed) return;
 
     showLoading(true);
     try {
+        const { count, error: checkError } = await sb
+            .from('chi_tiet')
+            .select('ma_vt', { count: 'exact', head: true })
+            .in('ma_vt', selectedIds);
+
+        if (checkError) throw checkError;
+
+        if (count > 0) {
+            showToast('Không thể xóa. Một hoặc nhiều sản phẩm đã có giao dịch Nhập/Xuất.', 'error');
+            return; 
+        }
+
+        showLoading(false); 
+        const confirmed = await showConfirm(`Bạn có chắc muốn xóa ${selectedIds.length} sản phẩm?`);
+        if (!confirmed) return;
+
+        showLoading(true); 
         const { data: productsToDelete, error: selectError } = await sb.from('san_pham').select('url_hinh_anh').in('ma_vt', selectedIds);
         if (selectError) throw selectError;
 
@@ -208,6 +228,7 @@ async function handleDeleteMultipleSanPham() {
         if (deleteError) throw deleteError;
 
         showToast(`Đã xóa ${selectedIds.length} sản phẩm.`, 'success');
+        fetchSanPham(1, false);
     } catch (error) {
         showToast(`Lỗi khi xóa: ${error.message}`, 'error');
     } finally {
@@ -260,9 +281,10 @@ async function openFilterPopover(button, view) {
     const filterKey = button.dataset.filterKey;
     const state = viewStates[view];
 
-    const popover = document.getElementById('filter-popover-template').cloneNode(true);
-    popover.id = '';
-    popover.classList.remove('hidden');
+    const template = document.getElementById('filter-popover-template');
+    if (!template) return;
+    const popoverContent = template.content.cloneNode(true);
+    const popover = popoverContent.querySelector('.filter-popover');
     document.body.appendChild(popover);
 
     const rect = button.getBoundingClientRect();
@@ -271,6 +293,25 @@ async function openFilterPopover(button, view) {
 
     const optionsList = popover.querySelector('.filter-options-list');
     const applyBtn = popover.querySelector('.filter-apply-btn');
+    const searchInput = popover.querySelector('.filter-search-input');
+
+    const renderOptions = (options) => {
+        const searchTerm = searchInput.value.toLowerCase();
+        const filteredOptions = options.filter(option => 
+            option && String(option).toLowerCase().includes(searchTerm)
+        );
+
+        if (filteredOptions.length > 0) {
+            optionsList.innerHTML = filteredOptions.map(option => `
+                <label class="flex items-center space-x-2 px-2 py-1 hover:bg-gray-100 rounded">
+                    <input type="checkbox" value="${option}" class="filter-option-cb" ${state.filters[filterKey]?.includes(String(option)) ? 'checked' : ''}>
+                    <span class="text-sm">${option}</span>
+                </label>
+            `).join('');
+        } else {
+             optionsList.innerHTML = '<div class="text-center p-4 text-sm text-gray-500">Không có tùy chọn.</div>';
+        }
+    };
     
     optionsList.innerHTML = '<div class="text-center p-4 text-sm text-gray-500">Đang tải...</div>';
     applyBtn.disabled = true;
@@ -282,29 +323,28 @@ async function openFilterPopover(button, view) {
             _ten_vt_filter: state.filters.ten_vt || [],
             _nganh_filter: state.filters.nganh || [],
             _phu_trach_filter: state.filters.phu_trach || [],
-            _search_term: state.searchTerm || ''
+            _search_term: state.searchTerm || '',
+            _user_role: currentUser.phan_quyen,
+            _user_ho_ten: currentUser.ho_ten
         });
         if (error) throw error;
         
-        const uniqueOptions = data; 
-
-        if (uniqueOptions.length > 0) {
-            optionsList.innerHTML = uniqueOptions.map(option => `
-                <label class="flex items-center space-x-2 px-2 py-1 hover:bg-gray-100 rounded">
-                    <input type="checkbox" value="${option}" class="filter-option-cb" ${state.filters[filterKey]?.includes(option) ? 'checked' : ''}>
-                    <span class="text-sm">${option}</span>
-                </label>
-            `).join('');
-        } else {
-             optionsList.innerHTML = '<div class="text-center p-4 text-sm text-gray-500">Không có tùy chọn.</div>';
-        }
-        
+        const uniqueOptions = Array.isArray(data) ? data.map(item => item.option) : [];
+        renderOptions(uniqueOptions);
+        searchInput.addEventListener('input', () => renderOptions(uniqueOptions));
         applyBtn.disabled = false;
         
     } catch (error) {
         optionsList.innerHTML = '<div class="text-center p-4 text-sm text-red-500">Lỗi tải bộ lọc.</div>';
-        showToast(`Không thể tải bộ lọc cho ${filterKey}.`, 'error');
+        showToast(`Lỗi tải bộ lọc cho ${filterKey}.`, 'error');
     }
+
+    const closeHandler = (e) => {
+        if (!popover.contains(e.target) && e.target !== button) {
+            popover.remove();
+            document.removeEventListener('click', closeHandler);
+        }
+    };
 
     applyBtn.onclick = () => {
         const selectedOptions = Array.from(popover.querySelectorAll('.filter-option-cb:checked')).map(cb => cb.value);
@@ -316,21 +356,16 @@ async function openFilterPopover(button, view) {
         if(view === 'view-san-pham') fetchSanPham(1);
         
         popover.remove();
+        document.removeEventListener('click', closeHandler);
     };
-
-    const closePopover = (e) => {
-        if (!popover.contains(e.target) && e.target !== button) {
-            popover.remove();
-            document.removeEventListener('click', closePopover);
-        }
-    };
-    setTimeout(() => document.addEventListener('click', closePopover), 0);
+    
+    setTimeout(() => document.addEventListener('click', closeHandler), 0);
 }
 
 export function initSanPhamView() {
     const viewContainer = document.getElementById('view-san-pham');
-    const isAdmin = currentUser.phan_quyen === 'Admin';
-    viewContainer.querySelectorAll('.sp-admin-only').forEach(el => el.classList.toggle('hidden', !isAdmin));
+    const isAdminOrUser = currentUser.phan_quyen === 'Admin' || currentUser.phan_quyen === 'User';
+    viewContainer.querySelectorAll('.sp-admin-only').forEach(el => el.classList.toggle('hidden', !isAdminOrUser));
 
 
     document.getElementById('san-pham-search').addEventListener('input', debounce(() => {
@@ -364,7 +399,9 @@ export function initSanPhamView() {
         if (!row || !row.dataset.id) return;
         const id = row.dataset.id;
         const checkbox = row.querySelector('.san-pham-select-row');
-        if (e.target.type !== 'checkbox') checkbox.checked = !checkbox.checked;
+        if (e.target.type !== 'checkbox') {
+            checkbox.checked = !checkbox.checked;
+        }
         viewStates['view-san-pham'].selected[checkbox.checked ? 'add' : 'delete'](id);
         row.classList.toggle('bg-blue-100', checkbox.checked);
         updateSanPhamActionButtonsState();
@@ -374,8 +411,15 @@ export function initSanPhamView() {
     document.getElementById('san-pham-select-all').addEventListener('click', (e) => {
         const isChecked = e.target.checked;
         document.querySelectorAll('.san-pham-select-row').forEach(cb => {
-            if(cb.checked !== isChecked) cb.click();
+            const row = cb.closest('tr');
+            if (row && cb.checked !== isChecked) {
+                 cb.checked = isChecked;
+                 const id = row.dataset.id;
+                 viewStates['view-san-pham'].selected[isChecked ? 'add' : 'delete'](id);
+                 row.classList.toggle('bg-blue-100', isChecked);
+            }
         });
+        updateSanPhamActionButtonsState();
         updateSanPhamSelectionInfo(); 
     });
     

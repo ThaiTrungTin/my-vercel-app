@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản Lý Vật Tư</title>
+    <title>App Base</title>
     <link rel="icon" type="image/png" href="https://images.seeklogo.com/logo-png/50/1/johnson-johnson-logo-png_seeklogo-500414.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -22,12 +22,12 @@
             transform: scale(0.97);
         }
         button:disabled { opacity: 0.5; cursor: not-allowed; }
-        .table-container { height: calc(100vh - 250px); overflow-y: auto; }
+        .table-container { height: calc(100vh - 200px); overflow-y: auto; }
         .table-container thead th { 
             position: sticky; 
             top: 0; 
             z-index: 10; 
-            background-color: #E5E7EB; /* <-- FIX: Thêm dòng này (Đây là màu bg-gray-200 của Tailwind) */
+            background-color: #E5E7EB;
         }
         
         #toast-container {
@@ -81,7 +81,7 @@
             animation: loading-bar-flow 1.5s infinite linear;
         }
         #loading-bar {
-            background-color: #93c5fd; /* light blue */
+            background-color: #93c5fd; 
             overflow: hidden;
         }
         .sortable-ghost {
@@ -95,16 +95,22 @@
         .cursor-move {
             cursor: move;
         }
-        /* Hide number input arrows */
         input[type=number]::-webkit-inner-spin-button,
         input[type=number]::-webkit-outer-spin-button {
           -webkit-appearance: none;
           margin: 0;
         }
         input[type=number] {
-          -moz-appearance: textfield; /* Firefox */
+          -moz-appearance: textfield; 
         }
     </style>
+<script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.29.0"
+  }
+}
+</script>
 </head>
 <body class="bg-gray-100 font-sans antialiased">
 
@@ -113,6 +119,16 @@
     </div>
 
     <div id="toast-container"></div>
+
+    <div id="app-loading" class="flex items-center justify-center h-screen">
+        <div class="text-center">
+            <svg class="animate-spin h-10 w-10 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="mt-2 text-gray-600">Đang tải ứng dụng...</p>
+        </div>
+    </div>
 
     <div id="main-app" class="hidden">
         <div class="flex h-screen bg-gray-200">
@@ -166,6 +182,11 @@
             </div>
 
             <div id="main-content-area" class="relative flex-1 flex flex-col ml-64 transition-all duration-300 ease-in-out">
+                <div id="main-header" class="flex-shrink-0 bg-green-100 shadow-md px-4 py-2 flex justify-between items-center gap-4">
+                    <h1 id="view-title" class="text-xl font-bold text-red-700"></h1>
+                    <div id="notification-bar" class="text-sm text-gray-800 text-right whitespace-nowrap overflow-hidden flex-grow">
+                    </div>
+                </div>
                 <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-4 md:p-6">
                     <div id="view-phat-trien" class="app-view flex items-center justify-center h-full">
                         <div class="text-center">
@@ -173,17 +194,15 @@
                                 <path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                             </svg>
                             <h2 class="mt-2 text-2xl font-semibold text-gray-900">Tính năng đang được phát triển</h2>
-                            <p class="mt-1 text-base text-gray-500">Chưa có ý tưởng cho chức năng này. Vui lòng quay lại sau 😅😀!</p>
+                            <p class="mt-1 text-base text-gray-500">Chúng tôi đang làm việc chăm chỉ để mang đến cho bạn chức năng này. Vui lòng quay lại sau!</p>
                         </div>
                     </div>
                     
                     <div id="view-san-pham" class="app-view hidden flex flex-col h-full">
-                        <!-- Content will be loaded dynamically -->
                     </div>
 
                     <div id="view-ton-kho" class="app-view hidden flex flex-col h-full">
                         <div class="flex-shrink-0">
-                            <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-4">Quản Lý Tồn Kho</h1>
                             <div class="bg-white p-4 rounded-lg shadow-md mb-4">
                                 <div class="flex flex-wrap gap-x-4 gap-y-2 items-center justify-between">
                                     <div class="flex flex-wrap gap-2 items-center">
@@ -211,7 +230,7 @@
                                 <table class="min-w-full border-collapse">
                                     <thead class="bg-gray-200"><tr>
                                         <th class="px-1 py-3 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 2%;"><input type="checkbox" id="ton-kho-select-all"></th>
-                                        <th class="px-1 py-3 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 15%;">Mã Vạch</th>
+                                        <th class="px-1 py-3 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 15%;">Code + Lot + EXP</th>
                                         <th class="px-1 py-3 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 10%;">Mã VT</th>
                                         <th class="px-1 py-3 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 30%;">Tên VT</th>
                                         <th class="px-1 py-3 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 5%;">Lot</th>
@@ -229,9 +248,14 @@
                                             <div>Cuối<span id="ton-kho-header-cuoi-count" class="block font-bold text-red-600 text-xs"></span></div>
                                         </th>
                                         <th class="px-1 py-3 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 3%;">T.Trạng</th>
-                                        <th class="px-1 py-3 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 3%;">Tray</th>
-                                        <th class="px-1 py-3 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 3%;">Ngành</th>
-                                        <th class="px-1 py-3 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 9%;">Phụ Trách</th>
+                                        <th class="px-1 py-3 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 3%;">
+                                            <div class="flex justify-between items-center">
+                                                <span>Tray</span>
+                                                <button id="ton-kho-toggle-cols" class="ml-1 text-blue-600 hover:text-blue-800 font-mono">[+]</button>
+                                            </div>
+                                        </th>
+                                        <th class="ton-kho-col-nganh px-1 py-3 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 3%;">Ngành</th>
+                                        <th class="ton-kho-col-phu-trach px-1 py-3 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 9%;">Phụ Trách</th>
                                         <th class="px-1 py-3 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 1.5%;">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -265,7 +289,6 @@
 
                     <div id="view-don-hang" class="app-view hidden flex flex-col h-full">
                          <div class="flex-shrink-0">
-                            <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-4">Quản Lý Đơn Hàng</h1>
                             <div class="bg-white p-4 rounded-lg shadow-md mb-4">
                                 <div class="flex flex-wrap gap-x-4 gap-y-2 items-center justify-between">
                                     <div class="flex flex-wrap gap-2 items-center">
@@ -336,8 +359,7 @@
                     </div>
 
                     <div id="view-chi-tiet" class="app-view hidden flex flex-col h-full">
-                        <div class="flex-shrink-0">
-                            <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-4">Chi Tiết Giao Dịch</h1>
+                         <div class="flex-shrink-0">
                             <div class="bg-white p-4 rounded-lg shadow-md mb-4">
                                 <div class="flex flex-wrap gap-x-4 gap-y-2 items-center justify-between">
                                     <div class="flex flex-wrap gap-2 items-center">
@@ -364,38 +386,36 @@
                         </div>
                         <div class="flex-grow bg-white rounded-lg shadow-md overflow-hidden">
                             <div class="table-container">
-                                <table class="min-w-full border-collapse">
-                                    <thead class="bg-gray-200">
-                                        <tr>
-                                            <th class="px-1 py-3 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 4%;">Thời Gian</th>
-                                            <th class="px-1 py-3 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 6%;">Mã Kho</th>
-                                            <th class="px-1 py-3 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 6%;">Mã NX</th>
-                                            <th class="px-1 py-3 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 10%;">Mã Vạch</th>
-                                            <th class="px-1 py-3 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 6%;">Mã VT</th>
-                                            <th class="px-1 py-3 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 15%;">Tên VT</th>
-                                            <th class="px-1 py-3 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 5%;">Lot</th>
-                                            <th class="px-1 py-3 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 5%;">Date</th>
-                                            <th class="px-1 py-3 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 3%;">YCSL</th>
-                                            <th class="px-1 py-3 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 3%;">
-                                                <div>Nhập<span id="chi-tiet-header-nhap-count" class="block font-bold text-green-600 text-xs"></span></div>
-                                            </th>
-                                            <th class="px-1 py-3 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 3%;">
-                                                <div>Xuất<span id="chi-tiet-header-xuat-count" class="block font-bold text-red-600 text-xs"></span></div>
-                                            </th>
-                                            <th class="px-1 py-3 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 5%;">Loại</th>
-                                            <th class="px-1 py-3 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 5%;">Yêu Cầu</th>
-                                            <th class="px-1 py-3 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 18%;">Mục Đích</th>
-                                            <th class="px-1 py-3 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 5%;">Ngành</th>
-                                            <th class="px-1 py-3 text-center text-xs font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 5%;">Phụ Trách</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="chi-tiet-table-body" class="bg-white text-xs"></tbody>
+                                <table class="min-w-full border-collapse text-xs">
+                                    <thead class="bg-gray-200"><tr>
+                                        <th class="px-1 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 7%;">Thời Gian</th>
+                                        <th class="px-1 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 7%;">Mã Kho</th>
+                                        <th class="px-1 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 7%;">Mã NX</th>
+                                        <th class="px-1 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 10%;">Code + Lot + EXP</th>
+                                        <th class="px-1 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 6%;">Mã VT</th>
+                                        <th class="px-1 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 15%;">Tên VT</th>
+                                        <th class="px-1 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 5%;">LOT</th>
+                                        <th class="px-1 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 5%;">Date</th>
+                                        <th class="px-1 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 3%;">Y/C</th>
+                                        <th class="px-1 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 3%;">Nhập<span id="chi-tiet-header-nhap-count" class="block font-bold text-green-600 text-xs"></span></th>
+                                        <th class="px-1 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 3%;">Xuất<span id="chi-tiet-header-xuat-count" class="block font-bold text-red-600 text-xs"></span></th>
+                                        <th class="px-1 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 5%;">Loại</th>
+                                        <th class="px-1 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 6%;">Yêu Cầu</th>
+                                        <th class="px-1 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300 relative" style="width: 16%;">
+                                            <div class="flex justify-center items-center">
+                                                <span>Mục Đích</span>
+                                            </div>
+                                            <button id="chi-tiet-toggle-cols" class="absolute right-1 top-1/2 -translate-y-1/2 text-blue-600 hover:text-blue-800 font-mono">[+]</button>
+                                        </th>
+                                        <th class="chi-tiet-col-nganh px-1 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 4%;">Ngành</th>
+                                        <th class="chi-tiet-col-phu-trach px-1 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300" style="width: 8%;">Phụ Trách</th>
+                                    </tr></thead>
+                                    <tbody id="chi-tiet-table-body" class="bg-white"></tbody>
                                 </table>
                             </div>
                         </div>
                         <div class="flex-shrink-0 flex flex-col md:flex-row justify-between items-center mt-4 p-4 bg-white rounded-lg shadow-md">
                             <span id="chi-tiet-pagination-info" class="text-sm text-gray-600 mb-2 md:mb-0"></span>
-                             <span id="chi-tiet-selection-info" class="text-sm text-gray-600 mb-2 md:mb-0"></span>
                             <div class="flex items-center gap-2 flex-wrap">
                                 <select id="chi-tiet-items-per-page" class="px-3 py-1 border rounded-md bg-white">
                                     <option value="50">50 / trang</option>
@@ -413,337 +433,262 @@
                             </div>
                         </div>
                     </div>
-    
+
                     <div id="view-cai-dat" class="app-view hidden">
+                        <!-- Content will be loaded dynamically -->
+                    </div>
+                    
+                    <div id="view-image-edit" class="app-view hidden">
                         <!-- Content will be loaded dynamically -->
                     </div>
                 </main>
             </div>
         </div>
     </div>
-    
-    <!-- Modals -->
-    <div id="san-pham-modal" class="fixed inset-0 z-50 flex items-center justify-center overflow-auto modal-backdrop hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-lg m-4">
-            <form id="san-pham-form" class="p-6">
-                <h3 class="text-xl font-semibold leading-6 text-gray-900 mb-4" id="san-pham-modal-title">Thêm Sản Phẩm Mới</h3>
-                <!-- SỬA ID: sp-edit-mode-ma-vt -> san-pham-edit-mode-ma-vt -->
+
+    <!-- Modals and Templates -->
+    <div id="confirm-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
+            <h3 id="confirm-title" class="text-lg font-bold text-gray-800 mb-2">Xác nhận</h3>
+            <p id="confirm-message" class="text-gray-600 mb-4">Bạn có chắc muốn tiếp tục?</p>
+            <div class="flex justify-end gap-3">
+                <button id="confirm-cancel-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Hủy</button>
+                <button id="confirm-ok-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Đồng ý</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="password-reset-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Đặt lại mật khẩu cho <span id="reset-user-gmail-display" class="font-mono"></span></h3>
+            <form id="password-reset-form">
+                <input type="hidden" id="reset-user-gmail">
+                <label for="reset-new-password" class="block text-sm font-medium text-gray-700">Mật khẩu mới</label>
+                <input type="password" id="reset-new-password" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                <div class="flex justify-end gap-3 mt-4">
+                    <button type="button" id="cancel-reset-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Hủy</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Lưu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="san-pham-modal" class="hidden fixed inset-0 z-40 flex items-center justify-center modal-backdrop overflow-y-auto p-4">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg">
+            <h3 id="san-pham-modal-title" class="text-xl font-bold text-gray-800 mb-4"></h3>
+            <form id="san-pham-form" class="space-y-4">
                 <input type="hidden" id="san-pham-edit-mode-ma-vt">
-                <!-- SỬA ID: sp-modal... -> san-pham-modal... -->
                 <input type="hidden" id="san-pham-modal-hinh-anh-url-hien-tai">
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Hình Ảnh Sản Phẩm</label>
-                        <div class="flex items-center space-x-4">
-                            <!-- SỬA ID: sp-image-paste-area -> san-pham-image-paste-area -->
-                            <div id="san-pham-image-paste-area" tabindex="0" class="w-24 h-24 border-2 border-dashed rounded-md flex items-center justify-center cursor-pointer bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <!-- SỬA ID: sp-modal... -> san-pham-modal... -->
-                                <img id="san-pham-modal-image-preview" src="" alt="Xem trước" class="w-full h-full object-cover rounded-md pointer-events-none">
-                            </div>
-                            <div class="flex flex-col space-y-2">
-                                <!-- SỬA ID: sp-modal... -> san-pham-modal... -->
-                                <label for="san-pham-modal-image-upload" class="cursor-pointer bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50">
-                                    <span>Tải ảnh lên</span>
-                                    <input id="san-pham-modal-image-upload" type="file" class="sr-only" accept="image/*">
-                                </label>
-                                <!-- SỬA ID: sp-modal... -> san-pham-modal... -->
-                                <button type="button" id="san-pham-modal-remove-image-btn" class="hidden text-sm text-red-600 hover:text-red-800">Xóa ảnh</button>
-                            </div>
+                 <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Ảnh Sản Phẩm</label>
+                    <div class="flex items-center space-x-4">
+                         <div id="san-pham-image-paste-area" tabindex="0" class="w-24 h-24 border-2 border-dashed rounded-md flex items-center justify-center cursor-pointer bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <img id="san-pham-modal-image-preview" src="" alt="Xem trước" class="w-full h-full object-cover rounded-md pointer-events-none">
+                        </div>
+                        <div class="flex flex-col space-y-2">
+                            <label for="san-pham-modal-image-upload" class="cursor-pointer bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                <span>Tải ảnh lên</span>
+                                <input id="san-pham-modal-image-upload" type="file" class="sr-only" accept="image/*">
+                            </label>
+                            <button type="button" id="san-pham-modal-remove-image-btn" class="hidden text-sm text-red-600 hover:text-red-800">Xóa ảnh</button>
                         </div>
                     </div>
-                    <div>
-                        <!-- SỬA ID: sp-modal... -> san-pham-modal... -->
-                        <label for="san-pham-modal-ma-vt" class="block text-sm font-medium text-gray-700">Mã Vật Tư</label>
-                        <input type="text" id="san-pham-modal-ma-vt" required class="mt-1 block w-full border rounded-md p-2">
-                    </div>
-                    <div>
-                        <!-- SỬA ID: sp-modal... -> san-pham-modal... -->
-                        <label for="san-pham-modal-ten-vt" class="block text-sm font-medium text-gray-700">Tên Vật Tư</label>
-                        <input type="text" id="san-pham-modal-ten-vt" required class="mt-1 block w-full border rounded-md p-2">
-                    </div>
-                    <div>
-                        <!-- SỬA ID: sp-modal... -> san-pham-modal... -->
-                        <label for="san-pham-modal-nganh" class="block text-sm font-medium text-gray-700">Ngành</label>
-                        <input type="text" id="san-pham-modal-nganh" class="mt-1 block w-full border rounded-md p-2">
-                    </div>
-                    <div>
-                        <!-- SỬA ID: sp-modal... -> san-pham-modal... -->
-                        <label for="san-pham-modal-phu-trach" class="block text-sm font-medium text-gray-700">Phụ Trách</label>
-                        <input type="text" id="san-pham-modal-phu-trach" list="phu-trach-list" class="mt-1 block w-full border rounded-md p-2">
-                        <datalist id="phu-trach-list"></datalist>
-                    </div>
                 </div>
-                <div class="mt-6 flex justify-end space-x-3">
-                    <!-- SỬA ID: cancel-sp-btn -> cancel-san-pham-btn (Thống nhất) -->
-                    <button type="button" id="cancel-san-pham-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-md">Hủy</button>
-                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md">Lưu</button>
+                <div><label for="san-pham-modal-ma-vt" class="block text-sm font-medium text-gray-700">Mã Vật Tư</label><input type="text" id="san-pham-modal-ma-vt" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"></div>
+                <div><label for="san-pham-modal-ten-vt" class="block text-sm font-medium text-gray-700">Tên Vật Tư</label><input type="text" id="san-pham-modal-ten-vt" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"></div>
+                <div><label for="san-pham-modal-nganh" class="block text-sm font-medium text-gray-700">Ngành</label><input type="text" id="san-pham-modal-nganh" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"></div>
+                <div>
+                    <label for="san-pham-modal-phu-trach" class="block text-sm font-medium text-gray-700">Phụ Trách</label>
+                    <input type="text" id="san-pham-modal-phu-trach" list="phu-trach-list" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm">
+                    <datalist id="phu-trach-list"></datalist>
+                </div>
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" id="cancel-san-pham-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Hủy</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Lưu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+     <div id="ton-kho-modal" class="hidden fixed inset-0 z-40 flex items-center justify-center modal-backdrop overflow-y-auto p-4">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-4xl max-h-full overflow-y-auto">
+            <h3 id="ton-kho-modal-title" class="text-xl font-bold text-gray-800 mb-4"></h3>
+            <form id="ton-kho-form" class="space-y-4">
+                 <input type="hidden" id="ton-kho-edit-mode-ma-vach">
+                 <div id="ton-kho-modal-ma-vach-display-container" class="p-3 bg-gray-100 rounded-lg text-center">
+                    <p class="text-sm text-gray-600">Code + Lot + EXP được tạo:</p>
+                    <p id="ton-kho-modal-ma-vach-display" class="text-lg font-mono font-bold text-gray-800">...</p>
+                 </div>
+                 <input type="hidden" id="ton-kho-modal-ma-vach">
+                 <p id="ton-kho-modal-ma-vach-status" class="text-sm text-center h-5"></p>
+
+                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label for="ton-kho-modal-ma-vt" class="block text-sm font-medium text-gray-700">Mã VT</label>
+                        <input type="text" id="ton-kho-modal-ma-vt" required class="mt-1 block w-full border rounded-md p-2">
+                    </div>
+                     <div><label for="ton-kho-modal-ten-vt" class="block text-sm font-medium text-gray-700">Tên VT</label><input type="text" id="ton-kho-modal-ten-vt" readonly class="mt-1 block w-full border rounded-md p-2 bg-gray-200"></div>
+                     <div><label for="ton-kho-modal-nganh" class="block text-sm font-medium text-gray-700">Ngành</label><input type="text" id="ton-kho-modal-nganh" readonly class="mt-1 block w-full border rounded-md p-2 bg-gray-200"></div>
+                     <div><label for="ton-kho-modal-lot" class="block text-sm font-medium text-gray-700">Lot</label><input type="text" id="ton-kho-modal-lot" class="mt-1 block w-full border rounded-md p-2"></div>
+                     <div><label for="ton-kho-modal-date" class="block text-sm font-medium text-gray-700">Date (dd/mm/yyyy)</label><input type="text" id="ton-kho-modal-date" placeholder="dd/mm/yyyy" class="mt-1 block w-full border rounded-md p-2"></div>
+                     <div><label for="ton-kho-modal-tinh-trang" class="block text-sm font-medium text-gray-700">Tình Trạng</label><div id="ton-kho-modal-tinh-trang-container" class="mt-1"></div></div>
+                     <div><label for="ton-kho-modal-ton-dau" class="block text-sm font-medium text-gray-700">Tồn Đầu</label><input type="number" id="ton-kho-modal-ton-dau" required value="0" min="0" class="mt-1 block w-full border rounded-md p-2"></div>
+                     <div><label for="ton-kho-modal-nhap" class="block text-sm font-medium text-gray-700">Nhập</label><input type="number" id="ton-kho-modal-nhap" value="0" min="0" class="mt-1 block w-full border rounded-md p-2"></div>
+                     <div><label for="ton-kho-modal-xuat" class="block text-sm font-medium text-gray-700">Xuất</label><input type="number" id="ton-kho-modal-xuat" value="0" min="0" class="mt-1 block w-full border rounded-md p-2"></div>
+                     <div><label for="ton-kho-modal-tray" class="block text-sm font-medium text-gray-700">Tray</label><input type="text" id="ton-kho-modal-tray" class="mt-1 block w-full border rounded-md p-2"></div>
+                     <div>
+                        <label for="ton-kho-modal-phu-trach" class="block text-sm font-medium text-gray-700">Phụ Trách</label>
+                        <input type="text" id="ton-kho-modal-phu-trach" readonly list="phu-trach-list" class="mt-1 block w-full border rounded-md p-2 bg-gray-200">
+                    </div>
+                 </div>
+                 <div><label for="ton-kho-modal-note" class="block text-sm font-medium text-gray-700">Ghi Chú</label><textarea id="ton-kho-modal-note" rows="3" class="mt-1 block w-full border rounded-md p-2"></textarea></div>
+
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" id="cancel-ton-kho-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Hủy</button>
+                    <button type="submit" id="save-ton-kho-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Lưu</button>
+                    <button type="button" id="close-ton-kho-view-btn" class="hidden px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Đóng</button>
                 </div>
             </form>
         </div>
     </div>
     
-    <div id="ton-kho-modal" class="fixed inset-0 z-50 flex items-center justify-center overflow-auto modal-backdrop hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl m-4">
-            <form id="ton-kho-form" class="p-6 max-h-[90vh] overflow-y-auto">
-                <div class="flex justify-between items-start mb-4">
-                    <div>
-                         <h3 class="text-xl font-semibold leading-6 text-gray-900" id="ton-kho-modal-title">Thêm Tồn Kho Mới</h3>
-                         <div id="ton-kho-modal-ma-vach-display-container" class="text-sm mt-1">
-                             Mã vạch: <span id="ton-kho-modal-ma-vach-display" class="font-mono font-bold"></span>
-                             <span id="ton-kho-modal-ma-vach-status" class="ml-2 text-xs"></span>
-                         </div>
-                    </div>
-                </div>
-
-                <input type="hidden" id="ton-kho-edit-mode-ma-vach">
-                <input type="hidden" id="ton-kho-modal-ma-vach"> 
+    <div id="don-hang-modal" class="hidden fixed inset-0 z-40 flex items-center justify-center modal-backdrop p-4">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-[90vw] h-[90vh] flex flex-col">
+            <h3 id="don-hang-modal-title" class="text-xl font-bold text-gray-800 mb-4 flex-shrink-0"></h3>
+            <form id="don-hang-form" class="flex-grow flex flex-col md:flex-row gap-6 overflow-hidden">
+                <input type="hidden" id="don-hang-edit-mode-ma-kho">
                 
-                <div class="space-y-4">
-                    <!-- Hàng 1 -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="relative">
-                            <label for="ton-kho-modal-ma-vt" class="block text-sm font-medium text-gray-700">Mã VT <span class="text-red-500">*</span></label>
-                            <input type="text" id="ton-kho-modal-ma-vt" required autocomplete="off" class="mt-1 block w-full border rounded-md p-2">
-                        </div>
-                        <div class="md:col-span-2">
-                            <label for="ton-kho-modal-ten-vt" class="block text-sm font-medium text-gray-700">Tên VT</label>
-                            <input type="text" id="ton-kho-modal-ten-vt" readonly class="mt-1 block w-full border rounded-md p-2 bg-gray-200 cursor-not-allowed">
-                        </div>
-                    </div>
-
-                    <!-- Hàng 2 -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <label for="ton-kho-modal-lot" class="block text-sm font-medium text-gray-700">Lot</label>
-                            <input type="text" id="ton-kho-modal-lot" class="mt-1 block w-full border rounded-md p-2">
-                        </div>
-                        <div>
-                            <label for="ton-kho-modal-date" class="block text-sm font-medium text-gray-700">Date</label>
-                            <input type="text" id="ton-kho-modal-date" placeholder="dd/mm/yyyy" class="mt-1 block w-full border rounded-md p-2">
-                        </div>
-                        <div>
-                            <label for="ton-kho-modal-tinh-trang" class="block text-sm font-medium text-gray-700">Tình Trạng <span class="text-red-500">*</span></label>
-                             <div id="ton-kho-modal-tinh-trang-container" class="mt-1">
-                                <input type="text" id="ton-kho-modal-tinh-trang" required class="block w-full border rounded-md p-2">
+                <!-- Cột trái: Thông tin chung -->
+                <div class="md:w-1/3 flex flex-col border-r pr-6">
+                    <h4 class="text-lg font-semibold mb-4 flex-shrink-0">Thông Tin Chung</h4>
+                    <div class="overflow-y-auto no-scrollbar flex-grow">
+                        <div class="grid grid-cols-6 gap-4">
+                            <div class="col-span-6 sm:col-span-2">
+                                <label class="block text-sm font-medium">Thời Gian <span class="text-red-500 font-bold">*</span></label>
+                                <input type="date" id="don-hang-modal-thoi-gian" required class="mt-1 block w-full p-2 border rounded-md">
+                            </div>
+                            <div class="col-span-6 sm:col-span-2">
+                                <label class="block text-sm font-medium">Loại Đơn <span class="text-red-500 font-bold">*</span></label>
+                                <select id="don-hang-modal-loai-don" required class="mt-1 block w-full p-2 border rounded-md">
+                                    <option value="" disabled selected>-- Chọn Loại --</option>
+                                    <option value="Nhap">Nhập</option>
+                                    <option value="Xuat">Xuất</option>
+                                </select>
+                            </div>
+                            <div class="col-span-6 sm:col-span-2">
+                                <label class="block text-sm font-medium">Yêu Cầu <span class="text-red-500 font-bold">*</span></label>
+                                <input type="text" id="don-hang-modal-yeu-cau" required class="mt-1 block w-full p-2 border rounded-md">
+                            </div>
+                            <div class="col-span-6 sm:col-span-2">
+                                <label class="block text-sm font-medium">Ngành <span class="text-red-500 font-bold">*</span></label>
+                                <input type="text" id="don-hang-modal-nganh" required list="nganh-list" class="mt-1 block w-full p-2 border rounded-md">
+                                <datalist id="nganh-list"></datalist>
+                            </div>
+                            <div class="col-span-6 sm:col-span-2">
+                                <label class="block text-sm font-medium">Mã Kho</label>
+                                <input type="text" id="don-hang-modal-ma-kho" readonly class="mt-1 block w-full p-2 border rounded-md bg-gray-200">
+                            </div>
+                            <div class="col-span-6 sm:col-span-2">
+                                <label class="block text-sm font-medium">Mã NX <span class="text-red-500 font-bold">*</span></label>
+                                <input type="text" id="don-hang-modal-ma-nx" required class="mt-1 block w-full p-2 border rounded-md">
+                            </div>
+                             <div class="col-span-6">
+                                <label class="block text-sm font-medium">Mục Đích <span class="text-red-500 font-bold">*</span></label>
+                                <textarea id="don-hang-modal-muc-dich" required rows="2" class="mt-1 block w-full p-2 border rounded-md resize-y"></textarea>
+                            </div>
+                            <div class="col-span-6">
+                                <label class="block text-sm font-medium">Ghi Chú</label>
+                                <textarea id="don-hang-modal-ghi-chu" rows="2" class="mt-1 block w-full p-2 border rounded-md resize-y"></textarea>
+                            </div>
+                            <div class="col-span-6">
+                                <label class="block text-sm font-medium">File đính kèm</label>
+                                <div id="don-hang-file-drop-area" tabindex="0" class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md cursor-pointer hover:border-indigo-500">
+                                    <div class="space-y-1 text-center"><p class="text-xs text-gray-500">Kéo & thả, dán, hoặc <label for="don-hang-file-upload" class="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"><span>tải file lên</span><input id="don-hang-file-upload" type="file" class="sr-only" multiple></label></p></div>
+                                </div>
+                                <div id="don-hang-file-list" class="mt-2 space-y-2 max-h-56 overflow-y-auto"></div>
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- Hàng 3 -->
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div>
-                            <label for="ton-kho-modal-ton-dau" class="block text-sm font-medium text-gray-700">Tồn Đầu <span class="text-red-500">*</span></label>
-                            <input type="number" id="ton-kho-modal-ton-dau" value="0" class="mt-1 block w-full border rounded-md p-2">
-                        </div>
-                        <div>
-                            <label for="ton-kho-modal-tray" class="block text-sm font-medium text-gray-700">Tray</label>
-                            <input type="text" id="ton-kho-modal-tray" class="mt-1 block w-full border rounded-md p-2">
-                        </div>
-                        <div>
-                            <label for="ton-kho-modal-nganh" class="block text-sm font-medium text-gray-700">Ngành</label>
-                            <input type="text" id="ton-kho-modal-nganh" readonly class="mt-1 block w-full border rounded-md p-2 bg-gray-200 cursor-not-allowed">
-                        </div>
-                        <div>
-                            <label for="ton-kho-modal-phu-trach" class="block text-sm font-medium text-gray-700">Phụ Trách</label>
-                            <input type="text" id="ton-kho-modal-phu-trach" readonly list="phu-trach-list" class="mt-1 block w-full border rounded-md p-2 bg-gray-200 cursor-not-allowed">
-                        </div>
-                    </div>
-                    
-                    <!-- Hàng ẩn -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
-                         <div><label for="ton-kho-modal-nhap" class="block text-sm font-medium text-gray-700">Nhập</label><input type="number" id="ton-kho-modal-nhap" value="0" class="mt-1 block w-full border rounded-md p-2"></div>
-                         <div><label for="ton-kho-modal-xuat" class="block text-sm font-medium text-gray-700">Xuất</label><input type="number" id="ton-kho-modal-xuat" value="0" class="mt-1 block w-full border rounded-md p-2"></div>
-                    </div>
-                    
-                    <!-- Hàng 4 -->
-                    <div>
-                        <label for="ton-kho-modal-note" class="block text-sm font-medium text-gray-700">Note</label>
-                        <textarea id="ton-kho-modal-note" rows="3" class="mt-1 block w-full border rounded-md p-2"></textarea>
-                    </div>
                 </div>
-                <div class="mt-6 flex justify-end space-x-3">
-                    <button type="button" id="cancel-ton-kho-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-md">Hủy</button>
-                    <button type="submit" id="save-ton-kho-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md">Lưu</button>
-                    <button type="button" id="close-ton-kho-view-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md hidden">Đóng</button>
+
+
+                <!-- Cột phải: Danh sách vật tư -->
+                <div class="md:w-2/3 flex flex-col overflow-hidden">
+                    <div class="flex-shrink-0 flex justify-between items-center pb-2">
+                        <h4 class="text-lg font-semibold">Danh Sách Vật Tư</h4>
+                        <div id="don-hang-chi-tiet-summary" class="text-sm text-center flex-grow"></div>
+                        <button id="don-hang-them-vat-tu-btn" type="button" class="dh-admin-only text-sm bg-gray-600 hover:bg-gray-700 text-white font-bold py-1 px-3 rounded-md">+ Thêm vật tư</button>
+                    </div>
+                    <div class="flex-grow overflow-y-auto mt-2 border-t pt-4">
+                        <table class="w-full border-collapse text-sm">
+                            <thead><tr class="bg-gray-100">
+                                <th class="p-2 border font-bold" style="width: 3%">STT</th>
+                                <th class="p-2 border font-bold" style="width: 15%">Mã VT <span class="text-red-500 font-bold">*</span></th>
+                                <th class="p-2 border font-bold" style="width: 25%">Tên VT</th>
+                                <th class="p-2 border font-bold" style="width: 10%">LOT <span class="text-red-500 font-bold">*</span></th>
+                                <th class="p-2 border font-bold" style="width: 10%">Date</th>
+                                <th class="p-2 border font-bold" style="width: 8%">Y/c <span class="text-red-500 font-bold">*</span></th>
+                                <th id="don-hang-sl-header" class="p-2 border font-bold" style="width: 8%">SL <span class="text-red-500 font-bold">*</span></th>
+                                <th class="p-2 border font-bold" style="width: 10%">Loại <span class="text-red-500 font-bold">*</span></th>
+                                <th class="p-2 border font-bold" style="width: 15%">Code + Lot + EXP</th>
+                                <th class="p-2 border font-bold" style="width: 3%"></th>
+                            </tr></thead>
+                            <tbody id="don-hang-chi-tiet-body"></tbody>
+                        </table>
+                    </div>
                 </div>
             </form>
-        </div>
-    </div>
-
-    <div id="don-hang-modal" class="fixed inset-0 z-50 flex items-center justify-center overflow-auto modal-backdrop hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-[95vw] m-4 max-h-[95vh] flex flex-col">
-            <form id="don-hang-form" class="flex flex-col flex-grow contents">
-                <div class="p-3 border-b flex-shrink-0">
-                    <h3 class="text-xl font-semibold leading-6 text-gray-900" id="don-hang-modal-title">Thêm Đơn Hàng Mới</h3>
-                </div>
-                <div class="flex-grow overflow-y-auto p-3">
-                    <input type="hidden" id="don-hang-edit-mode-ma-kho">
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
-                        <div class="lg:col-span-1 space-y-3">
-                            <div class="bg-gray-50 p-3 rounded-lg border h-full flex flex-col">
-                                <h4 class="font-semibold text-gray-800 mb-2">Thông Tin Chung</h4>
-                                <div class="flex-grow space-y-3">
-                                    <!-- Hàng 1 -->
-                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                        <div>
-                                            <label for="don-hang-modal-thoi-gian" class="block text-sm font-medium text-gray-700">Thời Gian <span class="text-red-500">*</span></label>
-                                            <input type="date" id="don-hang-modal-thoi-gian" required class="mt-1 block w-full border rounded-md p-2">
-                                        </div>
-                                        <div>
-                                            <label for="don-hang-modal-loai-don" class="block text-sm font-medium text-gray-700">Loại Đơn <span class="text-red-500">*</span></label>
-                                            <select id="don-hang-modal-loai-don" required class="mt-1 block w-full border rounded-md p-2">
-                                                <option value="" disabled selected>-- Chọn Loại Đơn --</option>
-                                                <option value="Xuat">Xuất</option>
-                                                <option value="Nhap">Nhập</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label for="don-hang-modal-yeu-cau" class="block text-sm font-medium text-gray-700">Yêu Cầu <span class="text-red-500">*</span></label>
-                                            <input type="text" id="don-hang-modal-yeu-cau" required class="mt-1 block w-full border rounded-md p-2">
-                                        </div>
-                                    </div>
-                                    <!-- Hàng 2 -->
-                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                        <div>
-                                            <label for="don-hang-modal-nganh" class="block text-sm font-medium text-gray-700">Ngành <span class="text-red-500">*</span></label>
-                                            <input type="text" id="don-hang-modal-nganh" list="nganh-list" required class="mt-1 block w-full border rounded-md p-2">
-                                            <datalist id="nganh-list"></datalist>
-                                        </div>
-                                        <div>
-                                            <label for="don-hang-modal-ma-kho" class="block text-sm font-medium text-gray-700">Mã Kho</label>
-                                            <input type="text" id="don-hang-modal-ma-kho" readonly class="mt-1 block w-full border rounded-md p-2 bg-gray-200 cursor-not-allowed">
-                                        </div>
-                                        <div>
-                                            <label for="don-hang-modal-ma-nx" class="block text-sm font-medium text-gray-700">Mã NX <span class="text-red-500">*</span></label>
-                                            <input type="text" id="don-hang-modal-ma-nx" required class="mt-1 block w-full border rounded-md p-2">
-                                        </div>
-                                    </div>
-                                    <!-- Hàng 3 - Mục đích & Ghi chú -->
-                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        <div>
-                                            <label for="don-hang-modal-muc-dich" class="block text-sm font-medium text-gray-700">Mục Đích <span class="text-red-500">*</span></label>
-                                            <textarea id="don-hang-modal-muc-dich" rows="4" required class="mt-1 block w-full border rounded-md p-2"></textarea>
-                                        </div>
-                                        <div>
-                                            <label for="don-hang-modal-ghi-chu" class="block text-sm font-medium text-gray-700">Ghi Chú</label>
-                                            <textarea id="don-hang-modal-ghi-chu" rows="4" class="mt-1 block w-full border rounded-md p-2"></textarea>
-                                        </div>
-                                    </div>
-                                    <!-- Hàng 4 - File đính kèm -->
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">File đính kèm</label>
-                                        <div class="flex items-start gap-3">
-                                            <div id="don-hang-file-drop-area" class="flex flex-col items-center justify-center rounded-md border-2 border-dashed border-gray-300 p-2 text-center h-28 w-28 flex-shrink-0">
-                                                <svg class="mx-auto h-6 w-6 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                                                <label for="don-hang-file-upload" class="relative cursor-pointer rounded-md bg-white font-medium text-indigo-600 hover:text-indigo-500 text-sm"><span>Tải tệp</span><input id="don-hang-file-upload" type="file" class="sr-only" multiple=""></label>
-                                                <p class="text-xs text-gray-500 mt-1">kéo/thả/dán</p>
-                                            </div>
-                                            <div id="don-hang-file-list" class="space-y-2 w-full" style="max-height: 112px; overflow-y: auto;"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="lg:col-span-2">
-                            <div class="bg-gray-50 p-3 rounded-lg border h-full flex flex-col">
-                                <div class="flex-shrink-0">
-                                    <div class="flex justify-between items-center mb-2">
-                                        <h4 class="font-semibold text-gray-800 flex-1 text-left">Danh Sách Vật Tư</h4>
-                                        <div id="don-hang-chi-tiet-summary" class="text-sm text-gray-700 font-medium h-5 flex-1 text-center"></div>
-                                        <div class="flex-1 text-right">
-                                            <button type="button" id="don-hang-them-vat-tu-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded-md text-sm">+ Thêm Vật Tư</button>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="flex-grow overflow-y-auto" style="max-height: 60vh;">
-                                    <table class="w-full text-sm text-left">
-                                        <thead class="bg-gray-200">
-                                            <tr>
-                                                <th style="width: 3%;" class="p-2 border sticky top-0 z-10 bg-gray-200">STT</th>
-                                                <th style="width: 12%;" class="p-2 border sticky top-0 z-10 bg-gray-200">Mã VT <span class="text-red-500">*</span></th>
-                                                <th style="width: 25%;" class="p-2 border sticky top-0 z-10 bg-gray-200">Tên VT</th>
-                                                <th style="width: 10%;" class="p-2 border sticky top-0 z-10 bg-gray-200">LOT</th>
-                                                <th style="width: 10%;" class="p-2 border sticky top-0 z-10 bg-gray-200">Date</th>
-                                                <th style="width: 5%;" class="p-2 border sticky top-0 z-10 bg-gray-200">Y/c <span class="text-red-500">*</span></th>
-                                                <th style="width: 5%;" class="p-2 border sticky top-0 z-10 bg-gray-200" id="don-hang-sl-header">SL <span class="text-red-500">*</span></th>
-                                                <th style="width: 10%;" class="p-2 border sticky top-0 z-10 bg-gray-200">Loại <span class="text-red-500">*</span></th>
-                                                <th style="width: 15%;" class="p-2 border sticky top-0 z-10 bg-gray-200">Mã Vạch</th>
-                                                <th style="width: 5%;" class="p-2 border sticky top-0 z-10 bg-gray-200">Xóa</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="don-hang-chi-tiet-body" class="bg-white">
-                                            <!-- Rows will be added dynamically -->
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="p-3 border-t flex-shrink-0 flex justify-end space-x-3">
-                    <button type="button" id="cancel-don-hang-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-md">Hủy</button>
-                    <button type="submit" id="save-don-hang-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md">Lưu</button>
-                    <button type="button" id="close-don-hang-view-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md hidden">Đóng</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div id="password-reset-modal" class="fixed inset-0 z-50 flex items-center justify-center overflow-auto modal-backdrop hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md m-4 p-6"><h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">Đặt lại mật khẩu</h3><form id="password-reset-form"><input type="hidden" id="reset-user-gmail"><p class="mb-2 text-sm text-gray-700">Bạn đang đặt lại mật khẩu cho: <strong id="reset-user-gmail-display"></strong></p><div><label for="reset-new-password" class="block text-sm font-medium text-gray-700">Mật khẩu mới</label><input type="password" id="reset-new-password" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></div><div class="mt-6 flex justify-end space-x-3"><button type="button" id="cancel-reset-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-md">Hủy</button><button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md">Đặt lại</button></div></form></div>
-    </div>
-    
-    <div id="confirm-modal" class="fixed inset-0 z-[60] flex items-center justify-center modal-backdrop hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md m-4 p-6">
-            <h3 id="confirm-title" class="text-lg font-medium leading-6 text-gray-900 mb-2">Xác nhận hành động</h3>
-            <p id="confirm-message" class="text-sm text-gray-600 mb-4">Bạn có chắc chắn muốn thực hiện hành động này?</p>
-            <div class="mt-6 flex justify-end space-x-3">
-                <button id="confirm-cancel-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-md">Hủy</button>
-                <button id="confirm-ok-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md">Xác nhận</button>
+            <div class="flex-shrink-0 flex justify-end gap-3 pt-4 mt-4 border-t">
+                <button type="button" id="cancel-don-hang-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Hủy</button>
+                <button type="submit" form="don-hang-form" id="save-don-hang-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Lưu</button>
+                <button type="button" id="close-don-hang-view-btn" class="hidden px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Đóng</button>
             </div>
         </div>
     </div>
 
-    <div id="excel-export-modal" class="fixed inset-0 z-[60] flex items-center justify-center modal-backdrop hidden">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-sm m-4 p-6">
-            <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">Tùy chọn xuất Excel</h3>
-            <p class="text-sm text-gray-600 mb-6">Chọn loại dữ liệu bạn muốn xuất ra file Excel.</p>
-            <div class="flex flex-col space-y-3">
-                <button id="excel-export-filtered-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md">Xuất theo bộ lọc</button>
-                <button id="excel-export-all-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md">Xuất toàn bộ</button>
-                 <button id="excel-export-cancel-btn" class="w-full mt-4 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-md">Hủy</button>
+    <div id="image-viewer-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4">
+        <div class="relative bg-white rounded-lg shadow-xl p-2 w-full max-w-4xl max-h-full">
+            <button id="close-image-viewer-btn" class="absolute -top-3 -right-3 bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-lg font-bold z-10">&times;</button>
+            <img id="image-viewer-img" src="" alt="Xem ảnh lớn" class="w-full h-auto max-h-[90vh] object-contain rounded">
+        </div>
+    </div>
+    
+     <div id="excel-export-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Tùy chọn xuất Excel</h3>
+            <div class="space-y-3">
+                 <button id="excel-export-filtered-btn" class="w-full text-left px-4 py-3 bg-blue-50 hover:bg-blue-100 rounded-md">
+                     <p class="font-semibold text-blue-800">Chỉ xuất dữ liệu đã lọc</p>
+                     <p class="text-sm text-blue-600">Xuất các hàng đang được hiển thị theo bộ lọc hiện tại.</p>
+                 </button>
+                 <button id="excel-export-all-btn" class="w-full text-left px-4 py-3 bg-green-50 hover:bg-green-100 rounded-md">
+                     <p class="font-semibold text-green-800">Xuất toàn bộ dữ liệu</p>
+                     <p class="text-sm text-green-600">Xuất tất cả các hàng có trong bảng, bỏ qua bộ lọc.</p>
+                 </button>
+            </div>
+            <div class="flex justify-end mt-6">
+                <button id="excel-export-cancel-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Hủy</button>
             </div>
         </div>
     </div>
 
-    <div id="image-viewer-modal" class="fixed inset-0 z-[60] flex items-center justify-center modal-backdrop hidden">
-        <div class="relative bg-white rounded-lg shadow-xl m-4 p-4">
-            <button id="close-image-viewer-btn" class="absolute -top-3 -right-3 bg-red-600 text-white rounded-full p-1.5 focus:outline-none hover:bg-red-700 z-10">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
-            <img id="image-viewer-img" src="" alt="Hình ảnh sản phẩm" class="max-w-[80vw] max-h-[80vh] object-contain">
+    <template id="filter-popover-template">
+        <div class="filter-popover">
+            <input type="text" class="filter-search-input w-full px-2 py-1 border rounded mb-2" placeholder="Tìm kiếm...">
+            <div class="filter-options-list space-y-1"></div>
+            <div class="mt-2 text-right">
+                <button class="filter-apply-btn px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">Áp dụng</button>
+            </div>
         </div>
-    </div>
+    </template>
     
-    <div id="filter-popover-template" class="filter-popover hidden">
-        <input type="text" class="filter-search-input w-full px-2 py-1 border rounded-md" placeholder="Tìm kiếm...">
-        <div class="filter-options-list space-y-1 p-1"></div>
-        <div class="text-right mt-2">
-            <button class="filter-apply-btn bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-1 px-3 rounded-md">Áp dụng</button>
+    <template id="autocomplete-popover-template">
+        <div class="absolute z-40 bg-white border border-gray-300 rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto">
+            <div class="autocomplete-options-list"></div>
         </div>
-    </div>
+    </template>
 
-    <div id="autocomplete-popover-template" class="absolute z-50 mt-1 bg-white border border-gray-300 rounded-md shadow-lg hidden w-full">
-        <div class="autocomplete-options-list max-h-48 overflow-y-auto">
-            <!-- Autocomplete options are rendered here by JavaScript -->
-        </div>
-    </div>
 
-    <!-- Overlays -->
-    <div id="app-loading" class="flex items-center justify-center min-h-screen">
-        <p class="text-gray-600 text-lg">Đang kiểm tra phiên đăng nhập...</p>
-    </div>
-
-    <script type="module" src="app.js"></script>
+    <script src="app.js" type="module"></script>
 </body>
 </html>

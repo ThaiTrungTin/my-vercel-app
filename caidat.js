@@ -1,3 +1,4 @@
+
 import { sb, cache, currentUser, showLoading, showToast, showConfirm, DEFAULT_AVTAR_URL, updateSidebarAvatar, sanitizeFileName } from './app.js';
 
 let selectedAvatarFile = null;
@@ -50,8 +51,6 @@ async function handleProfileUpdate(e) {
         showToast("Cập nhật thông tin thành công!", 'success');
         sessionStorage.setItem('loggedInUser', JSON.stringify(data));
         
-        // This won't update the exported currentUser in app.js, but it's handled by realtime
-        
         document.getElementById('user-ho-ten').textContent = data.ho_ten || 'User';
         document.getElementById('profile-form').reset();
         document.getElementById('profile-ho-ten').value = data.ho_ten;
@@ -99,6 +98,7 @@ function renderUserList(users) {
                         <select data-gmail="${user.gmail}" class="user-role-select border rounded p-2 text-sm w-full sm:w-28" ${isCurrentUser ? 'disabled' : ''}>
                             <option value="Admin" ${user.phan_quyen === 'Admin' ? 'selected' : ''}>Admin</option>
                             <option value="User" ${user.phan_quyen === 'User' ? 'selected' : ''}>User</option>
+                            <option value="View" ${user.phan_quyen === 'View' ? 'selected' : ''}>View</option>
                         </select>
                         <button data-gmail="${user.gmail}" class="reset-password-btn text-sm text-indigo-600 hover:text-indigo-900 font-medium px-3 py-2 rounded-md hover:bg-indigo-50 w-full sm:w-auto text-center" ${isCurrentUser ? 'disabled' : ''}>
                             Đặt lại MK
@@ -167,9 +167,8 @@ async function handleBackupExcel() {
 
     const tablesToBackup = ['user', 'san_pham', 'ton_kho', 'don_hang', 'chi_tiet'];
     try {
-        // Fetch all data in parallel
         const results = await Promise.all(
-            tablesToBackup.map(table => sb.from(table).select('*').limit(50000)) // Add a generous limit
+            tablesToBackup.map(table => sb.from(table).select('*').limit(50000)) 
         );
 
         const workbook = XLSX.utils.book_new();
@@ -206,20 +205,16 @@ function jsonToCsv(jsonData) {
     }
     const keys = Object.keys(jsonData[0]);
     const csvRows = [];
-    // Add header row
     csvRows.push(keys.join(','));
 
-    // Add data rows
     for (const row of jsonData) {
         const values = keys.map(key => {
             let cell = row[key];
-            // If the cell is an object or array, stringify it.
             if (typeof cell === 'object' && cell !== null) {
                 cell = JSON.stringify(cell);
             }
             cell = cell === null || cell === undefined ? '' : String(cell);
             
-            // Escape quotes and wrap in quotes if necessary (contains comma, quote, or newline)
             if (/[",\n]/.test(cell)) {
                 cell = `"${cell.replace(/"/g, '""')}"`;
             }
@@ -288,7 +283,6 @@ async function handleRestoreFromExcel(file) {
         "CẢNH BÁO: Hành động này sẽ XÓA TẤT CẢ dữ liệu hiện tại và thay thế bằng dữ liệu từ tệp. Hành động này không thể hoàn tác. Bạn có chắc chắn muốn tiếp tục không?",
         "XÁC NHẬN KHÔI PHỤC DỮ LIỆU"
     );
-     // Second confirmation for extra safety
     if(confirmed) {
         const finalConfirm = await showConfirm("XÁC NHẬN LẦN CUỐI: Toàn bộ dữ liệu sẽ bị ghi đè. Vẫn tiếp tục?", "HÀNH ĐỘNG NGUY HIỂM");
         if(!finalConfirm) {
@@ -325,7 +319,6 @@ async function handleRestoreFromExcel(file) {
             const insertOrder = ['user', 'san_pham', 'ton_kho', 'don_hang', 'chi_tiet'];
             const pkMap = { user: 'gmail', san_pham: 'ma_vt', ton_kho: 'ma_vach', don_hang: 'ma_kho', chi_tiet: 'id' };
 
-            // Step 1: Delete existing data
             showToast("Đang xóa dữ liệu cũ...", "info");
             for (const tableName of deleteOrder) {
                 const pk = pkMap[tableName];
@@ -338,13 +331,11 @@ async function handleRestoreFromExcel(file) {
                 }
             }
 
-            // Step 2: Insert new data
             for (const tableName of insertOrder) {
                 showToast(`Đang khôi phục bảng: ${tableName}...`, "info");
                 const worksheet = workbook.Sheets[tableName];
                 let jsonData = XLSX.utils.sheet_to_json(worksheet, { raw: false });
 
-                // **FIX: Filter out the current user before inserting**
                 if (tableName === 'user') {
                     jsonData = jsonData.filter(user => user.gmail !== currentUser.gmail);
                 }
@@ -358,7 +349,6 @@ async function handleRestoreFromExcel(file) {
                 });
 
                 if (cleanedData.length > 0) {
-                     // Supabase has a row limit per insert, so we chunk it.
                     const CHUNK_SIZE = 500;
                     for (let i = 0; i < cleanedData.length; i += CHUNK_SIZE) {
                         const chunk = cleanedData.slice(i, i + CHUNK_SIZE);
@@ -380,7 +370,7 @@ async function handleRestoreFromExcel(file) {
             console.error("Restore failed:", error);
             showToast(`Khôi phục thất bại: ${error.message}`, "error");
             showToast("Đang cố gắng tải lại dữ liệu hiện tại...", "info");
-            setTimeout(() => location.reload(), 3000); // Reload on failure to get back to a stable state
+            setTimeout(() => location.reload(), 3000); 
         } finally {
             showLoading(false);
             fileNameEl.textContent = '';
@@ -414,7 +404,6 @@ export function initCaiDatView() {
     document.getElementById('password-reset-form').addEventListener('submit', handlePasswordReset);
     document.getElementById('cancel-reset-btn').addEventListener('click', () => document.getElementById('password-reset-modal').classList.add('hidden'));
 
-    // Event listeners for backup/restore
     const backupBtn = document.getElementById('backup-excel-btn');
     if (backupBtn) backupBtn.addEventListener('click', handleBackupExcel);
     
@@ -428,7 +417,6 @@ export function initCaiDatView() {
         }
     });
 
-    // Avatar Profile Logic
     const processAvatarFile = (file) => {
         if (file && file.type.startsWith('image/')) {
             selectedAvatarFile = file;

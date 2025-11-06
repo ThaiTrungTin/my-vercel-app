@@ -1,4 +1,4 @@
-// --- KHỞI TẠO & CẤU HÌNH ---
+
 import { initCaiDatView, fetchUsers, initProfileAvatarState } from './caidat.js';
 import { initSanPhamView, fetchSanPham } from './sanpham.js';
 import { initDonHangView, fetchDonHang } from './don-hang.js';
@@ -10,10 +10,9 @@ const SUPABASE_URL = "https://uefydnefprcannlviimp.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVlZnlkbmVmcHJjYW5ubHZpaW1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwNTcwMDUsImV4cCI6MjA3NjYzMzAwNX0.X274J_1_crUknJEOT1WWUD1h0HM9WdYScDW2eWWsiLk";
 export const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// --- BIẾN TOÀN CỤC & TRẠNG THÁI ---
 export let currentUser = null;
-let currentView = 'view-phat-trien'; // View mặc định
-let userChannel = null; // Kênh Realtime
+let currentView = 'view-phat-trien'; 
+let userChannel = null; 
 export const DEFAULT_AVTAR_URL = 'https://t4.ftcdn.net/jpg/05/49/98/39/360_F_549983970_bRCkYfk0P6PP5fKbMhZMIb07vs1cACai.jpg';
 export const PLACEHOLDER_IMAGE_URL = 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Placeholder_view_vector.svg/681px-Placeholder_view_vector.svg.png';
 export const cache = {
@@ -95,7 +94,6 @@ export const filterButtonDefaultTexts = {
 let activeAutocompletePopover = null;
 
 
-// --- HÀM UTILITY ---
 export const showLoading = (show) => document.getElementById('loading-bar').classList.toggle('hidden', !show);
 
 export function showToast(message, type = 'info') {
@@ -148,7 +146,7 @@ export function sanitizeFileName(fileName) {
         .replace(/[\u0300-\u036f]/g, '') 
         .toLowerCase() 
         .replace(/\s+/g, '-') 
-        .replace(/[^a-z0-9-.]/g, '') + // Allow dots in filename
+        .replace(/[^a-z0-9-.]/g, '') + 
         ext; 
 }
 
@@ -196,7 +194,28 @@ export function updateSidebarAvatar(url) {
     document.getElementById('sidebar-avatar').src = url || DEFAULT_AVTAR_URL;
 }
 
-// --- HÀM AUTOCOMPLETE ---
+function updateFilterButtonTexts(viewPrefix) {
+    const state = viewStates[`view-${viewPrefix}`];
+    if (!state) return;
+    
+    const viewContainer = document.getElementById(`view-${viewPrefix}`);
+    if (!viewContainer) return;
+
+    viewContainer.querySelectorAll('.filter-btn').forEach(btn => {
+        const filterKey = btn.dataset.filterKey;
+        if (filterKey && state.filters.hasOwnProperty(filterKey)) {
+            const selectedOptions = state.filters[filterKey] || [];
+            const defaultText = filterButtonDefaultTexts[btn.id] || 'Filter';
+            
+            if (filterKey.includes('date') && selectedOptions) {
+                 btn.textContent = defaultText; 
+            } else if (Array.isArray(selectedOptions)) {
+                btn.textContent = selectedOptions.length > 0 ? `${defaultText} (${selectedOptions.length})` : defaultText;
+            }
+        }
+    });
+}
+
 function closeActiveAutocompletePopover() {
     if (activeAutocompletePopover) {
         activeAutocompletePopover.element.remove();
@@ -206,16 +225,14 @@ function closeActiveAutocompletePopover() {
 }
 
 export function openAutocomplete(inputElement, suggestions, config) {
-    // config = { valueKey: string, primaryTextKey: string, secondaryTextKey?: string, onSelect: (value) => {}, width?: string }
     closeActiveAutocompletePopover(); 
     if (suggestions.length === 0) return;
 
     const popoverTemplate = document.getElementById('autocomplete-popover-template');
     if (!popoverTemplate) return;
 
-    const popover = popoverTemplate.cloneNode(true);
-    popover.id = '';
-    popover.classList.remove('hidden');
+    const popoverContent = popoverTemplate.content.cloneNode(true);
+    const popover = popoverContent.querySelector('div'); 
     
     const optionsList = popover.querySelector('.autocomplete-options-list');
     const secondaryTextHTML = (item) => config.secondaryTextKey ? `<p class="text-xs text-gray-500 pointer-events-none">${item[config.secondaryTextKey] || ''}</p>` : '';
@@ -230,12 +247,12 @@ export function openAutocomplete(inputElement, suggestions, config) {
     inputElement.parentNode.appendChild(popover);
     popover.style.width = config.width || `${inputElement.offsetWidth}px`;
     
-    optionsList.addEventListener('mousedown', (e) => { // Use mousedown to prevent blur event
+    optionsList.addEventListener('mousedown', (e) => { 
         const option = e.target.closest('.autocomplete-option');
         if (option) {
-            e.preventDefault(); // Prevent input from losing focus
+            e.preventDefault(); 
             config.onSelect(option.dataset.value);
-            closeActiveAutocompletePopover(); // Close after selection
+            closeActiveAutocompletePopover(); 
         }
     });
     
@@ -250,9 +267,6 @@ export function openAutocomplete(inputElement, suggestions, config) {
     activeAutocompletePopover = { element: popover, closeHandler: closeHandler };
 }
 
-// --- LOGIC TỒN KHO ---
-
-// Debounced function for barcode validation
 const debouncedValidateMaVach = debounce(async (ma_vach) => {
     const statusEl = document.getElementById('ton-kho-modal-ma-vach-status');
     const saveBtn = document.getElementById('save-ton-kho-btn');
@@ -283,7 +297,6 @@ function updateGeneratedMaVach() {
     const lot = document.getElementById('ton-kho-modal-lot').value.trim();
     const dateInput = document.getElementById('ton-kho-modal-date').value.trim();
 
-    // Format date from dd/mm/yyyy to dd.mm.yyyy for barcode
     const dateParts = dateInput.split('/');
     const formattedDate = dateParts.length === 3 ? `${dateParts[0]}.${dateParts[1]}.${dateParts[2]}` : dateInput;
 
@@ -292,33 +305,30 @@ function updateGeneratedMaVach() {
     document.getElementById('ton-kho-modal-ma-vach').value = generatedMaVach;
     document.getElementById('ton-kho-modal-ma-vach-display').textContent = generatedMaVach || '...';
     
-    // Only validate in 'add' mode
     if (!document.getElementById('ton-kho-edit-mode-ma-vach').value) {
         debouncedValidateMaVach(generatedMaVach);
     }
 }
 
 
-function parseDate(dateString) { // dd/mm/yyyy
+function parseDate(dateString) { 
     if (!dateString || !/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) return null;
     
     const parts = dateString.split('/');
     const day = parseInt(parts[0], 10);
-    const month = parseInt(parts[1], 10); // month is 1-based from input
+    const month = parseInt(parts[1], 10); 
     const year = parseInt(parts[2], 10);
 
-    if (year < 1000 || year > 3000 || month === 0 || month > 12) return null;
+    if (year < 1000 || year > 9999 || month === 0 || month > 12) return null;
 
     const monthLength = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
-    // Adjust for leap years
     if (year % 400 === 0 || (year % 100 !== 0 && year % 4 === 0)) {
         monthLength[1] = 29;
     }
 
     if (day <= 0 || day > monthLength[month - 1]) return null;
 
-    // Note: months are 0-based in JS Date, so month - 1
     const date = new Date(year, month - 1, day);
     return isNaN(date.getTime()) ? null : date;
 }
@@ -330,7 +340,7 @@ function updateTinhTrangField() {
     const dateValue = parseDate(dateInput);
     
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // Normalize to start of day
+    today.setHours(0, 0, 0, 0); 
 
     const threeMonthsFromNow = new Date();
     threeMonthsFromNow.setMonth(threeMonthsFromNow.getMonth() + 3);
@@ -340,7 +350,7 @@ function updateTinhTrangField() {
         newElement = `<input type="text" id="ton-kho-modal-tinh-trang" value="Hết hạn sử dụng" readonly class="block w-full border rounded-md p-2 bg-gray-200">`;
     } else if (dateValue && dateValue > today && dateValue <= threeMonthsFromNow) {
         newElement = `<input type="text" id="ton-kho-modal-tinh-trang" value="Cận date" readonly class="block w-full border rounded-md p-2 bg-gray-200">`;
-    } else { // Date is far in the future OR date is empty/invalid
+    } else { 
         newElement = `
             <select id="ton-kho-modal-tinh-trang" required class="block w-full border rounded-md p-2">
                 <option value="Còn sử dụng">Còn sử dụng</option>
@@ -350,12 +360,6 @@ function updateTinhTrangField() {
     container.innerHTML = newElement;
 }
 
-/**
- * Fetches and updates the summary counts in the ton-kho table header.
- * This function assumes a Supabase RPC function 'get_ton_kho_summary' exists
- * which takes the current filters and returns the sum of ton_dau, nhap, xuat, and ton_cuoi.
- * This is the most performant way to get aggregate data based on filters.
- */
 async function updateTonKhoHeaderCounts() {
     const state = viewStates['view-ton-kho'];
     const dauEl = document.getElementById('ton-kho-header-dau-count');
@@ -365,7 +369,6 @@ async function updateTonKhoHeaderCounts() {
 
     if (!dauEl || !nhapEl || !xuatEl || !cuoiEl) return;
 
-    // Reset text content while loading
     [dauEl, nhapEl, xuatEl, cuoiEl].forEach(el => el.textContent = '(...)');
 
     try {
@@ -377,12 +380,14 @@ async function updateTonKhoHeaderCounts() {
             _tinh_trang_filter: state.filters.tinh_trang || [],
             _nganh_filter: state.filters.nganh || [],
             _phu_trach_filter: state.filters.phu_trach || [],
-            _ton_cuoi_filter: state.filters.ton_cuoi || []
+            _ton_cuoi_filter: state.filters.ton_cuoi || [],
+            _user_role: currentUser.phan_quyen,
+            _user_ho_ten: currentUser.ho_ten
         });
 
         if (error) {
             console.error("Error fetching ton kho summary:", error);
-            showToast("Lỗi: Cần tạo hàm 'get_ton_kho_summary' trên Supabase.", 'error');
+            showToast("Lỗi khi tải dữ liệu tổng hợp tồn kho.", 'error');
             throw error;
         }
 
@@ -411,6 +416,10 @@ async function updateTonKhoHeaderCounts() {
 function buildTonKhoQuery() {
     const state = viewStates['view-ton-kho'];
     let query = sb.from('ton_kho_update').select('*', { count: 'exact' });
+
+    if (currentUser.phan_quyen === 'View') {
+        query = query.eq('phu_trach', currentUser.ho_ten);
+    }
 
     if (state.searchTerm) {
         query = query.or(`ma_vach.ilike.%${state.searchTerm}%,ma_vt.ilike.%${state.searchTerm}%,ten_vt.ilike.%${state.searchTerm}%,lot.ilike.%${state.searchTerm}%,tinh_trang.ilike.%${state.searchTerm}%,nganh.ilike.%${state.searchTerm}%,phu_trach.ilike.%${state.searchTerm}%,note.ilike.%${state.searchTerm}%`);
@@ -449,7 +458,6 @@ async function fetchTonKho(page = viewStates['view-ton-kho'].currentPage, showLo
 
         let query = buildTonKhoQuery().order('ma_vach', { ascending: true }).range(from, to);
 
-        // Fetch paginated data and summary counts in parallel
         const [queryResult, _] = await Promise.all([
             query,
             updateTonKhoHeaderCounts()
@@ -464,8 +472,10 @@ async function fetchTonKho(page = viewStates['view-ton-kho'].currentPage, showLo
             cache.tonKhoList = data;
             
             renderTonKhoTable(data);
+            applyTonKhoColumnState();
             renderPagination('ton-kho', count, from, to);
             updateTonKhoSelectionInfo();
+            updateFilterButtonTexts('ton-kho');
         }
     } finally {
         if (showLoader) showLoading(false);
@@ -522,8 +532,8 @@ function renderTonKhoTable(data) {
                     <td class="px-2 py-2 text-sm border border-gray-300 text-center ${tonCuoiClass}">${tk.ton_cuoi}</td>
                     <td class="px-1 py-2 border border-gray-300 text-center whitespace-nowrap"><span class="${tinhTrangClass}">${tk.tinh_trang || ''}</span></td>
                     <td class="px-1 py-2 text-sm text-gray-600 border border-gray-300 text-center">${tk.tray || ''}</td>
-                    <td class="px-1 py-2 text-sm text-gray-600 border border-gray-300 text-center">${tk.nganh || ''}</td>
-                    <td class="px-1 py-2 text-sm text-gray-600 border border-gray-300 text-center">${tk.phu_trach || ''}</td>
+                    <td class="ton-kho-col-nganh px-1 py-2 text-sm text-gray-600 border border-gray-300 text-center">${tk.nganh || ''}</td>
+                    <td class="ton-kho-col-phu-trach px-1 py-2 text-sm text-gray-600 border border-gray-300 text-center">${tk.phu_trach || ''}</td>
                     <td class="px-1 py-2 border border-gray-300 text-center">${noteHtml}</td>
                 </tr>
             `;
@@ -558,7 +568,6 @@ async function openTonKhoModal(tk = null, mode = 'add') {
     form.reset();
     document.getElementById('ton-kho-modal-date').classList.remove('border-red-500');
 
-    // Populate datalists if not already done
     if (cache.sanPhamList.length === 0) await fetchSanPham(1, false);
     
     const isViewMode = mode === 'view';
@@ -576,16 +585,15 @@ async function openTonKhoModal(tk = null, mode = 'add') {
         document.getElementById('ton-kho-modal-title').textContent = 'Thêm Tồn Kho Mới';
         document.getElementById('ton-kho-edit-mode-ma-vach').value = '';
         updateGeneratedMaVach();
-        updateTinhTrangField(); // Initialize with default
-    } else { // Edit or View
+        updateTinhTrangField(); 
+    } else { 
         document.getElementById('ton-kho-modal-title').textContent = isViewMode ? 'Xem Chi Tiết Tồn Kho' : 'Sửa Tồn Kho';
         document.getElementById('ton-kho-edit-mode-ma-vach').value = tk.ma_vach;
         Object.keys(tk).forEach(key => {
             const input = document.getElementById(`ton-kho-modal-${key.replace(/_/g, '-')}`);
             if (input) input.value = tk[key] || '';
         });
-        updateTinhTrangField(); // Update based on existing date
-        // If tinh_trang was manually set and different from auto-calc, keep it
+        updateTinhTrangField(); 
         document.getElementById('ton-kho-modal-tinh-trang').value = tk.tinh_trang;
     }
 
@@ -643,16 +651,31 @@ async function handleSaveTonKho(e) {
 async function handleDeleteMultipleTonKho() {
     const selectedIds = [...viewStates['view-ton-kho'].selected];
     if (selectedIds.length === 0) return;
-    
-    const confirmed = await showConfirm(`Bạn có chắc muốn xóa ${selectedIds.length} mục tồn kho?`);
-    if (!confirmed) return;
 
     showLoading(true);
     try {
+        const { count, error: checkError } = await sb
+            .from('chi_tiet')
+            .select('ma_vach', { count: 'exact', head: true })
+            .in('ma_vach', selectedIds);
+
+        if (checkError) throw checkError;
+
+        if (count > 0) {
+            showToast('Không thể xóa. Một hoặc nhiều mã tồn kho đã có giao dịch Nhập/Xuất.', 'error');
+            return; 
+        }
+        
+        showLoading(false); 
+        const confirmed = await showConfirm(`Bạn có chắc muốn xóa ${selectedIds.length} mục tồn kho?`);
+        if (!confirmed) return;
+
+        showLoading(true); 
         const { error } = await sb.from('ton_kho').delete().in('ma_vach', selectedIds);
         if (error) throw error;
         showToast(`Đã xóa ${selectedIds.length} mục.`, 'success');
         fetchTonKho(1, false);
+
     } catch (error) {
         showToast(`Lỗi khi xóa: ${error.message}`, 'error');
     } finally {
@@ -698,9 +721,10 @@ async function openTonKhoFilterPopover(button, view) {
     const filterKey = button.dataset.filterKey;
     const state = viewStates[view];
 
-    const popover = document.getElementById('filter-popover-template').cloneNode(true);
-    popover.id = '';
-    popover.classList.remove('hidden');
+    const template = document.getElementById('filter-popover-template');
+    if (!template) return;
+    const popoverContent = template.content.cloneNode(true);
+    const popover = popoverContent.querySelector('.filter-popover');
     document.body.appendChild(popover);
 
     const rect = button.getBoundingClientRect();
@@ -714,13 +738,13 @@ async function openTonKhoFilterPopover(button, view) {
     const renderOptions = (options) => {
         const searchTerm = searchInput.value.toLowerCase();
         const filteredOptions = options.filter(option => 
-            option && option.toLowerCase().includes(searchTerm)
+            option && String(option).toLowerCase().includes(searchTerm)
         );
 
         if (filteredOptions.length > 0) {
             optionsList.innerHTML = filteredOptions.map(option => `
                 <label class="flex items-center space-x-2 px-2 py-1 hover:bg-gray-100 rounded">
-                    <input type="checkbox" value="${option}" class="filter-option-cb" ${state.filters[filterKey]?.includes(option) ? 'checked' : ''}>
+                    <input type="checkbox" value="${option}" class="filter-option-cb" ${state.filters[filterKey]?.includes(String(option)) ? 'checked' : ''}>
                     <span class="text-sm">${option}</span>
                 </label>
             `).join('');
@@ -745,18 +769,21 @@ async function openTonKhoFilterPopover(button, view) {
                 _nganh_filter: state.filters.nganh || [],
                 _phu_trach_filter: state.filters.phu_trach || [],
                 _ton_cuoi_filter: state.filters.ton_cuoi || [],
-                _search_term: state.searchTerm || ''
+                _search_term: state.searchTerm || '',
+                _user_role: currentUser.phan_quyen,
+                _user_ho_ten: currentUser.ho_ten
             });
             if (error) throw error;
             
-            const uniqueOptions = rpcData;
+            const uniqueOptions = Array.isArray(rpcData) ? rpcData.map(item => item.option) : [];
             renderOptions(uniqueOptions);
             searchInput.addEventListener('input', () => renderOptions(uniqueOptions));
             applyBtn.disabled = false;
 
         } catch (error) {
+            console.error("Filter popover error:", error)
             optionsList.innerHTML = '<div class="text-center p-4 text-sm text-red-500">Lỗi tải dữ liệu.</div>';
-            showToast(`Lỗi: Cần tạo hàm 'get_ton_kho_filter_options' trên Supabase.`, 'error');
+            showToast(`Lỗi tải bộ lọc cho ${filterKey}.`, 'error');
         }
     }
     
@@ -783,10 +810,26 @@ async function openTonKhoFilterPopover(button, view) {
     setTimeout(() => document.addEventListener('click', closePopover), 0);
 }
 
+function applyTonKhoColumnState() {
+    const table = document.getElementById('view-ton-kho').querySelector('table');
+    const btn = document.getElementById('ton-kho-toggle-cols');
+    if (!table || !btn) return;
+
+    const isCollapsed = sessionStorage.getItem('tonKhoColsCollapsed') !== 'false';
+
+    table.querySelectorAll('.ton-kho-col-nganh, .ton-kho-col-phu-trach').forEach(el => {
+        el.classList.toggle('hidden', isCollapsed);
+    });
+
+    btn.textContent = isCollapsed ? '[+]' : '[-]';
+}
+
 function initTonKhoView() {
     const viewContainer = document.getElementById('view-ton-kho');
-    const isAdmin = currentUser.phan_quyen === 'Admin';
-    viewContainer.querySelectorAll('.tk-admin-only').forEach(el => el.classList.toggle('hidden', !isAdmin));
+    const isAdminOrUser = currentUser.phan_quyen === 'Admin' || currentUser.phan_quyen === 'User';
+    viewContainer.querySelectorAll('.tk-admin-only').forEach(el => el.classList.toggle('hidden', !isAdminOrUser));
+    
+    applyTonKhoColumnState();
 
     document.getElementById('ton-kho-search').addEventListener('input', debounce(() => {
         viewStates['view-ton-kho'].searchTerm = document.getElementById('ton-kho-search').value;
@@ -862,7 +905,6 @@ function initTonKhoView() {
     document.getElementById('cancel-ton-kho-btn').addEventListener('click', closeModal);
     document.getElementById('close-ton-kho-view-btn').addEventListener('click', closeModal);
     
-    // Modal interactive fields
     const tkModalMaVt = document.getElementById('ton-kho-modal-ma-vt');
     
     const handleMaVtInput = () => {
@@ -939,12 +981,159 @@ function initTonKhoView() {
         if (e.key === 'Enter') { e.preventDefault(); handlePageJump(); e.target.blur(); }
     });
     pageInput.addEventListener('change', handlePageJump);
+    
+    document.getElementById('ton-kho-toggle-cols').addEventListener('click', () => {
+        const isCurrentlyCollapsed = sessionStorage.getItem('tonKhoColsCollapsed') !== 'false';
+        sessionStorage.setItem('tonKhoColsCollapsed', !isCurrentlyCollapsed);
+        applyTonKhoColumnState();
+    });
 }
 
+function updateNotificationBar() {
+    const notificationBar = document.getElementById('notification-bar');
+    if (!notificationBar || !currentUser) return;
 
-// --- HÀM CHÍNH ---
+    const now = new Date();
+    const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+    const dayOfWeek = days[now.getDay()];
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = now.getFullYear();
+    const dateString = `${dayOfWeek}, Ngày ${day} Tháng ${month} Năm ${year}`;
+
+    const ho_ten = currentUser.ho_ten || 'Guest';
+    const phan_quyen = currentUser.phan_quyen || 'View';
+
+    let roleMessage = '';
+    switch (phan_quyen) {
+        case 'Admin':
+            roleMessage = 'Chúc bạn ngày làm việc hiệu quả.';
+            break;
+        case 'User':
+            roleMessage = 'Bạn chỉ có thể xem dữ liệu. Cảm ơn.';
+            break;
+        case 'View':
+            roleMessage = 'Bạn chỉ có thể xem đơn hàng và Sản phẩm đang phụ trách. Cảm ơn.';
+            break;
+        default:
+            roleMessage = 'Chào mừng bạn.';
+    }
+
+    notificationBar.innerHTML = `
+        <marquee behavior="scroll" direction="left" scrollamount="5">
+            <span>${dateString}</span> : 
+            <span>Xin chào: <b class="font-bold">${ho_ten}</b> - <b class="font-bold">${phan_quyen}</b></span>. 
+            <span class="italic">${roleMessage}</span>
+        </marquee>
+    `;
+}
+
+async function handleLogout() {
+    if (userChannel) {
+        await sb.removeChannel(userChannel);
+        userChannel = null;
+    }
+    sessionStorage.clear();
+    window.location.href = 'login.html';
+}
+
+export async function showView(viewId) {
+    const viewTitles = {
+        'view-phat-trien': 'Tổng Quan',
+        'view-san-pham': 'Quản Lý Sản Phẩm',
+        'view-ton-kho': 'Quản Lý Tồn Kho',
+        'view-don-hang': 'Quản Lý Đơn Hàng',
+        'view-chi-tiet': 'Chi Tiết Giao Dịch',
+        'view-cai-dat': 'Cài Đặt & Quản Lý',
+    };
+
+    document.querySelectorAll('.app-view').forEach(view => view.classList.add('hidden'));
+    const viewContainer = document.getElementById(viewId);
+    
+    if (!viewContainer) {
+        console.error(`View with id ${viewId} not found.`);
+        return;
+    }
+
+    const viewTitleEl = document.getElementById('view-title');
+    if (viewTitleEl) {
+        viewTitleEl.textContent = viewTitles[viewId] || 'Dashboard';
+    }
+
+    viewContainer.classList.remove('hidden');
+
+    document.querySelectorAll('.nav-button').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.view === viewId);
+    });
+
+    currentView = viewId;
+
+    try {
+        if (viewId === 'view-cai-dat') {
+            if (!isViewInitialized['view-cai-dat']) {
+                const response = await fetch(`cai-dat.html`);
+                if (!response.ok) throw new Error(`Could not load cai-dat.html`);
+                viewContainer.innerHTML = await response.text();
+                const oldTitle = viewContainer.querySelector('h1');
+                if (oldTitle) oldTitle.remove();
+                initCaiDatView();
+                document.getElementById('logout-btn').addEventListener('click', handleLogout);
+                isViewInitialized['view-cai-dat'] = true;
+            }
+            document.getElementById('profile-ho-ten').value = currentUser.ho_ten || '';
+            initProfileAvatarState();
+            
+            const isAdmin = currentUser.phan_quyen === 'Admin';
+            const adminPanel = document.getElementById('admin-panel');
+            const backupPanel = document.getElementById('backup-restore-panel');
+            if (adminPanel) {
+                adminPanel.classList.toggle('hidden', !isAdmin);
+                if (isAdmin) {
+                    await fetchUsers();
+                }
+            }
+            if (backupPanel) {
+                backupPanel.classList.toggle('hidden', !isAdmin);
+            }
+        } else if (viewId === 'view-san-pham') {
+            if (!isViewInitialized['view-san-pham']) {
+                const response = await fetch(`san-pham.html`);
+                if (!response.ok) throw new Error(`Could not load san-pham.html`);
+                viewContainer.innerHTML = await response.text();
+                const oldTitle = viewContainer.querySelector('h1');
+                if (oldTitle) oldTitle.remove();
+                initSanPhamView();
+                isViewInitialized['view-san-pham'] = true;
+            }
+            await fetchSanPham();
+        } else if (viewId === 'view-ton-kho') {
+            if (!isViewInitialized['view-ton-kho']) {
+                initTonKhoView();
+                isViewInitialized['view-ton-kho'] = true;
+            }
+            await fetchTonKho();
+        } else if (viewId === 'view-don-hang') {
+            if (!isViewInitialized['view-don-hang']) {
+                initDonHangView();
+                isViewInitialized['view-don-hang'] = true;
+            }
+            await fetchDonHang();
+        } else if (viewId === 'view-chi-tiet') {
+            if (!isViewInitialized['view-chi-tiet']) {
+                initChiTietView();
+                isViewInitialized['view-chi-tiet'] = true;
+            }
+            await fetchChiTiet();
+        }
+    } catch (error) {
+        console.error(error);
+        if (viewContainer) {
+             viewContainer.innerHTML = `<div class="p-8 text-center text-red-500">Error loading view content. Please try again. Details: ${error.message}</div>`;
+        }
+    }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
-    // --- SIDEBAR TOGGLE LOGIC ---
     const sidebar = document.getElementById('sidebar');
     const mainContent = document.getElementById('main-content-area');
     const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
@@ -988,8 +1177,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         setSidebarState(true);
     }
 
-
-    // --- XÁC THỰC & KHỞI TẠO APP ---
     async function checkSession() {
         try {
             const userJson = sessionStorage.getItem('loggedInUser');
@@ -1012,6 +1199,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('user-gmail').textContent = user.gmail;
         updateSidebarAvatar(user.anh_dai_dien_url);
         
+        updateNotificationBar();
         applyPermissions(user);
         subscribeToUserChanges();
         
@@ -1022,23 +1210,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     function applyPermissions(user) {
-        const isAdmin = user.phan_quyen === 'Admin';
-        document.getElementById('admin-panel')?.classList.toggle('hidden', !isAdmin); // Use optional chaining as panel is loaded dynamically
-        document.querySelectorAll('.sp-admin-only').forEach(el => el.classList.toggle('hidden', !isAdmin));
-        document.querySelectorAll('.tk-admin-only').forEach(el => el.classList.toggle('hidden', !isAdmin));
-        document.querySelectorAll('.dh-admin-only').forEach(el => el.classList.toggle('hidden', !isAdmin));
+        const is_admin = user.phan_quyen === 'Admin';
+        const is_user = user.phan_quyen === 'User';
+        
+        document.getElementById('admin-panel')?.classList.toggle('hidden', !is_admin);
+        
+        document.querySelectorAll('.sp-admin-only').forEach(el => el.classList.toggle('hidden', !(is_admin || is_user) ));
+        document.querySelectorAll('.tk-admin-only').forEach(el => el.classList.toggle('hidden', !(is_admin || is_user) ));
+        document.querySelectorAll('.dh-admin-only').forEach(el => el.classList.toggle('hidden', !(is_admin || is_user) ));
     }
 
-    async function handleLogout() {
-        if (userChannel) {
-            await sb.removeChannel(userChannel);
-            userChannel = null;
-        }
-        sessionStorage.clear();
-        window.location.href = 'login.html';
-    }
-
-    // --- REALTIME ---
     function subscribeToUserChanges() {
         if (userChannel) return;
         userChannel = sb.channel('public:user')
@@ -1057,6 +1238,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                         document.getElementById('user-ho-ten').textContent = currentUser.ho_ten || 'User';
                         updateSidebarAvatar(currentUser.anh_dai_dien_url);
+                        updateNotificationBar(); 
                         if (currentView === 'view-cai-dat') {
                              document.getElementById('profile-ho-ten').value = currentUser.ho_ten || '';
                              initProfileAvatarState();
@@ -1086,9 +1268,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                           if (currentView === 'view-san-pham') {
                               fetchSanPham(viewStates['view-san-pham'].currentPage, false);
                           }
-                          // Update cache for Ton Kho view
                           if(payload.eventType === 'INSERT' || payload.eventType === 'UPDATE' || payload.eventType === 'DELETE'){
-                              cache.sanPhamList = []; // Invalidate cache
+                              cache.sanPhamList = []; 
                           }
                       })
                       .subscribe();
@@ -1112,95 +1293,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
     }
 
-    // --- ĐIỀU HƯỚNG VIEW ---
-    async function showView(viewId) {
-        document.querySelectorAll('.app-view').forEach(view => view.classList.add('hidden'));
-        const viewContainer = document.getElementById(viewId);
-        viewContainer.classList.remove('hidden');
-
-        document.querySelectorAll('.nav-button').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.view === viewId);
-        });
-
-        currentView = viewId;
-
-        try {
-            if (viewId === 'view-cai-dat') {
-                if (!isViewInitialized['view-cai-dat']) {
-                    const response = await fetch(`cai-dat.html`);
-                    if (!response.ok) throw new Error(`Could not load cai-dat.html`);
-                    viewContainer.innerHTML = await response.text();
-                    initCaiDatView();
-                    document.getElementById('logout-btn').addEventListener('click', handleLogout);
-                    isViewInitialized['view-cai-dat'] = true;
-                }
-                // Logic to run every time view is shown
-                document.getElementById('profile-ho-ten').value = currentUser.ho_ten || '';
-                initProfileAvatarState();
-                
-                // Handle Admin Panel Visibility and Data Fetching
-                const isAdmin = currentUser.phan_quyen === 'Admin';
-                const adminPanel = document.getElementById('admin-panel');
-                const backupPanel = document.getElementById('backup-restore-panel');
-                if (adminPanel) {
-                    adminPanel.classList.toggle('hidden', !isAdmin);
-                    if (isAdmin) {
-                        await fetchUsers();
-                    }
-                }
-                if (backupPanel) {
-                    backupPanel.classList.toggle('hidden', !isAdmin);
-                }
-            } else if (viewId === 'view-san-pham') {
-                if (!isViewInitialized['view-san-pham']) {
-                    const response = await fetch(`san-pham.html`);
-                    if (!response.ok) throw new Error(`Could not load san-pham.html`);
-                    viewContainer.innerHTML = await response.text();
-                    initSanPhamView();
-                    isViewInitialized['view-san-pham'] = true;
-                }
-                 // Logic to run every time view is shown
-                await fetchSanPham();
-            } else if (viewId === 'view-ton-kho') {
-                if (!isViewInitialized['view-ton-kho']) {
-                    initTonKhoView();
-                    isViewInitialized['view-ton-kho'] = true;
-                }
-                await fetchTonKho();
-            } else if (viewId === 'view-don-hang') {
-                if (!isViewInitialized['view-don-hang']) {
-                    initDonHangView();
-                    isViewInitialized['view-don-hang'] = true;
-                }
-                await fetchDonHang();
-            } else if (viewId === 'view-chi-tiet') {
-                if (!isViewInitialized['view-chi-tiet']) {
-                    initChiTietView();
-                    isViewInitialized['view-chi-tiet'] = true;
-                }
-                await fetchChiTiet();
-            }
-        } catch (error) {
-            console.error(error);
-            if (viewContainer) {
-                 viewContainer.innerHTML = `<div class="p-8 text-center text-red-500">Error loading view content. Please try again. Details: ${error.message}</div>`;
-            }
-        }
-    }
-    
-    // --- GẮN EVENT LISTENERS ---
-    
-    // Điều hướng
     document.querySelectorAll('.nav-button').forEach(btn => btn.addEventListener('click', () => showView(btn.dataset.view)));
 
-    // Global
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             document.getElementById('confirm-modal').classList.add('hidden');
             document.getElementById('password-reset-modal').classList.add('hidden');
             document.getElementById('san-pham-modal').classList.add('hidden');
             document.getElementById('ton-kho-modal').classList.add('hidden');
-            // document.getElementById('don-hang-modal').classList.add('hidden'); // Delegated to don-hang.js
+            document.getElementById('don-hang-modal')?.classList.add('hidden');
             document.getElementById('image-viewer-modal').classList.add('hidden');
             document.getElementById('excel-export-modal').classList.add('hidden');
             closeActiveAutocompletePopover();
@@ -1208,7 +1309,5 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     document.getElementById('close-image-viewer-btn').addEventListener('click', () => document.getElementById('image-viewer-modal').classList.add('hidden'));
 
-
-    // Khởi tạo app
     checkSession();
 });
