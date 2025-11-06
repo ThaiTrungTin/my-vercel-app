@@ -1,4 +1,5 @@
 
+
 import { sb, cache, viewStates, showLoading, showToast, showConfirm, debounce, renderPagination, sanitizeFileName, filterButtonDefaultTexts, currentUser, openAutocomplete } from './app.js';
 
 let selectedDonHangFiles = []; 
@@ -353,6 +354,17 @@ function renderChiTietTable() {
         const barcodeColorClass = item.ma_vach_valid === true ? 'text-green-600' : 'text-red-600';
         const generatedBarcode = item.ma_vach;
 
+        let slColorClass = '';
+        const slNum = parseFloat(item.sl);
+        const ycs_Num = parseFloat(item.yc_sl);
+        if (!isNaN(slNum) && !isNaN(ycs_Num)) {
+            if (slNum === ycs_Num) {
+                slColorClass = 'text-green-600 font-bold';
+            } else {
+                slColorClass = 'text-red-600 font-bold';
+            }
+        }
+
         return `
             <tr data-id="${item.id}" class="chi-tiet-row group">
                 <td class="p-1 border text-center align-top ${isViewMode ? '' : 'drag-handle cursor-move'}">${index + 1}</td>
@@ -373,7 +385,7 @@ function renderChiTietTable() {
                     <input type="number" value="${item.yc_sl || ''}" min="1" class="w-full p-1 border rounded chi-tiet-input" data-field="yc_sl" ${isViewMode ? 'disabled' : ''}>
                 </td>
                 <td class="p-1 border align-top">
-                    <input type="number" value="${(item.sl === null || item.sl === undefined) ? '' : item.sl}" min="0" class="w-full p-1 border rounded chi-tiet-input" data-field="sl" ${isViewMode ? 'disabled' : ''}>
+                    <input type="number" value="${(item.sl === null || item.sl === undefined) ? '' : item.sl}" min="0" class="w-full p-1 border rounded chi-tiet-input ${slColorClass}" data-field="sl" ${isViewMode ? 'disabled' : ''}>
                 </td>
                 <td class="p-1 border align-top">
                     <select class="w-full p-1 border rounded chi-tiet-input" data-field="loai" ${isViewMode ? 'disabled' : ''}>
@@ -424,6 +436,9 @@ function openLotSelectorPopover(inputElement, item) {
 
     const optionsList = popover.querySelector('.autocomplete-options-list');
     if (item.lotOptions && item.lotOptions.length > 0) {
+        // Sort options: stock > 0 first, then by descending stock amount
+        item.lotOptions.sort((a, b) => b.ton_cuoi - a.ton_cuoi);
+
         optionsList.innerHTML = item.lotOptions.map(opt => {
             const tonKhoClass = opt.ton_cuoi > 0 ? 'text-green-600' : 'text-red-600';
             const tinhTrangClass = getTinhTrangClass(opt.tinh_trang);
@@ -1148,74 +1163,104 @@ export function initDonHangView() {
             ghostClass: 'sortable-ghost',
             dragClass: 'sortable-drag',
             draggable: '.chi-tiet-row',
-            onUpdate: (evt) => {
-                const itemToMove = chiTietItems.splice(evt.oldIndex, 1)[0];
-                if (itemToMove) {
-                    chiTietItems.splice(evt.newIndex, 0, itemToMove);
+            forceFallback: true,
+            onEnd: (evt) => {
+                const { oldIndex, newIndex } = evt;
+                if (oldIndex === newIndex) return;
+                const movedItem = chiTietItems.splice(oldIndex, 1)[0];
+                if (movedItem) {
+                    chiTietItems.splice(newIndex, 0, movedItem);
                 }
                 renderChiTietTable();
             }
         });
 
         chiTietBody.addEventListener('paste', async (e) => {
+            const targetInput = e.target;
+            if (!targetInput || !targetInput.closest('tr.chi-tiet-row') || !targetInput.dataset.field) {
+                return;
+            }
+
             e.preventDefault();
             const pasteData = e.clipboardData.getData('text');
-            const rows = pasteData.split(/[\r\n]+/).filter(row => row.trim() !== '');
-            if (rows.length === 0) return;
+            const pastedValues = pasteData.split(/[\r\n]+/).filter(val => val.trim() !== '');
+            if (pastedValues.length === 0) return;
+
+            const targetRow = targetInput.closest('tr.chi-tiet-row');
+            const targetId = targetRow.dataset.id;
+            const targetField = targetInput.dataset.field;
+            
+            const startIndex = chiTietItems.findIndex(item => item && item.id == targetId);
+            if (startIndex === -1) {
+                return;
+            }
 
             showLoading(true);
-            showToast('Đang xử lý dữ liệu dán...', 'info');
+            showToast(`Đang dán ${pastedValues.length} mục...`, 'info');
 
             try {
-                const initialNewItems = rows.map(row => {
-                    const cells = row.split('\t'); 
-                    const ma_vt = (cells[0] || '').trim();
-                    const yc_sl_raw = cells[1] || '';
-                    const yc_sl = parseInt(yc_sl_raw, 10);
-            
-                    if (!ma_vt) return null; 
-            
-                    return {
-                        id: `new-${Date.now()}-${Math.random()}`,
-                        ma_vt: ma_vt,
-                        ten_vt: '',
-                        yc_sl: isNaN(yc_sl) ? null : yc_sl,
-                        sl: null,
-                        loai: null,
-                    };
-                }).filter(Boolean); 
+                const maVtUpdatePromises = [];
 
-                const updatePromises = initialNewItems.map(item => updateItemFromMaVt(item, item.ma_vt));
-                const finalNewItems = await Promise.all(updatePromises);
-                
-                if(finalNewItems.length > 0) {
-                   const focusedRow = document.activeElement.closest('tr.chi-tiet-row');
-                   if (focusedRow && focusedRow.dataset.id) {
-                       const targetId = focusedRow.dataset.id;
-                       const targetIndex = chiTietItems.findIndex(item => item && item.id == targetId);
-                       
-                       if (targetIndex !== -1) {
-                           chiTietItems.splice(targetIndex, 1, ...finalNewItems);
-                       } else {
-                           chiTietItems.push(...finalNewItems);
-                       }
-                   } else {
-                       chiTietItems.push(...finalNewItems);
-                   }
-                    renderChiTietTable();
-                    showToast(`Đã dán và cập nhật ${finalNewItems.length} vật tư.`, 'success');
+                for (let i = 0; i < pastedValues.length; i++) {
+                    const targetIndex = startIndex + i;
+                    let value = pastedValues[i].trim();
+
+                    let currentItem = chiTietItems[targetIndex];
+
+                    if (!currentItem) {
+                        currentItem = { id: `new-${Date.now()}-${Math.random()}`, loai: null, sl: 0, yc_sl: 1 };
+                        chiTietItems.push(currentItem);
+                    }
+
+                    if (targetField === 'yc_sl' || targetField === 'sl') {
+                        const numValue = parseInt(value, 10);
+                        currentItem[targetField] = isNaN(numValue) ? null : numValue;
+                    } else {
+                        currentItem[targetField] = value;
+                    }
+
+                    if (targetField === 'ma_vt') {
+                        maVtUpdatePromises.push(updateItemFromMaVt(currentItem, value));
+                    }
                 }
-            } catch(err) {
+
+                if (maVtUpdatePromises.length > 0) {
+                    await Promise.all(maVtUpdatePromises);
+                }
+
+                renderChiTietTable();
+                showToast(`Đã dán thành công!`, 'success');
+
+            } catch (err) {
                 showToast(`Lỗi khi dán: ${err.message}`, 'error');
+                console.error("Paste error:", err);
             } finally {
                 showLoading(false);
             }
-       });
+        });
     }
 
     document.getElementById('don-hang-them-vat-tu-btn').addEventListener('click', () => {
         chiTietItems.push({ id: `new-${Date.now()}-${Math.random()}`, loai: null, sl: 0, yc_sl: 1 });
         renderChiTietTable();
+    });
+
+    document.getElementById('don-hang-chi-tiet-fill-loai-all').addEventListener('click', () => {
+        if (chiTietItems.length < 1) return;
+        const firstItemLoai = chiTietItems[0]?.loai;
+        if (!firstItemLoai) {
+            showToast('Vui lòng chọn "Loại" cho dòng đầu tiên trước khi áp dụng cho tất cả.', 'error');
+            return;
+        }
+
+        chiTietItems.forEach(item => {
+            if (item) {
+                item.loai = firstItemLoai;
+            }
+        });
+
+        renderChiTietTable();
+        showToast(`Đã áp dụng "${firstItemLoai}" cho tất cả các dòng.`, 'success');
     });
 
     chiTietBody.addEventListener('click', (e) => {

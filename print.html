@@ -41,9 +41,16 @@
             background: white;
             box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
         }
+        #chi-tiet-table-body tr {
+            height: 1.08cm; /* Fixed height for all rows (reduced 10%) */
+            page-break-inside: avoid; /* Prevent rows from splitting across pages */
+        }
+        #chi-tiet-table-body td {
+            vertical-align: middle; /* Vertically center content in taller cells */
+        }
     </style>
 </head>
-<body class="font-sans">
+<body class="font-sans text-xs">
 
     <div id="toolbar" class="no-print bg-white p-4 shadow-md sticky top-0 z-50 flex items-center justify-center gap-3">
         <button id="print-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">In Phiếu</button>
@@ -66,57 +73,121 @@
         <p id="error-message">Mã đơn hàng không hợp lệ hoặc không tồn tại.</p>
     </div>
 
-    <div id="printable-area" class="hidden">
-        <div class="flex justify-between items-start mb-6">
-            <div class="text-left">
-                <h1 class="text-2xl font-bold" id="header-logo">JNJ</h1>
-                <p class="text-sm">Warehouse Management</p>
-            </div>
-            <div id="qrcode" class="w-24 h-24"></div>
-        </div>
-        <h2 id="phieu-title" class="text-3xl font-bold text-center mb-8">PHIẾU XUẤT/NHẬP KHO</h2>
-        
-        <div class="grid grid-cols-2 gap-x-8 gap-y-2 mb-8 text-sm">
-            <div><strong>Ngày:</strong> <span id="info-ngay"></span></div>
-            <div><strong>Mã số:</strong> <span id="info-ma-so" class="font-mono"></span></div>
-            <div><strong>Người yêu cầu:</strong> <span id="info-yeu-cau"></span></div>
-            <div><strong>Mã NX:</strong> <span id="info-ma-nx" class="font-mono"></span></div>
-            <div class="col-span-2"><strong>Mục đích:</strong> <span id="info-muc-dich"></span></div>
-            <div class="col-span-2"><strong>Ghi chú:</strong> <span id="info-ghi-chu"></span></div>
+    <div id="printable-area" class="hidden relative">
+        <div id="qrcode" class="absolute top-6 right-6 w-12 h-12 flex-shrink-0"></div>
+
+        <div class="text-center mb-6">
+            <h2 id="main-title" class="text-base font-bold uppercase"></h2>
+            <p id="sub-title" class="text-[10px]">
+                <em id="sub-title-label"></em>
+                <strong id="sub-title-value" class="uppercase"></strong>
+            </p>
+            <p id="info-date" class="text-[8px] italic"></p>
         </div>
 
-        <table class="w-full border-collapse text-sm mb-8">
-            <thead>
+        <div class="mb-8">
+             <div class="grid grid-cols-[max-content_1fr] gap-x-2 gap-y-1 text-[10px]">
+                <div id="receiver-label" class="italic text-left whitespace-nowrap"></div>
+                <div id="info-yeu-cau"></div>
+                
+                <div class="italic text-left whitespace-nowrap">Bộ Phận / Department :</div>
+                <div id="info-nganh"></div>
+
+                <div class="italic text-left whitespace-nowrap align-top">Lý do / Reason (Địa điểm/thời gian/tên Hội nghị) :</div>
+                <div id="info-muc-dich" class="font-bold"></div>
+             </div>
+        </div>
+
+        <table class="w-full border-collapse text-[8px] mb-8">
+            <thead class="align-middle">
                 <tr class="bg-gray-100">
-                    <th class="border p-2 text-center font-bold" style="width: 5%;">STT</th>
-                    <th class="border p-2 text-left font-bold" style="width: 15%;">Mã VT</th>
-                    <th class="border p-2 text-left font-bold" style="width: 55%;">Tên Vật Tư</th>
-                    <th class="border p-2 text-center font-bold" style="width: 10%;">ĐVT</th>
-                    <th class="border p-2 text-center font-bold" style="width: 15%;">Số Lượng</th>
+                    <th rowspan="2" class="border p-1 text-center">
+                        <span class="font-bold">No</span>
+                    </th>
+                    <th rowspan="2" class="border p-1 text-center" style="width: 37.5%;">
+                        <span class="font-bold">Tên Hàng</span><br>
+                        <em class="font-normal">(Item)</em>
+                    </th>
+                    <th rowspan="2" class="border p-1 text-center" style="width: 12%;">
+                        <span class="font-bold">Mã Hàng</span><br>
+                        <em class="font-normal">(Code)</em>
+                    </th>
+                    <th rowspan="2" class="border p-1 text-center" style="width: 5%;">
+                        <span class="font-bold">Đơn Vị</span><br>
+                        <em class="font-normal">Unit</em>
+                    </th>
+                    <th colspan="2" class="border p-1 text-center" style="width: 14%;">
+                        <span class="font-bold">Số Lượng</span><br>
+                        <em class="font-normal">(Quantity)</em>
+                    </th>
+                    <th rowspan="2" class="border p-1 text-center" style="width: 8%;">
+                        <span class="font-bold">Trưng Bày</span>
+                    </th>
+                    <th rowspan="2" class="border p-1 text-center" style="width: 8%;">
+                        <span class="font-bold">Tiêu Hao</span>
+                    </th>
+                    <th rowspan="2" class="border p-1 text-center" style="width: 12.5%;">
+                        <span class="font-bold">Ghi Chú</span><br>
+                        <em class="font-normal">(Lot)</em>
+                    </th>
+                </tr>
+                <tr class="bg-gray-100">
+                    <th class="border p-1 text-center">
+                        <span class="font-bold">Yêu Cầu</span>
+                    </th>
+                    <th class="border p-1 text-center">
+                        <span class="font-bold" id="sl-header-text">Thực Xuất/Nhập</span>
+                    </th>
                 </tr>
             </thead>
             <tbody id="chi-tiet-table-body">
             </tbody>
-            <tfoot>
-                <tr class="bg-gray-100 font-bold">
-                    <td colspan="4" class="border p-2 text-right">TỔNG CỘNG:</td>
-                    <td id="total-sl" class="border p-2 text-center"></td>
+            <tfoot class="font-bold">
+                 <tr class="bg-gray-100">
+                    <td colspan="4" class="border p-1 text-right font-bold">Tổng</td>
+                    <td id="total-ycsl" class="border p-1 text-center font-bold"></td>
+                    <td id="total-sl" class="border p-1 text-center font-bold"></td>
+                    <td colspan="3" class="border p-1"></td>
                 </tr>
             </tfoot>
         </table>
         
-        <div id="signature-section" class="hidden pt-12">
-            <div class="flex justify-around text-center text-sm">
+        <div id="signature-section" class="hidden pt-0.000001">
+            <div class="flex justify-between text-center text-[10px]">
                 <div>
-                    <p class="font-bold">Người Lập Phiếu</p>
-                    <p class="italic mt-1">(Ký, ghi rõ họ tên)</p>
+                    <p class="font-bold">Người yêu cầu xuất hàng</p>
+                    <p class="italic mt-1">Requestor's signature</p>
                     <div class="mt-20" id="sig-yeu-cau"></div>
                 </div>
                 <div>
-                    <p class="font-bold">Thủ Kho</p>
-                    <p class="italic mt-1">(Ký, ghi rõ họ tên)</p>
+                    <p class="font-bold">Người nhận hàng</p>
+                    <p class="italic mt-1">Receiver's signature</p>
+                    <div class="mt-20">PSR / PM</div>
+                </div>
+                <div>
+                    <p class="font-bold">Thủ kho</p>
+                    <p class="italic mt-1">Storeman's signature</p>
+                    <div class="mt-20">&nbsp;</div>
                 </div>
             </div>
+        </div>
+
+        <div class="mt-8 text-[10px]">
+            <p class="font-bold">Lưu ý / Notes:</p>
+            <ol class="list-decimal list-inside space-y-1 mt-2">
+                <li>
+                    Chỉ nhân viên được chỉ định mới được quyền ký Phiếu xuất kho này
+                    <br><em class="ml-4">Only appointed personnel have the rights to sign this Delivery Order</em>
+                </li>
+                <li>
+                    Vui lòng thông báo cho Thủ kho 4 tiếng trước khi nhận hàng để Thủ kho có thể chuẩn bị hàng hóa sẵn sàng
+                    <br><em class="ml-4">Please inform Storeman at least 4 hours in advance for necessary arrangement</em>
+                </li>
+                <li>
+                    Việc nhận hàng được thực hiện tại kho và người nhận hàng phải đeo thẻ nhân viên JNJ và xuất trình Phiếu xuất kho khi nhận hàng
+                    <br><em class="ml-4">The process must only be conducted at store and receiver have to wear JNJ employee card and present Delivery Order</em>
+                </li>
+            </ol>
         </div>
     </div>
 
@@ -131,7 +202,6 @@
 
         function sanitizeFileName(fileName) {
             if (!fileName) return 'file';
-            // Bỏ dấu, chuyển thành chữ thường, thay khoảng trắng bằng gạch ngang, loại bỏ ký tự đặc biệt
             return fileName
                 .normalize('NFD')
                 .replace(/[\u0300-\u036f]/g, '')
@@ -157,45 +227,70 @@
                 
                 donHangData = dhData;
                 
-                const { data: ctData, error: ctError } = await sb.from('chi_tiet').select('*').eq('ma_kho', ma_kho);
+                const { data: ctData, error: ctError } = await sb.from('chi_tiet').select('*').eq('ma_kho', ma_kho).order('ma_vt', { ascending: true });
                 if (ctError) throw new Error(ctError.message);
                 
                 chiTietData = ctData;
 
-                // Render data
+                // Render Header data
                 const isXuat = donHangData.ma_kho.startsWith('OUT');
-                document.getElementById('phieu-title').textContent = isXuat ? 'PHIẾU XUẤT KHO' : 'PHIẾU NHẬP KHO';
+                
+                document.getElementById('main-title').textContent = isXuat ? 'PHIẾU XUẤT KHO (DELIVERY ORDER)' : 'PHIẾU NHẬP KHO (RECEIPT ORDER)';
+                document.getElementById('sl-header-text').textContent = isXuat ? 'Thực Xuất' : 'Thực Nhập';
+                
+                document.getElementById('sub-title-label').textContent = isXuat ? 'Số Phiếu xuất kho (DO No) :' : 'Số Phiếu nhập kho (RO No) :';
+                document.getElementById('sub-title-value').textContent = `MDDMKT2025_${donHangData.ma_nx}`;
 
                 const date = new Date(donHangData.thoi_gian);
-                document.getElementById('info-ngay').textContent = `Ngày ${date.getDate()} tháng ${date.getMonth() + 1} năm ${date.getFullYear()}`;
-                document.getElementById('info-ma-so').textContent = donHangData.ma_kho;
+                const formattedDate = `Ngày ${date.getDate()} tháng ${date.getMonth() + 1} năm ${date.getFullYear()}`;
+                document.getElementById('info-date').textContent = `Ngày/Date : ${formattedDate}`;
+
+                const receiverLabelText = isXuat ? 'Tên người nhận hàng (name of receiver) :' : 'Tên người giao hàng (name of deliverer) :';
+                document.getElementById('receiver-label').innerHTML = receiverLabelText;
+
                 document.getElementById('info-yeu-cau').textContent = donHangData.yeu_cau;
-                document.getElementById('info-ma-nx').textContent = donHangData.ma_nx;
+                document.getElementById('info-nganh').textContent = donHangData.nganh;
                 document.getElementById('info-muc-dich').textContent = donHangData.muc_dich || 'Không có';
-                document.getElementById('info-ghi-chu').textContent = donHangData.ghi_chu || 'Không có';
+
                 document.getElementById('sig-yeu-cau').textContent = donHangData.yeu_cau;
 
+
+                // Render Table data
                 const tableBody = document.getElementById('chi-tiet-table-body');
                 let totalSl = 0;
+                let totalYcsl = 0;
                 tableBody.innerHTML = chiTietData.map((item, index) => {
                     const sl = isXuat ? item.xuat : item.nhap;
+                    const yc_sl = item.yc_sl || 0;
                     totalSl += sl;
+                    totalYcsl += yc_sl;
+
+                    const slClass = sl === yc_sl ? 'text-green-600 font-bold' : 'text-red-600 font-bold';
+                    const lotDisplay = sl === 0 ? '<span class="font-bold">0</span>' : (item.lot || '');
+                    const trungBay = item.loai === 'Trưng Bày' ? 'X' : '';
+                    const tieuHao = item.loai === 'Tiêu Hao' ? 'X' : '';
+
                     return `
                         <tr>
-                            <td class="border p-2 text-center">${index + 1}</td>
-                            <td class="border p-2">${item.ma_vt}</td>
-                            <td class="border p-2">${item.ten_vt}</td>
-                            <td class="border p-2 text-center">Cái</td>
-                            <td class="border p-2 text-center">${sl}</td>
+                            <td class="border p-1 text-center">${index + 1}</td>
+                            <td class="border p-1 text-left">${item.ten_vt}</td>
+                            <td class="border p-1 text-center">${item.ma_vt}</td>
+                            <td class="border p-1 text-center">Pcs</td>
+                            <td class="border p-1 text-center">${yc_sl}</td>
+                            <td class="border p-1 text-center ${slClass}">${sl}</td>
+                            <td class="border p-1 text-center font-bold">${trungBay}</td>
+                            <td class="border p-1 text-center font-bold">${tieuHao}</td>
+                            <td class="border p-1 text-center">${lotDisplay}</td>
                         </tr>
                     `;
                 }).join('');
                 document.getElementById('total-sl').textContent = totalSl;
+                document.getElementById('total-ycsl').textContent = totalYcsl;
 
                 new QRCode(document.getElementById("qrcode"), {
                     text: window.location.href,
-                    width: 96,
-                    height: 96,
+                    width: 48,
+                    height: 48,
                 });
 
                 document.getElementById('loading-state').classList.add('hidden');
@@ -253,30 +348,42 @@
             const isXuat = donHangData.ma_kho.startsWith('OUT');
             const title = isXuat ? 'PHIẾU XUẤT KHO' : 'PHIẾU NHẬP KHO';
             const date = new Date(donHangData.thoi_gian);
+            const slHeaderText = isXuat ? "Thực Xuất (SL)" : "Thực Nhập (SL)";
 
             const headerData = [
                 [title],
-                [], // Empty row
+                [],
                 ["Người yêu cầu:", donHangData.yeu_cau, "", "Mã NX:", donHangData.ma_nx],
                 ["Mục đích:", donHangData.muc_dich, "", "Ngày:", `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`],
-                [], // Empty row
+                ["Ghi chú ĐH:", donHangData.ghi_chu || ''],
+                [],
             ];
             
-            const tableHeader = ["STT", "Mã VT", "Tên Vật Tư", "ĐVT", "Số Lượng"];
+            const tableHeader = ["No", "Tên Hàng (Item)", "Mã Hàng (Code)", "Đơn Vị (Unit)", "Yêu Cầu (YCSL)", slHeaderText, "Trưng Bày", "Tiêu Hao", "Ghi Chú (Lot)"];
+
             let totalSl = 0;
+            let totalYcsl = 0;
+            
             const tableData = chiTietData.map((item, index) => {
                 const sl = isXuat ? item.xuat : item.nhap;
+                const yc_sl = item.yc_sl || 0;
                 totalSl += sl;
-                return [index + 1, item.ma_vt, item.ten_vt, "Cái", sl];
+                totalYcsl += yc_sl;
+
+                const lotDisplay = sl === 0 ? '0' : (item.lot || '');
+                const trungBay = item.loai === 'Trưng Bày' ? 'X' : '';
+                const tieuHao = item.loai === 'Tiêu Hao' ? 'X' : '';
+
+                return [index + 1, item.ten_vt, item.ma_vt, "Pcs", yc_sl, sl, trungBay, tieuHao, lotDisplay];
             });
 
             const footerData = [
                 [],
-                ["", "", "", "TỔNG CỘNG:", totalSl],
+                ["", "", "", "Tổng", totalYcsl, totalSl, "", "", ""],
                 [],
                 ["", "Người Lập Phiếu", "", "Thủ Kho"],
                 ["", "(Ký, ghi rõ họ tên)", "", "(Ký, ghi rõ họ tên)"],
-                [],[],[], // spacing
+                [],[],[],
                 ["", donHangData.yeu_cau]
             ];
             
@@ -284,15 +391,14 @@
             
             const ws = XLSX.utils.aoa_to_sheet(finalData);
             
-            // Merging and styling
             ws['!merges'] = [
-                { s: { r: 0, c: 0 }, e: { r: 0, c: 4 } }, // Title
-                { s: { r: 3, c: 1 }, e: { r: 3, c: 2 } }  // Muc dich value
+                { s: { r: 0, c: 0 }, e: { r: 0, c: 8 } },
+                { s: { r: 3, c: 1 }, e: { r: 3, c: 2 } },
+                { s: { r: 4, c: 1 }, e: { r: 4, c: 8 } }
             ];
             
-            // Column widths
             ws['!cols'] = [
-                { wch: 5 }, { wch: 15 }, { wch: 50 }, { wch: 8 }, { wch: 10 }
+                { wch: 5 }, { wch: 40 }, { wch: 15 }, { wch: 8 }, { wch: 8 }, { wch: 15 }, { wch: 10 }, { wch: 10 }, { wch: 25 }
             ];
 
             const wb = XLSX.utils.book_new();
