@@ -4,6 +4,7 @@ import { initCaiDatView, fetchUsers, initProfileAvatarState } from './caidat.js'
 import { initSanPhamView, fetchSanPham } from './sanpham.js';
 import { initDonHangView, fetchDonHang } from './don-hang.js';
 import { initChiTietView, fetchChiTiet } from './chitiet.js';
+import { initTongQuanView, fetchTongQuanData } from './tongquan.js';
 
 
 const { createClient } = supabase;
@@ -15,6 +16,8 @@ export let currentUser = null;
 let currentView = 'view-phat-trien'; 
 let userChannel = null; 
 let adminNotificationChannel = null;
+let presenceChannel = null;
+export const onlineUsers = new Map();
 export const DEFAULT_AVATAR_URL = 'https://t4.ftcdn.net/jpg/05/49/98/39/360_F_549983970_bRCkYfk0P6PP5fKbMhZMIb07vs1cACai.jpg';
 export const PLACEHOLDER_IMAGE_URL = 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Placeholder_view_vector.svg/681px-Placeholder_view_vector.svg.png';
 export const cache = {
@@ -62,6 +65,7 @@ export const viewStates = {
     }
 };
 let isViewInitialized = {
+    'view-phat-trien': false,
     'view-san-pham': false,
     'view-ton-kho': false,
     'view-don-hang': false,
@@ -1101,6 +1105,10 @@ async function handleLogout() {
         await sb.removeChannel(adminNotificationChannel);
         adminNotificationChannel = null;
     }
+    if (presenceChannel) {
+        await sb.removeChannel(presenceChannel);
+        presenceChannel = null;
+    }
     sessionStorage.clear();
     window.location.href = 'login.html';
 }
@@ -1137,7 +1145,13 @@ export async function showView(viewId) {
     currentView = viewId;
 
     try {
-        if (viewId === 'view-cai-dat') {
+        if (viewId === 'view-phat-trien') {
+            if (!isViewInitialized['view-phat-trien']) {
+                initTongQuanView();
+                isViewInitialized['view-phat-trien'] = true;
+            }
+            await fetchTongQuanData();
+        } else if (viewId === 'view-cai-dat') {
             if (!isViewInitialized['view-cai-dat']) {
                 const response = await fetch(`cai-dat.html`);
                 if (!response.ok) throw new Error(`Could not load cai-dat.html`);
@@ -1201,12 +1215,72 @@ export async function showView(viewId) {
     }
 }
 
+function updateOnlineStatusUI() {
+    const listEl = document.getElementById('online-users-list');
+    const countEl = document.getElementById('online-user-count');
+    const avatarStatusEl = document.getElementById('sidebar-avatar-status');
+    if (!listEl || !countEl || !avatarStatusEl) return;
+
+    // Update own status dot
+    const selfPresence = onlineUsers.get(currentUser.gmail);
+    if (selfPresence) {
+        const status = selfPresence.status || 'online';
+        const statusColor = status === 'away' ? 'bg-yellow-400' : 'bg-green-500';
+        avatarStatusEl.className = `absolute -bottom-0.5 -right-0.5 block h-3 w-3 rounded-full ${statusColor} ring-2 ring-gray-900`;
+    } else {
+        // If for some reason self presence is not found, show as offline/gray.
+        avatarStatusEl.className = 'absolute -bottom-0.5 -right-0.5 block h-3 w-3 rounded-full bg-gray-400 ring-2 ring-gray-900';
+    }
+
+    // Filter out current user for the list
+    const otherOnlineUsers = new Map(onlineUsers);
+    otherOnlineUsers.delete(currentUser.gmail);
+
+    countEl.textContent = otherOnlineUsers.size;
+    
+    if (otherOnlineUsers.size === 0) {
+        listEl.innerHTML = `<li class="px-2 text-xs text-gray-400 nav-text transition-opacity duration-300">Không có ai.</li>`;
+    } else {
+        listEl.innerHTML = '';
+        const sortedUsers = [...otherOnlineUsers.values()].sort((a, b) => {
+            const statusA = a.status || 'online';
+            const statusB = b.status || 'online';
+            if (statusA === 'online' && statusB !== 'online') return -1;
+            if (statusA !== 'online' && statusB === 'online') return 1;
+            return a.user_ho_ten.localeCompare(b.user_ho_ten);
+        });
+
+        for (const user of sortedUsers) {
+            const status = user.status || 'online';
+            const statusColor = status === 'away' ? 'bg-yellow-400' : 'bg-green-500';
+
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <div class="flex items-center gap-3 px-2">
+                    <div class="relative flex-shrink-0">
+                        <img src="${user.user_avatar_url || DEFAULT_AVATAR_URL}" alt="${user.user_ho_ten}" class="w-8 h-8 rounded-full object-cover">
+                        <span class="absolute -bottom-0.5 -right-0.5 block h-2.5 w-2.5 rounded-full ${statusColor} ring-2 ring-gray-900"></span>
+                    </div>
+                    <span class="nav-text text-sm font-medium transition-opacity duration-300 truncate">${user.user_ho_ten}</span>
+                </div>
+            `;
+            listEl.appendChild(li);
+        }
+    }
+    
+    if (currentView === 'view-cai-dat') {
+        fetchUsers();
+    }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     const sidebar = document.getElementById('sidebar');
     const mainContent = document.getElementById('main-content-area');
     const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
     const iconOpen = document.getElementById('sidebar-toggle-icon-open');
     const iconClose = document.getElementById('sidebar-toggle-icon-close');
+    const navButtons = document.querySelectorAll('.nav-button');
+    const navIcons = document.querySelectorAll('.nav-button > svg');
     const navTexts = document.querySelectorAll('.nav-text');
     const sidebarHeaderContent = document.getElementById('sidebar-header-content');
     const userInfoText = document.getElementById('user-info-text');
@@ -1220,14 +1294,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             mainContent.classList.add('ml-20');
             iconClose.classList.add('hidden');
             iconOpen.classList.remove('hidden');
-            navTexts.forEach(text => text.classList.add('opacity-0'));
-            sidebarFooter.classList.add('opacity-0');
+            navTexts.forEach(text => text.classList.add('hidden'));
+            sidebarFooter.classList.add('opacity-0', 'pointer-events-none');
 
             if (userInfoText) userInfoText.classList.add('hidden');
             if (sidebarHeaderContent) {
                 sidebarHeaderContent.classList.remove('justify-between');
-                sidebarHeaderContent.classList.add('flex-col', 'gap-4');
+                sidebarHeaderContent.classList.add('flex-col', 'gap-4', 'items-center');
             }
+
+            navButtons.forEach(btn => {
+                btn.classList.remove('px-6');
+                btn.classList.add('justify-center');
+            });
+            navIcons.forEach(icon => {
+                icon.classList.remove('mr-4');
+            });
+
         } else {
             sidebar.classList.remove('w-20');
             sidebar.classList.add('w-64');
@@ -1235,15 +1318,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             mainContent.classList.add('ml-64');
             iconOpen.classList.add('hidden');
             iconClose.classList.remove('hidden');
-            navTexts.forEach(text => text.classList.remove('opacity-0'));
-            sidebarFooter.classList.remove('opacity-0');
+            navTexts.forEach(text => text.classList.remove('hidden'));
+            sidebarFooter.classList.remove('opacity-0', 'pointer-events-none');
 
             if (userInfoText) userInfoText.classList.remove('hidden');
             if (sidebarHeaderContent) {
                 sidebarHeaderContent.classList.add('justify-between');
-                sidebarHeaderContent.classList.remove('flex-col', 'gap-4');
+                sidebarHeaderContent.classList.remove('flex-col', 'gap-4', 'items-center');
             }
+
+            navButtons.forEach(btn => {
+                btn.classList.add('px-6');
+                btn.classList.remove('justify-center');
+            });
+            navIcons.forEach(icon => {
+                icon.classList.add('mr-4');
+            });
         }
+         // Use timeout to allow CSS transition to catch up
+        setTimeout(() => {
+             sidebarFooter.classList.toggle('pointer-events-none', isCollapsed);
+        }, 150);
     };
 
     const isSidebarCollapsed = sessionStorage.getItem('sidebarCollapsed') === 'true';
@@ -1290,6 +1385,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                         sessionStorage.setItem('loggedInUser', JSON.stringify(updatedUser));
                         currentUser = updatedUser;
                         updateNotificationBar();
+                        if (presenceChannel) {
+                            presenceChannel.track({ 
+                                user_ho_ten: currentUser.ho_ten, 
+                                user_avatar_url: currentUser.anh_dai_dien_url,
+                                status: document.visibilityState === 'visible' ? 'online' : 'away'
+                            });
+                        }
                         if(currentView === 'view-cai-dat') {
                              document.getElementById('profile-ho-ten').value = currentUser.ho_ten || '';
                              initProfileAvatarState();
@@ -1314,6 +1416,52 @@ document.addEventListener('DOMContentLoaded', async () => {
                     })
                     .subscribe();
             }
+
+            presenceChannel = sb.channel('online-users', {
+              config: {
+                presence: {
+                  key: currentUser.gmail,
+                },
+              },
+            });
+
+            presenceChannel
+                .on('presence', { event: 'sync' }, () => {
+                    const state = presenceChannel.presenceState();
+                    onlineUsers.clear();
+                    for (const gmail in state) {
+                        onlineUsers.set(gmail, state[gmail][0]);
+                    }
+                    updateOnlineStatusUI();
+                })
+                .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+                    onlineUsers.set(key, newPresences[0]);
+                    updateOnlineStatusUI();
+                })
+                .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+                    onlineUsers.delete(key);
+                    updateOnlineStatusUI();
+                })
+                .subscribe(async (status) => {
+                    if (status === 'SUBSCRIBED') {
+                        await presenceChannel.track({ 
+                            user_ho_ten: currentUser.ho_ten, 
+                            user_avatar_url: currentUser.anh_dai_dien_url,
+                            status: document.visibilityState === 'visible' ? 'online' : 'away'
+                        });
+                    }
+                });
+            
+            document.addEventListener('visibilitychange', () => {
+                if (!presenceChannel) return;
+                const status = document.visibilityState === 'visible' ? 'online' : 'away';
+                presenceChannel.track({ 
+                    user_ho_ten: currentUser.ho_ten, 
+                    user_avatar_url: currentUser.anh_dai_dien_url,
+                    status: status
+                });
+            });
+
 
         } else {
             window.location.href = 'login.html';

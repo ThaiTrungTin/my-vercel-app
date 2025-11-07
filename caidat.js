@@ -1,6 +1,6 @@
 
 
-import { sb, cache, currentUser, showLoading, showToast, showConfirm, DEFAULT_AVATAR_URL, updateSidebarAvatar, sanitizeFileName } from './app.js';
+import { sb, cache, currentUser, showLoading, showToast, showConfirm, DEFAULT_AVATAR_URL, updateSidebarAvatar, sanitizeFileName, onlineUsers } from './app.js';
 
 let selectedAvatarFile = null;
 
@@ -68,7 +68,7 @@ async function handleProfileUpdate(e) {
         const { data, error } = await sb.from('user').update(updateData).eq('gmail', currentUser.gmail).select().single();
         if (error) throw error;
         
-        showToast("Cập nhật thông tin thành công!", 'success');
+        showToast("Cập nhật thông tin thành công!", "success");
         sessionStorage.setItem('loggedInUser', JSON.stringify(data));
         
         document.getElementById('user-ho-ten').textContent = data.ho_ten || 'User';
@@ -104,13 +104,27 @@ function renderUserList(users) {
     }
     users.forEach(user => {
         const isCurrentUser = user.gmail === currentUser.gmail;
+        const presenceInfo = onlineUsers.get(user.gmail);
+        const status = presenceInfo ? (presenceInfo.status || 'online') : 'offline';
+
+        let onlineIndicatorHtml = '';
+        if (status !== 'offline') {
+            const statusColor = status === 'away' ? 'bg-yellow-400' : 'bg-green-500';
+            onlineIndicatorHtml = `<span class="absolute bottom-0 right-0 block h-3 w-3 rounded-full ${statusColor} border-2 border-white ring-1 ring-gray-300"></span>`;
+        }
         
-        let statusClass = '';
+        let gmailClass = '';
         let statusText = user.stt || 'Chờ Duyệt';
         switch (statusText) {
-            case 'Đã Duyệt': statusClass = 'bg-green-500'; break;
-            case 'Khóa': statusClass = 'bg-red-500'; break;
-            default: statusClass = 'bg-yellow-500'; statusText = 'Chờ Duyệt';
+            case 'Đã Duyệt': 
+                gmailClass = 'bg-green-100 text-green-800'; 
+                break;
+            case 'Khóa': 
+                gmailClass = 'bg-red-100 text-red-800'; 
+                break;
+            default: 
+                gmailClass = 'bg-yellow-100 text-yellow-800'; 
+                statusText = 'Chờ Duyệt';
         }
 
         let statusOptionsHtml = '';
@@ -125,13 +139,13 @@ function renderUserList(users) {
             <div class="border rounded-lg p-4 bg-gray-50/50 shadow-sm">
                 <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                     <div class="flex-grow flex items-center gap-4">
-                         <img src="${user.anh_dai_dien_url || DEFAULT_AVATAR_URL}" alt="Avatar" class="w-12 h-12 rounded-full object-cover">
+                         <div class="relative flex-shrink-0">
+                            <img src="${user.anh_dai_dien_url || DEFAULT_AVATAR_URL}" alt="Avatar" class="w-12 h-12 rounded-full object-cover">
+                            ${onlineIndicatorHtml}
+                         </div>
                         <div>
-                            <div class="flex items-center gap-2">
-                                <span class="w-3 h-3 rounded-full ${statusClass}" title="${statusText}"></span>
-                                <p class="font-semibold text-gray-900">${user.ho_ten}</p>
-                            </div>
-                            <p class="text-sm text-gray-600 break-all">${user.gmail}</p>
+                            <p class="font-semibold text-gray-900">${user.ho_ten}</p>
+                            <p class="text-sm break-all px-2 py-0.5 rounded-full inline-block ${gmailClass} mt-1" title="Trạng thái: ${statusText}">${user.gmail}</p>
                         </div>
                     </div>
                     <div class="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto flex-shrink-0">

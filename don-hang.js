@@ -1,7 +1,3 @@
-
-
-
-
 import { sb, cache, viewStates, showLoading, showToast, showConfirm, debounce, renderPagination, sanitizeFileName, filterButtonDefaultTexts, currentUser, openAutocomplete } from './app.js';
 
 let selectedDonHangFiles = []; 
@@ -341,7 +337,7 @@ function renderDonHangTable(data) {
                     maNxClass = 'text-green-600 font-semibold';
                 }
             }
-            
+
             return `
                 <tr data-id="${dh.ma_kho}" class="hover:bg-gray-50 ${isSelected ? 'bg-blue-100' : ''}">
                     <td class="px-1 py-2 border border-gray-300 text-center"><input type="checkbox" class="don-hang-select-row" data-id="${dh.ma_kho}" ${isSelected ? 'checked' : ''}></td>
