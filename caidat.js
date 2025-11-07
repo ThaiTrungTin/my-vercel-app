@@ -1,5 +1,6 @@
 
-import { sb, cache, currentUser, showLoading, showToast, showConfirm, DEFAULT_AVTAR_URL, updateSidebarAvatar, sanitizeFileName } from './app.js';
+
+import { sb, cache, currentUser, showLoading, showToast, showConfirm, DEFAULT_AVATAR_URL, updateSidebarAvatar, sanitizeFileName } from './app.js';
 
 let selectedAvatarFile = null;
 
@@ -20,6 +21,25 @@ async function handleProfileUpdate(e) {
         showToast("Mật khẩu mới không khớp.", 'error');
         return;
     }
+    
+    if (ho_ten !== currentUser.ho_ten) {
+        const { count, error } = await sb
+            .from('user')
+            .select('ho_ten', { count: 'exact', head: true })
+            .eq('ho_ten', ho_ten)
+            .neq('gmail', currentUser.gmail);
+
+        if (error) {
+            showToast(`Lỗi kiểm tra tên: ${error.message}`, 'error');
+            return;
+        }
+
+        if (count > 0) {
+            showToast('Tên này đã được người dùng khác sử dụng.', 'error');
+            return;
+        }
+    }
+
 
     showLoading(true);
 
@@ -84,17 +104,37 @@ function renderUserList(users) {
     }
     users.forEach(user => {
         const isCurrentUser = user.gmail === currentUser.gmail;
+        
+        let statusClass = '';
+        let statusText = user.stt || 'Chờ Duyệt';
+        switch (statusText) {
+            case 'Đã Duyệt': statusClass = 'bg-green-500'; break;
+            case 'Khóa': statusClass = 'bg-red-500'; break;
+            default: statusClass = 'bg-yellow-500'; statusText = 'Chờ Duyệt';
+        }
+
+        let statusOptionsHtml = '';
+        if (user.stt === 'Khóa') {
+             statusOptionsHtml += `<button class="user-status-option block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" data-gmail="${user.gmail}" data-status="Đã Duyệt">Mở Khóa</button>`;
+        } else {
+             statusOptionsHtml += `<button class="user-status-option block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" data-gmail="${user.gmail}" data-status="Đã Duyệt">Duyệt</button>`;
+             statusOptionsHtml += `<button class="user-status-option block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" data-gmail="${user.gmail}" data-status="Khóa">Khóa</button>`;
+        }
+        
         userListContainer.innerHTML += `
             <div class="border rounded-lg p-4 bg-gray-50/50 shadow-sm">
                 <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                     <div class="flex-grow flex items-center gap-4">
-                         <img src="${user.anh_dai_dien_url || DEFAULT_AVTAR_URL}" alt="Avatar" class="w-12 h-12 rounded-full object-cover">
+                         <img src="${user.anh_dai_dien_url || DEFAULT_AVATAR_URL}" alt="Avatar" class="w-12 h-12 rounded-full object-cover">
                         <div>
-                            <p class="font-semibold text-gray-900">${user.ho_ten}</p>
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full ${statusClass}" title="${statusText}"></span>
+                                <p class="font-semibold text-gray-900">${user.ho_ten}</p>
+                            </div>
                             <p class="text-sm text-gray-600 break-all">${user.gmail}</p>
                         </div>
                     </div>
-                    <div class="flex flex-col sm:flex-row sm:items-center gap-4 w-full sm:w-auto flex-shrink-0">
+                    <div class="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto flex-shrink-0">
                         <select data-gmail="${user.gmail}" class="user-role-select border rounded p-2 text-sm w-full sm:w-28" ${isCurrentUser ? 'disabled' : ''}>
                             <option value="Admin" ${user.phan_quyen === 'Admin' ? 'selected' : ''}>Admin</option>
                             <option value="User" ${user.phan_quyen === 'User' ? 'selected' : ''}>User</option>
@@ -103,6 +143,16 @@ function renderUserList(users) {
                         <button data-gmail="${user.gmail}" class="reset-password-btn text-sm text-indigo-600 hover:text-indigo-900 font-medium px-3 py-2 rounded-md hover:bg-indigo-50 w-full sm:w-auto text-center" ${isCurrentUser ? 'disabled' : ''}>
                             Đặt lại MK
                         </button>
+                        <div class="relative">
+                            <button data-gmail="${user.gmail}" class="user-options-btn p-2 rounded-full hover:bg-gray-200" ${isCurrentUser ? 'disabled' : ''}>
+                                <svg class="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 20 20"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path></svg>
+                            </button>
+                            <div id="options-popover-${user.gmail.replace(/[@.]/g, '')}" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20 border">
+                                ${statusOptionsHtml}
+                                <div class="border-t my-1"></div>
+                                <button class="user-delete-option block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50" data-gmail="${user.gmail}">Xóa Tài Khoản</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -131,8 +181,48 @@ async function handleRoleChange(e) {
         e.target.value = originalRole;
     } else {
         showToast("Đổi quyền thành công.", 'success');
+        fetchUsers();
     }
 }
+
+async function handleUpdateUserStatus(gmail, newStatus) {
+    showLoading(true);
+    const { error } = await sb.from('user').update({ stt: newStatus }).eq('gmail', gmail);
+    showLoading(false);
+    if (error) {
+        showToast(`Thay đổi trạng thái thất bại: ${error.message}`, 'error');
+    } else {
+        showToast("Cập nhật trạng thái thành công.", 'success');
+        fetchUsers(); // Refresh list to show new status
+    }
+}
+
+async function handleDeleteUser(gmail) {
+    const userToDelete = cache.userList.find(u => u.gmail === gmail);
+    if (!userToDelete) return;
+    
+    const confirmed = await showConfirm(`Bạn có chắc muốn xóa vĩnh viễn tài khoản của ${userToDelete.ho_ten}? Hành động này không thể hoàn tác.`);
+    if (!confirmed) return;
+
+    showLoading(true);
+    try {
+        if (userToDelete.anh_dai_dien_url) {
+            const oldFileName = userToDelete.anh_dai_dien_url.split('/').pop();
+            await sb.storage.from('anh_dai_dien').remove([`public/${oldFileName}`]);
+        }
+        
+        const { error } = await sb.from('user').delete().eq('gmail', gmail);
+        if (error) throw error;
+        
+        showToast("Đã xóa tài khoản thành công.", 'success');
+        fetchUsers();
+    } catch (error) {
+        showToast(`Lỗi khi xóa tài khoản: ${error.message}`, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
 
 function openPasswordResetModal(gmail) {
     document.getElementById('reset-user-gmail').value = gmail;
@@ -387,7 +477,7 @@ export function initProfileAvatarState() {
     const removeBtn = document.getElementById('profile-remove-image-btn');
     const urlInput = document.getElementById('profile-current-avatar-url');
     
-    preview.src = currentAvatarUrl || DEFAULT_AVTAR_URL;
+    preview.src = currentAvatarUrl || DEFAULT_AVATAR_URL;
     urlInput.value = currentAvatarUrl || '';
     removeBtn.classList.toggle('hidden', !currentAvatarUrl);
 }
@@ -397,10 +487,44 @@ export function initCaiDatView() {
     document.getElementById('user-list-body').addEventListener('change', e => {
         if(e.target.classList.contains('user-role-select')) handleRoleChange(e);
     });
+    
     document.getElementById('user-list-body').addEventListener('click', e => {
-        const btn = e.target.closest('.reset-password-btn');
-        if(btn) openPasswordResetModal(btn.dataset.gmail);
+        const resetBtn = e.target.closest('.reset-password-btn');
+        if (resetBtn) {
+            openPasswordResetModal(resetBtn.dataset.gmail);
+            return;
+        }
+
+        const optionsBtn = e.target.closest('.user-options-btn');
+        if (optionsBtn) {
+            const gmail = optionsBtn.dataset.gmail;
+            const popoverId = `options-popover-${gmail.replace(/[@.]/g, '')}`;
+            const popover = document.getElementById(popoverId);
+            if (popover) {
+                // Close other popovers
+                document.querySelectorAll('[id^="options-popover-"]').forEach(p => {
+                    if (p.id !== popoverId) p.classList.add('hidden');
+                });
+                popover.classList.toggle('hidden');
+            }
+            return;
+        }
+        
+        const statusBtn = e.target.closest('.user-status-option');
+        if(statusBtn) {
+            handleUpdateUserStatus(statusBtn.dataset.gmail, statusBtn.dataset.status);
+            statusBtn.closest('[id^="options-popover-"]').classList.add('hidden');
+            return;
+        }
+
+        const deleteBtn = e.target.closest('.user-delete-option');
+        if(deleteBtn) {
+            handleDeleteUser(deleteBtn.dataset.gmail);
+            deleteBtn.closest('[id^="options-popover-"]').classList.add('hidden');
+            return;
+        }
     });
+
     document.getElementById('password-reset-form').addEventListener('submit', handlePasswordReset);
     document.getElementById('cancel-reset-btn').addEventListener('click', () => document.getElementById('password-reset-modal').classList.add('hidden'));
 
@@ -443,7 +567,7 @@ export function initCaiDatView() {
     document.getElementById('profile-remove-image-btn').addEventListener('click', () => {
         selectedAvatarFile = null;
         document.getElementById('profile-image-upload').value = '';
-        document.getElementById('profile-image-preview').src = DEFAULT_AVTAR_URL;
+        document.getElementById('profile-image-preview').src = DEFAULT_AVATAR_URL;
         document.getElementById('profile-remove-image-btn').classList.add('hidden');
         document.getElementById('profile-current-avatar-url').value = '';
     });

@@ -1,4 +1,5 @@
 
+
 import { initCaiDatView, fetchUsers, initProfileAvatarState } from './caidat.js';
 import { initSanPhamView, fetchSanPham } from './sanpham.js';
 import { initDonHangView, fetchDonHang } from './don-hang.js';
@@ -13,7 +14,8 @@ export const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 export let currentUser = null;
 let currentView = 'view-phat-trien'; 
 let userChannel = null; 
-export const DEFAULT_AVTAR_URL = 'https://t4.ftcdn.net/jpg/05/49/98/39/360_F_549983970_bRCkYfk0P6PP5fKbMhZMIb07vs1cACai.jpg';
+let adminNotificationChannel = null;
+export const DEFAULT_AVATAR_URL = 'https://t4.ftcdn.net/jpg/05/49/98/39/360_F_549983970_bRCkYfk0P6PP5fKbMhZMIb07vs1cACai.jpg';
 export const PLACEHOLDER_IMAGE_URL = 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Placeholder_view_vector.svg/681px-Placeholder_view_vector.svg.png';
 export const cache = {
     userList: [],
@@ -191,7 +193,7 @@ export function renderPagination(viewPrefix, totalItems, from, to) {
 }
 
 export function updateSidebarAvatar(url) {
-    document.getElementById('sidebar-avatar').src = url || DEFAULT_AVTAR_URL;
+    document.getElementById('sidebar-avatar').src = url || DEFAULT_AVATAR_URL;
 }
 
 function updateFilterButtonTexts(viewPrefix) {
@@ -734,6 +736,27 @@ async function openTonKhoFilterPopover(button, view) {
     const optionsList = popover.querySelector('.filter-options-list');
     const applyBtn = popover.querySelector('.filter-apply-btn');
     const searchInput = popover.querySelector('.filter-search-input');
+    const selectionCountEl = popover.querySelector('.filter-selection-count');
+    const toggleAllBtn = popover.querySelector('.filter-toggle-all-btn');
+    
+    const tempSelectedOptions = new Set(state.filters[filterKey] || []);
+
+    const updateSelectionCount = () => {
+        const count = tempSelectedOptions.size;
+        selectionCountEl.textContent = count > 0 ? `Đã chọn: ${count}` : '';
+    };
+
+    const updateToggleAllButtonState = () => {
+        const visibleCheckboxes = optionsList.querySelectorAll('.filter-option-cb');
+        if (visibleCheckboxes.length === 0) {
+            toggleAllBtn.textContent = 'Tất cả';
+            toggleAllBtn.disabled = true;
+            return;
+        }
+        toggleAllBtn.disabled = false;
+        const allVisibleSelected = [...visibleCheckboxes].every(cb => cb.checked);
+        toggleAllBtn.textContent = allVisibleSelected ? 'Bỏ chọn' : 'Tất cả';
+    };
 
     const renderOptions = (options) => {
         const searchTerm = searchInput.value.toLowerCase();
@@ -744,18 +767,60 @@ async function openTonKhoFilterPopover(button, view) {
         if (filteredOptions.length > 0) {
             optionsList.innerHTML = filteredOptions.map(option => `
                 <label class="flex items-center space-x-2 px-2 py-1 hover:bg-gray-100 rounded">
-                    <input type="checkbox" value="${option}" class="filter-option-cb" ${state.filters[filterKey]?.includes(String(option)) ? 'checked' : ''}>
+                    <input type="checkbox" value="${option}" class="filter-option-cb" ${tempSelectedOptions.has(String(option)) ? 'checked' : ''}>
                     <span class="text-sm">${option}</span>
                 </label>
             `).join('');
         } else {
             optionsList.innerHTML = '<div class="text-center p-4 text-sm text-gray-500">Không có tùy chọn.</div>';
         }
+        updateToggleAllButtonState();
     };
+    
+    const setupEventListeners = (allOptions) => {
+        searchInput.addEventListener('input', () => renderOptions(allOptions));
+        
+        optionsList.addEventListener('change', e => {
+            const cb = e.target;
+            if (cb.type === 'checkbox' && cb.classList.contains('filter-option-cb')) {
+                if (cb.checked) {
+                    tempSelectedOptions.add(cb.value);
+                } else {
+                    tempSelectedOptions.delete(cb.value);
+                }
+                updateSelectionCount();
+                updateToggleAllButtonState();
+            }
+        });
+        
+        toggleAllBtn.onclick = () => {
+            const searchTerm = searchInput.value.toLowerCase();
+            const visibleOptions = allOptions.filter(option => 
+                option && String(option).toLowerCase().includes(searchTerm)
+            );
+            
+            const isSelectAllAction = toggleAllBtn.textContent === 'Tất cả';
+            
+            visibleOptions.forEach(option => {
+                if (isSelectAllAction) {
+                    tempSelectedOptions.add(String(option));
+                } else {
+                    tempSelectedOptions.delete(String(option));
+                }
+            });
+
+            renderOptions(allOptions);
+            updateSelectionCount();
+        };
+    };
+
+    updateSelectionCount();
 
     if (filterKey === 'ton_cuoi') {
         searchInput.classList.add('hidden');
-        renderOptions(['Còn Hàng', 'Hết Hàng']);
+        const options = ['Còn Hàng', 'Hết Hàng'];
+        renderOptions(options);
+        setupEventListeners(options);
     } else {
         optionsList.innerHTML = '<div class="text-center p-4 text-sm text-gray-500">Đang tải...</div>';
         applyBtn.disabled = true;
@@ -777,7 +842,7 @@ async function openTonKhoFilterPopover(button, view) {
             
             const uniqueOptions = Array.isArray(rpcData) ? rpcData.map(item => item.option) : [];
             renderOptions(uniqueOptions);
-            searchInput.addEventListener('input', () => renderOptions(uniqueOptions));
+            setupEventListeners(uniqueOptions);
             applyBtn.disabled = false;
 
         } catch (error) {
@@ -795,11 +860,10 @@ async function openTonKhoFilterPopover(button, view) {
     };
 
     applyBtn.onclick = () => {
-        const selectedOptions = Array.from(popover.querySelectorAll('.filter-option-cb:checked')).map(cb => cb.value);
-        state.filters[filterKey] = selectedOptions;
+        state.filters[filterKey] = [...tempSelectedOptions];
         
         const defaultText = filterButtonDefaultTexts[button.id] || button.id;
-        button.textContent = selectedOptions.length > 0 ? `${defaultText} (${selectedOptions.length})` : defaultText;
+        button.textContent = tempSelectedOptions.size > 0 ? `${defaultText} (${tempSelectedOptions.size})` : defaultText;
         
         if(view === 'view-ton-kho') fetchTonKho(1);
         
@@ -1033,6 +1097,10 @@ async function handleLogout() {
         await sb.removeChannel(userChannel);
         userChannel = null;
     }
+    if (adminNotificationChannel) {
+        await sb.removeChannel(adminNotificationChannel);
+        adminNotificationChannel = null;
+    }
     sessionStorage.clear();
     window.location.href = 'login.html';
 }
@@ -1140,7 +1208,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const iconOpen = document.getElementById('sidebar-toggle-icon-open');
     const iconClose = document.getElementById('sidebar-toggle-icon-close');
     const navTexts = document.querySelectorAll('.nav-text');
-    const userDetails = document.getElementById('user-details');
+    const sidebarHeaderContent = document.getElementById('sidebar-header-content');
+    const userInfoText = document.getElementById('user-info-text');
     const sidebarFooter = document.getElementById('sidebar-footer');
 
     const setSidebarState = (isCollapsed) => {
@@ -1149,165 +1218,118 @@ document.addEventListener('DOMContentLoaded', async () => {
             sidebar.classList.add('w-20');
             mainContent.classList.remove('ml-64');
             mainContent.classList.add('ml-20');
-            iconOpen.classList.remove('hidden');
             iconClose.classList.add('hidden');
-            navTexts.forEach(text => text.classList.add('opacity-0', 'hidden'));
-            userDetails.classList.add('opacity-0', 'hidden');
-            sidebarFooter.classList.add('opacity-0', 'hidden');
+            iconOpen.classList.remove('hidden');
+            navTexts.forEach(text => text.classList.add('opacity-0'));
+            sidebarFooter.classList.add('opacity-0');
+
+            if (userInfoText) userInfoText.classList.add('hidden');
+            if (sidebarHeaderContent) {
+                sidebarHeaderContent.classList.remove('justify-between');
+                sidebarHeaderContent.classList.add('flex-col', 'gap-4');
+            }
         } else {
-            sidebar.classList.add('w-64');
             sidebar.classList.remove('w-20');
-            mainContent.classList.add('ml-64');
+            sidebar.classList.add('w-64');
             mainContent.classList.remove('ml-20');
+            mainContent.classList.add('ml-64');
             iconOpen.classList.add('hidden');
             iconClose.classList.remove('hidden');
-            navTexts.forEach(text => text.classList.remove('opacity-0', 'hidden'));
-            userDetails.classList.remove('opacity-0', 'hidden');
-            sidebarFooter.classList.remove('opacity-0', 'hidden');
+            navTexts.forEach(text => text.classList.remove('opacity-0'));
+            sidebarFooter.classList.remove('opacity-0');
+
+            if (userInfoText) userInfoText.classList.remove('hidden');
+            if (sidebarHeaderContent) {
+                sidebarHeaderContent.classList.add('justify-between');
+                sidebarHeaderContent.classList.remove('flex-col', 'gap-4');
+            }
         }
     };
-    
+
+    const isSidebarCollapsed = sessionStorage.getItem('sidebarCollapsed') === 'true';
+    setSidebarState(isSidebarCollapsed);
+
     sidebarToggleBtn.addEventListener('click', () => {
         const isCollapsed = sidebar.classList.contains('w-20');
+        sessionStorage.setItem('sidebarCollapsed', !isCollapsed);
         setSidebarState(!isCollapsed);
-        localStorage.setItem('sidebarCollapsed', !isCollapsed);
     });
-    
-    if (localStorage.getItem('sidebarCollapsed') === 'true') {
-        setSidebarState(true);
-    }
 
-    async function checkSession() {
-        try {
-            const userJson = sessionStorage.getItem('loggedInUser');
-            if (userJson) {
-                const user = JSON.parse(userJson);
-                await initializeApp(user);
-            } else {
-                window.location.href = 'login.html';
-            }
-        } catch (error) {
-            console.error("Lỗi session:", error);
-            sessionStorage.clear();
-            window.location.href = 'login.html';
-        }
-    }
+    try {
+        const userJson = sessionStorage.getItem('loggedInUser');
+        if (userJson) {
+            currentUser = JSON.parse(userJson);
+            
+            document.getElementById('user-ho-ten').textContent = currentUser.ho_ten || 'User';
+            document.getElementById('user-gmail').textContent = currentUser.gmail || '';
+            updateSidebarAvatar(currentUser.anh_dai_dien_url);
+            updateNotificationBar();
 
-    async function initializeApp(user) {
-        currentUser = user;
-        document.getElementById('user-ho-ten').textContent = user.ho_ten || 'User';
-        document.getElementById('user-gmail').textContent = user.gmail;
-        updateSidebarAvatar(user.anh_dai_dien_url);
-        
-        updateNotificationBar();
-        applyPermissions(user);
-        subscribeToUserChanges();
-        
-        document.getElementById('app-loading').classList.add('hidden');
-        document.getElementById('main-app').classList.remove('hidden');
-        
-        await showView(currentView);
-    }
-    
-    function applyPermissions(user) {
-        const is_admin = user.phan_quyen === 'Admin';
-        const is_user = user.phan_quyen === 'User';
-        
-        document.getElementById('admin-panel')?.classList.toggle('hidden', !is_admin);
-        
-        document.querySelectorAll('.sp-admin-only').forEach(el => el.classList.toggle('hidden', !(is_admin || is_user) ));
-        document.querySelectorAll('.tk-admin-only').forEach(el => el.classList.toggle('hidden', !(is_admin || is_user) ));
-        document.querySelectorAll('.dh-admin-only').forEach(el => el.classList.toggle('hidden', !(is_admin || is_user) ));
-    }
+            document.getElementById('app-loading').classList.add('hidden');
+            document.getElementById('main-app').classList.remove('hidden');
 
-    function subscribeToUserChanges() {
-        if (userChannel) return;
-        userChannel = sb.channel('public:user')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'user' },
-                async (payload) => {
-                    console.log('Realtime: User data changed', payload);
-                    let isCurrentUserUpdated = false;
+            document.querySelectorAll('.nav-button').forEach(btn => {
+                btn.addEventListener('click', () => showView(btn.dataset.view));
+            });
+            
+            const lastView = sessionStorage.getItem('lastViewId') || 'view-phat-trien';
+            await showView(lastView);
 
-                    if (payload.new && payload.new.gmail === currentUser.gmail) {
-                        isCurrentUserUpdated = true;
-                        const updatedUser = payload.new;
-                        const oldRole = currentUser.phan_quyen;
-
+            userChannel = sb.channel('public:user')
+                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'user', filter: 'gmail=eq.'+currentUser.gmail }, payload => {
+                    const updatedUser = payload.new;
+                    if (updatedUser.stt === 'Khóa') {
+                        showToast("Tài khoản của bạn đã bị quản trị viên khóa.", 'error');
+                        setTimeout(handleLogout, 2000);
+                        return;
+                    }
+                    if(updatedUser.mat_khau !== currentUser.mat_khau) {
+                        showToast("Mật khẩu của bạn đã được quản trị viên thay đổi. Vui lòng đăng nhập lại.", 'info');
+                        setTimeout(handleLogout, 3000);
+                    } else {
+                        sessionStorage.setItem('loggedInUser', JSON.stringify(updatedUser));
                         currentUser = updatedUser;
-                        sessionStorage.setItem('loggedInUser', JSON.stringify(currentUser));
-
-                        document.getElementById('user-ho-ten').textContent = currentUser.ho_ten || 'User';
-                        updateSidebarAvatar(currentUser.anh_dai_dien_url);
-                        updateNotificationBar(); 
-                        if (currentView === 'view-cai-dat') {
+                        updateNotificationBar();
+                        if(currentView === 'view-cai-dat') {
                              document.getElementById('profile-ho-ten').value = currentUser.ho_ten || '';
                              initProfileAvatarState();
                         }
-                        
-                        if (oldRole !== currentUser.phan_quyen) {
-                            applyPermissions(currentUser);
+                    }
+                })
+                .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'user', filter: 'gmail=eq.'+currentUser.gmail }, payload => {
+                    showToast("Tài khoản của bạn đã bị xóa khỏi hệ thống.", 'error');
+                    setTimeout(handleLogout, 2000);
+                })
+                .subscribe();
+            
+            if(currentUser.phan_quyen === 'Admin') {
+                adminNotificationChannel = sb.channel('admin-notifications')
+                    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'user' }, payload => {
+                        if(payload.new.stt === 'Chờ Duyệt') {
+                            showToast(`Có tài khoản mới "${payload.new.ho_ten}" đang chờ duyệt.`, 'info');
+                            if(currentView === 'view-cai-dat') {
+                                fetchUsers();
+                            }
                         }
-                    }
-                    
-                    if (currentUser.phan_quyen === 'Admin' && currentView === 'view-cai-dat') {
-                         await fetchUsers();
-                    }
+                    })
+                    .subscribe();
+            }
 
-                    if (isCurrentUserUpdated) {
-                        showToast('Thông tin của bạn vừa được cập nhật.', 'info');
-                    } else if (currentUser.phan_quyen === 'Admin') {
-                         showToast('Danh sách nhân viên đã được cập nhật.', 'info');
-                    }
-                }
-            )
-            .subscribe((status) => {
-                if (status === 'SUBSCRIBED') {
-                    sb.channel('public:san_pham')
-                      .on('postgres_changes', { event: '*', schema: 'public', table: 'san_pham' }, (payload) => {
-                          console.log('Realtime: san_pham changed', payload);
-                          if (currentView === 'view-san-pham') {
-                              fetchSanPham(viewStates['view-san-pham'].currentPage, false);
-                          }
-                          if(payload.eventType === 'INSERT' || payload.eventType === 'UPDATE' || payload.eventType === 'DELETE'){
-                              cache.sanPhamList = []; 
-                          }
-                      })
-                      .subscribe();
-                    sb.channel('public:ton_kho')
-                      .on('postgres_changes', { event: '*', schema: 'public', table: 'ton_kho' }, (payload) => {
-                          console.log('Realtime: ton_kho changed', payload);
-                          if (currentView === 'view-ton-kho') {
-                              fetchTonKho(viewStates['view-ton-kho'].currentPage, false);
-                          }
-                      })
-                      .subscribe();
-                    sb.channel('public:don_hang')
-                      .on('postgres_changes', { event: '*', schema: 'public', table: 'don_hang' }, (payload) => {
-                          console.log('Realtime: don_hang changed', payload);
-                          if (currentView === 'view-don-hang') {
-                              fetchDonHang(viewStates['view-don-hang'].currentPage, false);
-                          }
-                      })
-                      .subscribe();
-                }
-            });
-    }
-
-    document.querySelectorAll('.nav-button').forEach(btn => btn.addEventListener('click', () => showView(btn.dataset.view)));
-
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            document.getElementById('confirm-modal').classList.add('hidden');
-            document.getElementById('password-reset-modal').classList.add('hidden');
-            document.getElementById('san-pham-modal').classList.add('hidden');
-            document.getElementById('ton-kho-modal').classList.add('hidden');
-            document.getElementById('don-hang-modal')?.classList.add('hidden');
-            document.getElementById('image-viewer-modal').classList.add('hidden');
-            document.getElementById('excel-export-modal').classList.add('hidden');
-            closeActiveAutocompletePopover();
+        } else {
+            window.location.href = 'login.html';
         }
+    } catch (error) {
+        console.error("Initialization error:", error);
+        sessionStorage.clear();
+        window.location.href = 'login.html';
+    }
+    
+    window.addEventListener('beforeunload', () => {
+        if (currentView) sessionStorage.setItem('lastViewId', currentView);
     });
-    document.getElementById('close-image-viewer-btn').addEventListener('click', () => document.getElementById('image-viewer-modal').classList.add('hidden'));
-
-    checkSession();
+    
+    document.getElementById('close-image-viewer-btn').addEventListener('click', () => {
+        document.getElementById('image-viewer-modal').classList.add('hidden');
+        document.getElementById('image-viewer-img').src = '';
+    });
 });

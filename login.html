@@ -72,6 +72,13 @@
                 </div>
                 <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Đăng ký</h2>
                 <div class="mb-4">
+                    <label for="register-role" class="block text-gray-700 text-sm font-bold mb-2">Vai trò</label>
+                    <select id="register-role" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="View" selected>View</option>
+                        <option value="User">User</option>
+                    </select>
+                </div>
+                <div class="mb-4">
                     <label for="register-gmail" class="block text-gray-700 text-sm font-bold mb-2">Gmail</label>
                     <input type="email" id="register-gmail" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
@@ -95,219 +102,180 @@
                         </button>
                     </div>
                 </div>
-                <div class="mb-6">
-                    <label for="register-confirm-password" class="block text-gray-700 text-sm font-bold mb-2">Xác nhận Mật khẩu</label>
-                    <div class="relative mb-3">
+                <div class="mb-4">
+                    <label for="register-confirm-password" class="block text-gray-700 text-sm font-bold mb-2">Xác nhận mật khẩu</label>
+                    <div class="relative">
                         <input type="password" id="register-confirm-password" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10">
-                        <button type="button" data-toggle-password="register-confirm-password" class="password-toggle-btn absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 hover:text-gray-700">
-                            <svg class="w-5 h-5 toggle-icon-show" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 10.224 7.29 6 12 6s8.577 4.224 9.964 5.683c.214.21.317.49.317.772 0 .282-.103.562-.317.772C20.577 13.776 16.71 18 12 18s-8.577-4.224-9.964-5.683a1.012 1.012 0 0 1 0-.639Z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                            </svg>
-                            <svg class="w-5 h-5 toggle-icon-hide hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.243 4.243L12 12" />
-                            </svg>
-                        </button>
                     </div>
                 </div>
-                <button type="submit" class="w-full bg-green-500 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-200">
+                <button type="submit" class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-200">
                     Đăng ký
                 </button>
                 <p class="text-center text-gray-600 text-sm mt-4">
                     Đã có tài khoản? 
-                    <button type="button" id="show-login-btn" class="font-bold text-blue-500 hover:text-blue-700">Đăng nhập</button>
+                    <button type="button" id="show-login-btn" class="font-bold text-blue-500 hover:text-blue-700">Đăng nhập ngay</button>
                 </p>
             </form>
-            
-            <div id="message-container" class="mt-4 text-center text-red-500 font-medium"></div>
-
         </div>
 
+        <div id="message-container" class="hidden fixed top-5 right-5 bg-red-500 text-white py-2 px-4 rounded-lg shadow-lg animate-pulse">
+        </div>
     </div>
 
-    <script type="module">
+    <script>
         const { createClient } = supabase;
-
         const SUPABASE_URL = "https://uefydnefprcannlviimp.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVlZnlkbmVmcHJjYW5ubHZpaW1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwNTcwMDUsImV4cCI6MjA3NjYzMzAwNX0.X274J_1_crUknJEOT1WWUD1h0HM9WdYScDW2eWWsiLk";
-        
         const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        const loadingContainer = document.getElementById('loading-container');
-        const authContainer = document.getElementById('auth-container');
-        const appContainer = document.getElementById('app-container');
-        
-        const loginForm = document.getElementById('login-form');
-        const registerForm = document.getElementById('register-form');
-        
-        const showRegisterBtn = document.getElementById('show-register-btn');
-        const showLoginBtn = document.getElementById('show-login-btn');
-        
-        const messageContainer = document.getElementById('message-container');
-
-        function showMessage(message, isError = true) {
+        function showMessage(message) {
+            const messageContainer = document.getElementById('message-container');
             messageContainer.textContent = message;
-            messageContainer.className = isError 
-                ? 'mt-4 text-center text-red-500 font-medium' 
-                : 'mt-4 text-center text-green-500 font-medium';
-        }
-
-        function showAppView(user) {
-            window.location.href = 'index.html';
-        }
-
-        function showAuthView() {
-            loadingContainer.classList.add('hidden');
-            
-            registerForm.classList.add('hidden');
-            loginForm.classList.remove('hidden');
-            authContainer.classList.remove('hidden');
+            messageContainer.classList.remove('hidden');
+            setTimeout(() => {
+                messageContainer.classList.add('hidden');
+            }, 3000);
         }
 
         async function handleLogin(e) {
             e.preventDefault();
-            showMessage('Đang đăng nhập...', false);
-
             const gmail = document.getElementById('login-gmail').value;
-            const mat_khau = document.getElementById('login-password').value;
-
-            const { data, error } = await sb
+            const password = document.getElementById('login-password').value;
+            
+            const { data: user, error } = await sb
                 .from('user')
                 .select('*')
                 .eq('gmail', gmail)
-                .limit(1);
+                .single();
 
-            if (error) {
-                console.error('Lỗi Supabase:', error.message);
-                showMessage('Có lỗi xảy ra khi truy vấn. Vui lòng thử lại.');
+            if (error || !user) {
+                showMessage('Gmail hoặc mật khẩu không đúng.');
                 return;
             }
 
-            if (data && data.length > 0) {
-                const user = data[0];
-                if (user.mat_khau === mat_khau) {
-                    showMessage('Đăng nhập thành công!', false);
+            if (user.mat_khau !== password) {
+                showMessage('Gmail hoặc mật khẩu không đúng.');
+                return;
+            }
+            
+            switch (user.stt) {
+                case 'Đã Duyệt':
                     sessionStorage.setItem('loggedInUser', JSON.stringify(user));
-                    showAppView(user);
-                } else {
-                    showMessage('Mật khẩu không chính xác.');
-                }
-            } else {
-                showMessage('Gmail không tồn tại.');
+                    window.location.href = 'index.html';
+                    break;
+                case 'Khóa':
+                    showMessage('Tài khoản của bạn đã bị khóa.');
+                    break;
+                case 'Chờ Duyệt':
+                    showMessage('Tài khoản của bạn đang chờ quản trị viên duyệt.');
+                    break;
+                default:
+                    showMessage('Trạng thái tài khoản không hợp lệ. Vui lòng liên hệ quản trị viên.');
             }
         }
 
         async function handleRegister(e) {
             e.preventDefault();
-            
             const gmail = document.getElementById('register-gmail').value;
-            const ho_ten = document.getElementById('register-ho-ten').value;
-            const mat_khau = document.getElementById('register-password').value;
-            const confirm_mat_khau = document.getElementById('register-confirm-password').value;
+            const password = document.getElementById('register-password').value;
+            const confirmPassword = document.getElementById('register-confirm-password').value;
+            const ho_ten = document.getElementById('register-ho-ten').value.trim();
+            const phan_quyen = document.getElementById('register-role').value;
 
-            if (mat_khau !== confirm_mat_khau) {
-                showMessage('Mật khẩu xác nhận không khớp.');
+            if (password !== confirmPassword) {
+                showMessage('Mật khẩu không khớp.');
                 return;
             }
-            
-            showMessage('Đang xử lý đăng ký...', false);
-
-            const { data: existingUser, error: selectError } = await sb
-                .from('user')
-                .select('gmail')
-                .eq('gmail', gmail)
-                .limit(1);
-
-            if (existingUser && existingUser.length > 0) {
-                showMessage('Gmail này đã được sử dụng.');
+             if (ho_ten.length < 3) {
+                showMessage('Họ tên phải có ít nhất 3 ký tự.');
                 return;
             }
 
-            const { data: newUser, error: insertError } = await sb
-                .from('user')
-                .insert([
-                    { 
-                        gmail: gmail, 
-                        ho_ten: ho_ten, 
-                        mat_khau: mat_khau, 
-                        phan_quyen: 'View'
-                    }
-                ])
-                .select()
-                .single();
-
-            if (insertError) {
-                console.error('Lỗi Supabase:', insertError.message);
-                showMessage('Đăng ký thất bại, vui lòng thử lại.');
-                return;
-            }
-
-            if (newUser) {
-                showMessage('Đăng ký thành công!', false);
-                sessionStorage.setItem('loggedInUser', JSON.stringify(newUser));
-                showAppView(newUser);
-            }
-        }
-
-        function checkSession() {
-            try {
-                const userJson = sessionStorage.getItem('loggedInUser');
-                if (userJson) {
-                    window.location.href = 'index.html';
-                } else {
-                    showAuthView();
+            // Validate username if role is 'User'
+            if (phan_quyen === 'User') {
+                 const { count, error: spError } = await sb
+                    .from('san_pham')
+                    .select('phu_trach', { count: 'exact', head: true })
+                    .eq('phu_trach', ho_ten);
+                
+                if (spError || count === 0) {
+                    showMessage('Bạn không được sử dụng tên này (Tên không có trong danh sách Phụ trách).');
+                    return;
                 }
-            } catch (error) {
-                console.error('Lỗi khi kiểm tra session:', error);
-                sessionStorage.clear();
-                showAuthView();
+
+                const { count: userCount, error: userError } = await sb
+                    .from('user')
+                    .select('ho_ten', { count: 'exact', head: true })
+                    .eq('ho_ten', ho_ten);
+
+                if (userError || userCount > 0) {
+                    showMessage('Bạn không được sử dụng tên này (Tên đã được người khác đăng ký).');
+                    return;
+                }
+            }
+
+            const newUser = {
+                gmail: gmail,
+                mat_khau: password,
+                ho_ten: ho_ten,
+                phan_quyen: phan_quyen,
+                stt: 'Chờ Duyệt'
+            };
+
+            const { data, error } = await sb.from('user').insert(newUser).select().single();
+
+            if (error) {
+                if (error.code === '23505') { // Unique constraint violation
+                    showMessage('Gmail này đã được đăng ký.');
+                } else {
+                    showMessage('Lỗi đăng ký: ' + error.message);
+                }
+            } else {
+                document.getElementById('register-form').reset();
+                document.getElementById('register-form').classList.add('hidden');
+                document.getElementById('login-form').classList.remove('hidden');
+                showMessage('Đăng ký thành công! Vui lòng chờ quản trị viên duyệt tài khoản.');
             }
         }
 
-        showRegisterBtn.addEventListener('click', () => {
-            loginForm.classList.add('hidden');
-            registerForm.classList.remove('hidden');
-            showMessage('');
-        });
-
-        showLoginBtn.addEventListener('click', () => {
-            registerForm.classList.add('hidden');
-            loginForm.classList.remove('hidden');
-            showMessage('');
-        });
-
-        loginForm.addEventListener('submit', handleLogin);
-        registerForm.addEventListener('submit', handleRegister);
-        
         document.addEventListener('DOMContentLoaded', () => {
-            checkSession();
-
-            const passwordToggleButtons = document.querySelectorAll('.password-toggle-btn');
+            document.getElementById('loading-container').classList.add('hidden');
+            document.getElementById('auth-container').classList.remove('hidden');
             
-            passwordToggleButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    const inputId = button.dataset.togglePassword;
-                    if (!inputId) return;
+            if (sessionStorage.getItem('loggedInUser')) {
+                window.location.href = 'index.html';
+                return;
+            }
 
-                    const input = document.getElementById(inputId);
-                    if (!input) return;
+            const loginForm = document.getElementById('login-form');
+            const registerForm = document.getElementById('register-form');
+            const showRegisterBtn = document.getElementById('show-register-btn');
+            const showLoginBtn = document.getElementById('show-login-btn');
 
-                    const iconShow = button.querySelector('.toggle-icon-show');
-                    const iconHide = button.querySelector('.toggle-icon-hide');
+            loginForm.addEventListener('submit', handleLogin);
+            registerForm.addEventListener('submit', handleRegister);
 
-                    if (input.type === 'password') {
-                        input.type = 'text';
-                        iconShow.classList.add('hidden');
-                        iconHide.classList.remove('hidden');
-                    } else {
-                        input.type = 'password';
-                        iconShow.classList.remove('hidden');
-                        iconHide.classList.add('hidden');
-                    }
+            showRegisterBtn.addEventListener('click', () => {
+                loginForm.classList.add('hidden');
+                registerForm.classList.remove('hidden');
+            });
+
+            showLoginBtn.addEventListener('click', () => {
+                registerForm.classList.add('hidden');
+                loginForm.classList.remove('hidden');
+            });
+            
+            document.querySelectorAll('.password-toggle-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const inputId = btn.dataset.togglePassword;
+                    const passwordInput = document.getElementById(inputId);
+                    const isPassword = passwordInput.type === 'password';
+                    passwordInput.type = isPassword ? 'text' : 'password';
+                    btn.querySelector('.toggle-icon-show').classList.toggle('hidden', isPassword);
+                    btn.querySelector('.toggle-icon-hide').classList.toggle('hidden', !isPassword);
                 });
             });
         });
-
     </script>
 </body>
 </html>
