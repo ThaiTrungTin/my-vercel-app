@@ -160,6 +160,19 @@
             
             switch (user.stt) {
                 case 'Đã Duyệt':
+                    const active_session_id = crypto.randomUUID();
+                    const { error: updateError } = await sb
+                        .from('user')
+                        .update({ active_session_id: active_session_id })
+                        .eq('gmail', user.gmail);
+
+                    if (updateError) {
+                        showMessage('Không thể tạo phiên đăng nhập. Vui lòng thử lại.');
+                        console.error('Session update error:', updateError);
+                        return;
+                    }
+                    
+                    user.active_session_id = active_session_id;
                     sessionStorage.setItem('loggedInUser', JSON.stringify(user));
                     window.location.href = 'index.html';
                     break;

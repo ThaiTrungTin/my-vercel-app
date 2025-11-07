@@ -1373,6 +1373,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             userChannel = sb.channel('public:user')
                 .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'user', filter: 'gmail=eq.'+currentUser.gmail }, payload => {
                     const updatedUser = payload.new;
+
+                    const newSessionId = updatedUser.active_session_id;
+                    if (newSessionId && currentUser.active_session_id && newSessionId !== currentUser.active_session_id) {
+                        showToast("Tài khoản của bạn đã được đăng nhập từ một thiết bị khác.", 'error');
+                        setTimeout(handleLogout, 2000);
+                        return;
+                    }
+
                     if (updatedUser.stt === 'Khóa') {
                         showToast("Tài khoản của bạn đã bị quản trị viên khóa.", 'error');
                         setTimeout(handleLogout, 2000);
