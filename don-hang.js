@@ -1,4 +1,5 @@
 
+
 import { sb, cache, viewStates, showLoading, showToast, showConfirm, debounce, renderPagination, sanitizeFileName, filterButtonDefaultTexts, currentUser, openAutocomplete, addJobToOfflineQueue } from './app.js';
 
 let selectedDonHangFiles = []; 
@@ -409,9 +410,9 @@ function renderDonHangTable(data) {
             const fileCount = filesAsArray.length;
 
             const fileIcon = fileCount > 0 ? 
-                `<div class="relative cursor-pointer w-6 h-6 mx-auto">
-                    <svg class="w-6 h-6 text-yellow-500" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path></svg>
-                    <span class="absolute -top-1 -right-2 bg-red-600 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">${fileCount}</span>
+                `<div class="relative cursor-pointer w-8 h-8 mx-auto">
+                    <svg class="w-8 h-8 text-yellow-500" fill="currentColor" viewBox="0 0 20 20"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path></svg>
+                    <span class="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">${fileCount}</span>
                  </div>` : '';
             
             let maKhoIcon = '';
@@ -444,7 +445,7 @@ function renderDonHangTable(data) {
                     <td class="px-1 py-2 text-sm text-gray-600 border border-gray-300 text-center">${dh.nganh || ''}</td>
                     <td class="px-1 py-2 text-sm text-gray-600 break-words border border-gray-300 text-left">${dh.muc_dich || ''}</td>
                     <td class="px-1 py-2 text-sm text-gray-600 break-words border border-gray-300 text-left">${dh.ghi_chu || ''}</td>
-                    <td class="px-1 py-2 border border-gray-300 text-center file-cell">${fileIcon}</td>
+                    <td class="px-3 py-2 border border-gray-300 text-center file-cell">${fileIcon}</td>
                 </tr>
             `;
         }).join('');
