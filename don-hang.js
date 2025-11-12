@@ -1,3 +1,4 @@
+
 import { sb, cache, viewStates, showLoading, showToast, showConfirm, debounce, renderPagination, sanitizeFileName, filterButtonDefaultTexts, currentUser, openAutocomplete } from './app.js';
 
 let selectedDonHangFiles = []; 
@@ -8,6 +9,101 @@ let initialChiTietItems = [];
 let initialDonHangData = {}; 
 let chiTietSortable = null; 
 let activeLotPopover = null;
+let saveDonHangBtn;
+
+const debouncedValidateMaKho = debounce(async (ma_kho) => {
+    if (!saveDonHangBtn) saveDonHangBtn = document.getElementById('save-don-hang-btn');
+    const statusEl = document.getElementById('don-hang-modal-ma-kho-status');
+    const inputEl = document.getElementById('don-hang-modal-ma-kho');
+    const ma_kho_orig = document.getElementById('don-hang-edit-mode-ma-kho').value;
+    
+    if (!ma_kho) {
+        statusEl.textContent = '';
+        saveDonHangBtn.disabled = true;
+        return;
+    }
+    
+    let query = sb.from('don_hang').select('ma_kho', { count: 'exact', head: true }).eq('ma_kho', ma_kho);
+    if(ma_kho_orig && ma_kho === ma_kho_orig) {
+        // In edit mode, and the code hasn't changed, it's valid.
+        statusEl.textContent = 'Hợp lệ';
+        statusEl.className = 'text-xs mt-1 h-4 text-green-600';
+        inputEl.classList.remove('text-red-600');
+        inputEl.classList.add('text-green-600');
+        saveDonHangBtn.disabled = false;
+        return;
+    }
+
+    const { count, error } = await query;
+
+    inputEl.classList.remove('text-red-600', 'text-green-600');
+    if (error) {
+        statusEl.textContent = 'Lỗi kiểm tra';
+        statusEl.className = 'text-xs mt-1 h-4 text-red-600';
+        saveDonHangBtn.disabled = true;
+    } else if (count > 0) {
+        statusEl.textContent = 'Mã Kho bị trùng';
+        statusEl.className = 'text-xs mt-1 h-4 text-red-600';
+        inputEl.classList.add('text-red-600');
+        saveDonHangBtn.disabled = true;
+    } else {
+        statusEl.textContent = 'Hợp lệ';
+        statusEl.className = 'text-xs mt-1 h-4 text-green-600';
+        inputEl.classList.add('text-green-600');
+        saveDonHangBtn.disabled = document.getElementById('don-hang-modal-ma-nx').classList.contains('text-red-600');
+    }
+}, 500);
+
+const debouncedValidateMaNx = debounce(async (ma_nx) => {
+    if (!saveDonHangBtn) saveDonHangBtn = document.getElementById('save-don-hang-btn');
+    const statusEl = document.getElementById('don-hang-modal-ma-nx-status');
+    const inputEl = document.getElementById('don-hang-modal-ma-nx');
+    const ma_kho_orig = document.getElementById('don-hang-edit-mode-ma-kho').value;
+
+    if (!ma_nx) {
+        statusEl.textContent = '';
+        inputEl.classList.remove('text-red-600', 'text-yellow-600', 'text-green-600');
+        saveDonHangBtn.disabled = true;
+        return;
+    }
+
+    inputEl.classList.remove('text-red-600', 'text-yellow-600', 'text-green-600');
+
+    // If it's a processing code (ends with '-'), allow it without a duplicate check.
+    if (ma_nx.endsWith('-')) {
+        statusEl.textContent = 'Đang xử lý';
+        statusEl.className = 'text-xs mt-1 h-4 text-green-600';
+        inputEl.classList.add('text-yellow-600');
+        // Enable save as long as ma_kho is not invalid
+        saveDonHangBtn.disabled = document.getElementById('don-hang-modal-ma-kho').classList.contains('text-red-600');
+        return; // Exit early
+    }
+
+    // Logic for non-processing (complete) codes
+    let query = sb.from('don_hang').select('ma_nx', { count: 'exact', head: true }).eq('ma_nx', ma_nx);
+    if (ma_kho_orig) {
+        // Exclude the current order from the duplicate check
+        query = query.neq('ma_kho', ma_kho_orig);
+    }
+    const { count, error } = await query;
+
+    if (error) {
+        statusEl.textContent = 'Lỗi kiểm tra';
+        statusEl.className = 'text-xs mt-1 h-4 text-red-600';
+        saveDonHangBtn.disabled = true;
+    } else if (count > 0) {
+        statusEl.textContent = 'Mã NX bị trùng';
+        statusEl.className = 'text-xs mt-1 h-4 text-red-600';
+        inputEl.classList.add('text-red-600');
+        saveDonHangBtn.disabled = true;
+    } else {
+        statusEl.textContent = 'Đã xử lý';
+        statusEl.className = 'text-xs mt-1 h-4 text-green-600';
+        inputEl.classList.add('text-green-600');
+        saveDonHangBtn.disabled = document.getElementById('don-hang-modal-ma-kho').classList.contains('text-red-600');
+    }
+}, 500);
+
 
 function formatDateToDDMMYYYY(dateString) {
     if (!dateString) return '';
@@ -381,7 +477,7 @@ function updateChiTietSummary() {
 
 async function fetchChiTietDonHang(ma_kho_don_hang) {
     showLoading(true);
-    const { data, error } = await sb.from('chi_tiet').select('*').eq('ma_kho', ma_kho_don_hang);
+    const { data, error } = await sb.from('chi_tiet').select('*').eq('ma_kho', ma_kho_don_hang).order('stt', { ascending: true });
     showLoading(false);
     if (error) {
         showToast("Lỗi khi tải chi tiết đơn hàng.", "error");
@@ -607,14 +703,61 @@ function generateMaNx(loai, nganh) {
     return `${prefix}-${year}-${nganhPart}`;
 }
 
+async function generateUniqueMaKho(loai) {
+    const maKhoInput = document.getElementById('don-hang-modal-ma-kho');
+    const statusEl = document.getElementById('don-hang-modal-ma-kho-status');
+    let isUnique = false;
+    let generatedMaKho;
+    let attempts = 0;
+
+    statusEl.textContent = 'Đang tạo mã kho...';
+    statusEl.className = 'text-xs mt-1 h-4 text-gray-500';
+
+    while (!isUnique && attempts < 10) {
+      generatedMaKho = generateMaKho(loai);
+      const { count, error } = await sb.from('don_hang').select('ma_kho', { count: 'exact', head: true }).eq('ma_kho', generatedMaKho);
+      
+      if (error) {
+        statusEl.textContent = 'Lỗi kiểm tra';
+        statusEl.className = 'text-xs mt-1 h-4 text-red-600';
+        maKhoInput.classList.add('text-red-600');
+        return;
+      }
+      isUnique = count === 0;
+      attempts++;
+    }
+    
+    maKhoInput.value = generatedMaKho;
+    maKhoInput.classList.remove('text-red-600', 'bg-gray-200');
+    maKhoInput.classList.add('text-green-600');
+    if (isUnique) {
+        statusEl.textContent = 'Hợp lệ';
+        statusEl.className = 'text-xs mt-1 h-4 text-green-600';
+        maKhoInput.classList.add('text-green-600');
+    } else {
+        statusEl.textContent = 'Không thể tạo mã duy nhất!';
+        statusEl.className = 'text-xs mt-1 h-4 text-red-600';
+        maKhoInput.classList.add('text-red-600');
+    }
+    debouncedValidateMaKho(generatedMaKho);
+}
+
 function updateGeneratedCodes() {
     const loai = document.getElementById('don-hang-modal-loai-don').value;
     const nganh = document.getElementById('don-hang-modal-nganh').value;
-    
+    const maNxInput = document.getElementById('don-hang-modal-ma-nx');
+
     if (!document.getElementById('don-hang-edit-mode-ma-kho').value) {
-        document.getElementById('don-hang-modal-ma-kho').value = generateMaKho(loai);
+        if (loai) {
+            generateUniqueMaKho(loai);
+        }
     }
-    document.getElementById('don-hang-modal-ma-nx').value = generateMaNx(loai, nganh);
+    
+    const newMaNx = generateMaNx(loai, nganh);
+    if (maNxInput.value !== newMaNx) {
+        maNxInput.value = newMaNx;
+        debouncedValidateMaNx(newMaNx);
+    }
 }
 
 function renderFileList() {
@@ -660,14 +803,26 @@ export async function openDonHangModal(dh = null, mode = 'add') {
     initialChiTietItems = [];
     initialDonHangData = {};
 
+    const maKhoInput = document.getElementById('don-hang-modal-ma-kho');
+    const maNxInput = document.getElementById('don-hang-modal-ma-nx');
+    [maKhoInput, maNxInput].forEach(el => el.classList.remove('text-red-600', 'text-green-600', 'text-yellow-600'));
+    document.getElementById('don-hang-modal-ma-kho-status').textContent = '';
+    document.getElementById('don-hang-modal-ma-nx-status').textContent = '';
+
+
     const isViewMode = mode === 'view';
     const isEditOrAdd = !isViewMode;
     
     form.querySelectorAll('input, select, textarea').forEach(el => el.disabled = isViewMode);
+    maNxInput.disabled = false;
+
     document.getElementById('don-hang-file-drop-area').style.display = isViewMode ? 'none' : 'flex';
     document.getElementById('don-hang-them-vat-tu-btn').classList.toggle('hidden', !isEditOrAdd || !(currentUser.phan_quyen === 'Admin' || currentUser.phan_quyen === 'User'));
 
-    document.getElementById('save-don-hang-btn').classList.toggle('hidden', isViewMode);
+    saveDonHangBtn = document.getElementById('save-don-hang-btn');
+    saveDonHangBtn.classList.toggle('hidden', isViewMode);
+    saveDonHangBtn.disabled = true;
+
     document.getElementById('cancel-don-hang-btn').classList.toggle('hidden', isViewMode);
     document.getElementById('close-don-hang-view-btn').classList.toggle('hidden', !isViewMode);
 
@@ -680,6 +835,8 @@ export async function openDonHangModal(dh = null, mode = 'add') {
     if (mode === 'add') {
         document.getElementById('don-hang-modal-title').textContent = 'Thêm Đơn Hàng Mới';
         document.getElementById('don-hang-edit-mode-ma-kho').value = '';
+        maKhoInput.readOnly = true;
+
         const today = new Date();
         document.getElementById('don-hang-modal-thoi-gian').valueAsDate = today;
         document.getElementById('don-hang-modal-loai-don').value = ''; 
@@ -699,6 +856,7 @@ export async function openDonHangModal(dh = null, mode = 'add') {
     } else {
         document.getElementById('don-hang-modal-title').textContent = isViewMode ? 'Xem Chi Tiết Đơn Hàng' : 'Sửa Đơn Hàng';
         document.getElementById('don-hang-edit-mode-ma-kho').value = dh.ma_kho;
+        maKhoInput.readOnly = true;
         
         Object.keys(dh).forEach(key => {
             const input = document.getElementById(`don-hang-modal-${key.replace(/_/g, '-')}`);
@@ -712,6 +870,9 @@ export async function openDonHangModal(dh = null, mode = 'add') {
         });
         document.getElementById('don-hang-modal-loai-don').value = dh.ma_kho.startsWith('IN') ? 'Nhap' : 'Xuat';
         
+        debouncedValidateMaKho(dh.ma_kho);
+        debouncedValidateMaNx(dh.ma_nx);
+
         initialDonHangData = {
             thoi_gian: dh.thoi_gian ? new Date(dh.thoi_gian).toISOString().split('T')[0] : '',
             loai_don: dh.ma_kho.startsWith('IN') ? 'Nhap' : 'Xuat',
@@ -783,9 +944,10 @@ async function syncChiTietDonHang(ma_kho_don_hang, donHangInfo) {
         if (!item.phu_trach && item.tonKhoData) item.phu_trach = item.tonKhoData.phu_trach;
     }
 
-    chiTietItems.forEach(item => {
+    chiTietItems.forEach((item, index) => {
         if (!item) return;
         const baseData = {
+            stt: index + 1,
             id: item.id.toString().startsWith('new-') ? crypto.randomUUID() : item.id, 
             ma_kho: ma_kho_don_hang,
             thoi_gian: donHangInfo.thoi_gian,
@@ -834,6 +996,10 @@ async function syncChiTietDonHang(ma_kho_don_hang, donHangInfo) {
 
 async function handleSaveDonHang(e) {
     e.preventDefault();
+    if (document.getElementById('save-don-hang-btn').disabled) {
+        showToast('Mã Kho hoặc Mã NX không hợp lệ hoặc đang được kiểm tra.', 'error');
+        return;
+    }
     const ma_kho_orig = document.getElementById('don-hang-edit-mode-ma-kho').value;
     const isEdit = !!ma_kho_orig;
 
@@ -1189,6 +1355,10 @@ export function initDonHangView() {
     document.getElementById('close-don-hang-view-btn').addEventListener('click', closeDonHangModalWithConfirm);
     document.getElementById('don-hang-form').addEventListener('submit', handleSaveDonHang);
 
+    document.getElementById('don-hang-modal-ma-nx').addEventListener('input', (e) => {
+        debouncedValidateMaNx(e.target.value);
+    });
+
     document.getElementById('don-hang-modal-loai-don').addEventListener('change', () => {
         updateGeneratedCodes();
         document.getElementById('don-hang-sl-header').textContent = document.getElementById('don-hang-modal-loai-don').value === 'Nhap' ? 'Nhập' : 'SL';
@@ -1223,14 +1393,19 @@ export function initDonHangView() {
             handle: '.drag-handle',
             ghostClass: 'sortable-ghost',
             dragClass: 'sortable-drag',
-            draggable: '.chi-tiet-row',
             forceFallback: true,
             onEnd: (evt) => {
-                const { oldIndex, newIndex } = evt;
-                if (oldIndex === newIndex) return;
-                const movedItem = chiTietItems.splice(oldIndex, 1)[0];
+                const { oldIndex: domOldIndex, newIndex: domNewIndex } = evt;
+                if (domOldIndex === domNewIndex) return;
+
+                const arrayOldIndex = Math.floor(domOldIndex / 2);
+                const arrayNewIndex = Math.floor(domNewIndex / 2);
+
+                if (arrayOldIndex === arrayNewIndex) return;
+
+                const movedItem = chiTietItems.splice(arrayOldIndex, 1)[0];
                 if (movedItem) {
-                    chiTietItems.splice(newIndex, 0, movedItem);
+                    chiTietItems.splice(arrayNewIndex, 0, movedItem);
                 }
                 renderChiTietTable();
             }

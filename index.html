@@ -328,10 +328,13 @@
                                         <div class="relative"><button id="ton-kho-filter-ma-vt-btn" data-filter-key="ma_vt" class="filter-btn text-left px-3 py-2 border rounded-md bg-white w-32">Mã VT</button></div>
                                         <div class="relative"><button id="ton-kho-filter-lot-btn" data-filter-key="lot" class="filter-btn text-left px-3 py-2 border rounded-md bg-white w-28">Lot</button></div>
                                         <div class="relative"><button id="ton-kho-filter-date-btn" data-filter-key="date" class="filter-btn text-left px-3 py-2 border rounded-md bg-white w-28">Date</button></div>
-                                        <div class="relative"><button id="ton-kho-filter-ton-cuoi-btn" data-filter-key="ton_cuoi" class="filter-btn text-left px-3 py-2 border rounded-md bg-white w-32">Tồn Cuối</button></div>
                                         <div class="relative"><button id="ton-kho-filter-tinh-trang-btn" data-filter-key="tinh_trang" class="filter-btn text-left px-3 py-2 border rounded-md bg-white w-32">Tình Trạng</button></div>
                                         <div class="relative"><button id="ton-kho-filter-nganh-btn" data-filter-key="nganh" class="filter-btn text-left px-3 py-2 border rounded-md bg-white w-28">Ngành</button></div>
                                         <div class="relative"><button id="ton-kho-filter-phu-trach-btn" data-filter-key="phu_trach" class="filter-btn text-left px-3 py-2 border rounded-md bg-white w-32">Phụ Trách</button></div>
+                                        <div class="flex items-center space-x-1 bg-gray-200 rounded-full p-0.5 text-sm ml-2">
+                                            <button id="ton-kho-toggle-available" data-stock-mode="available" class="px-4 py-1 rounded-full">Khả Dụng</button>
+                                            <button id="ton-kho-toggle-all" data-stock-mode="all" class="px-4 py-1 rounded-full">Tất Cả</button>
+                                        </div>
                                     </div>
                                     <div class="flex flex-wrap gap-2 items-center">
                                         <button id="ton-kho-reset-filters" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md">Xóa Lọc</button>
@@ -705,10 +708,12 @@
                             <div class="col-span-6 sm:col-span-2">
                                 <label class="block text-sm font-medium">Mã Kho</label>
                                 <input type="text" id="don-hang-modal-ma-kho" readonly class="mt-1 block w-full p-2 border rounded-md bg-gray-200">
+                                <p id="don-hang-modal-ma-kho-status" class="text-xs mt-1 h-4"></p>
                             </div>
                             <div class="col-span-6 sm:col-span-2">
                                 <label class="block text-sm font-medium">Mã NX <span class="text-red-500 font-bold">*</span></label>
                                 <input type="text" id="don-hang-modal-ma-nx" required class="mt-1 block w-full p-2 border rounded-md">
+                                <p id="don-hang-modal-ma-nx-status" class="text-xs mt-1 h-4"></p>
                             </div>
                              <div class="col-span-6">
                                 <label class="block text-sm font-medium">Mục Đích <span class="text-red-500 font-bold">*</span></label>

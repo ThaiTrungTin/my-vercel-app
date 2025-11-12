@@ -227,7 +227,7 @@
                 
                 donHangData = dhData;
                 
-                const { data: ctData, error: ctError } = await sb.from('chi_tiet').select('*').eq('ma_kho', ma_kho).order('ma_vt', { ascending: true });
+                const { data: ctData, error: ctError } = await sb.from('chi_tiet').select('*').eq('ma_kho', ma_kho).order('stt', { ascending: true });
                 if (ctError) throw new Error(ctError.message);
                 
                 chiTietData = ctData;
@@ -272,7 +272,7 @@
 
                     return `
                         <tr>
-                            <td class="border p-1 text-center">${index + 1}</td>
+                            <td class="border p-1 text-center">${item.stt || index + 1}</td>
                             <td class="border p-1 text-left">${item.ten_vt}</td>
                             <td class="border p-1 text-center">${item.ma_vt}</td>
                             <td class="border p-1 text-center">Pcs</td>
@@ -374,7 +374,7 @@
                 const trungBay = item.loai === 'Trưng Bày' ? 'X' : '';
                 const tieuHao = item.loai === 'Tiêu Hao' ? 'X' : '';
 
-                return [index + 1, item.ten_vt, item.ma_vt, "Pcs", yc_sl, sl, trungBay, tieuHao, lotDisplay];
+                return [item.stt || index + 1, item.ten_vt, item.ma_vt, "Pcs", yc_sl, sl, trungBay, tieuHao, lotDisplay];
             });
 
             const footerData = [

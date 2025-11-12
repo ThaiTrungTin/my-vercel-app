@@ -2,7 +2,9 @@
 
 
 
-import { sb, cache, viewStates, showLoading, showToast, showConfirm, debounce, renderPagination, sanitizeFileName, filterButtonDefaultTexts, PLACEHOLDER_IMAGE_URL, currentUser } from './app.js';
+
+
+import { sb, cache, viewStates, showLoading, showToast, showConfirm, debounce, renderPagination, sanitizeFileName, filterButtonDefaultTexts, PLACEHOLDER_IMAGE_URL, currentUser, showView } from './app.js';
 
 let selectedSanPhamImageFile = null;
 
@@ -36,16 +38,42 @@ export async function fetchSanPham(page = viewStates['view-san-pham'].currentPag
         const from = (page - 1) * itemsPerPage;
         const to = from + itemsPerPage - 1;
         
-        let query = buildSanPhamQuery().order('ma_vt', { ascending: true }).range(from, to);
+        let query = buildSanPhamQuery();
 
-        const { data, error, count } = await query;
+        const { data: sanPhamData, error, count } = await query.order('ma_vt', { ascending: true }).range(from, to);
+        
         if (error) {
             showToast("Không thể tải dữ liệu sản phẩm.", 'error');
         } else {
             state.totalFilteredCount = count; 
-            cache.sanPhamList = data;
             
-            renderSanPhamTable(data);
+            let dataWithStock = sanPhamData;
+            if (sanPhamData && sanPhamData.length > 0) {
+                const maVts = sanPhamData.map(p => p.ma_vt);
+                const { data: stockData, error: stockError } = await sb
+                    .from('ton_kho_update')
+                    .select('ma_vt, ton_cuoi')
+                    .in('ma_vt', maVts);
+                
+                if (stockError) {
+                    showToast("Lỗi khi tải dữ liệu tồn kho.", 'error');
+                } else {
+                    const stockMap = new Map();
+                    (stockData || []).forEach(item => {
+                        const currentStock = stockMap.get(item.ma_vt) || 0;
+                        stockMap.set(item.ma_vt, currentStock + (item.ton_cuoi || 0));
+                    });
+
+                    dataWithStock = sanPhamData.map(sp => ({
+                        ...sp,
+                        total_ton_cuoi: stockMap.get(sp.ma_vt) || 0
+                    }));
+                }
+            }
+
+            cache.sanPhamList = dataWithStock;
+            
+            renderSanPhamTable(dataWithStock);
             renderPagination('san-pham', count, from, to);
             updateSanPhamSelectionInfo(); 
         }
@@ -64,12 +92,20 @@ function renderSanPhamTable(data) {
             const imageHtml = sp.url_hinh_anh
                 ? `<img src="${sp.url_hinh_anh}" alt="${sp.ten_vt}" class="w-12 h-12 object-cover rounded-md thumbnail-image" data-large-src="${sp.url_hinh_anh}">`
                 : `<div class="w-12 h-12 bg-gray-200 rounded-md flex items-center justify-center text-gray-400">...</div>`;
+            
+            const tonCuoiText = sp.total_ton_cuoi.toLocaleString();
+            const tonCuoiClass = sp.total_ton_cuoi > 0 ? 'text-green-600' : 'text-red-500';
 
             return `
                 <tr data-id="${sp.ma_vt}" class="cursor-pointer hover:bg-gray-50 ${isSelected ? 'bg-blue-100' : ''}">
                     <td class="px-4 py-1 border border-gray-300 text-center"><input type="checkbox" class="san-pham-select-row" data-id="${sp.ma_vt}" ${isSelected ? 'checked' : ''}></td>
                     <td class="px-4 py-1 border border-gray-300 flex justify-center items-center">${imageHtml}</td>
-                    <td class="px-6 py-1 text-sm font-medium text-gray-900 border border-gray-300">${sp.ma_vt}</td>
+                    <td class="px-6 py-1 text-sm font-medium text-gray-900 border border-gray-300">
+                        <div class="flex justify-between items-center">
+                            <a href="#" data-ma-vt="${sp.ma_vt}" class="san-pham-ma-vt-link text-blue-600 hover:underline">${sp.ma_vt}</a>
+                            <span class="text-xs font-semibold ${tonCuoiClass}">Tồn: ${tonCuoiText}</span>
+                        </div>
+                    </td>
                     <td class="px-6 py-1 text-sm text-gray-600 break-words border border-gray-300">${sp.ten_vt}</td>
                     <td class="px-6 py-1 text-sm text-gray-600 border border-gray-300 text-center">${sp.nganh || ''}</td>
                     <td class="px-6 py-1 text-sm text-gray-600 border border-gray-300 text-center">${sp.phu_trach || ''}</td>
@@ -414,7 +450,7 @@ async function openFilterPopover(button, view) {
         state.filters[filterKey] = [...tempSelectedOptions];
         
         const defaultText = filterButtonDefaultTexts[button.id] || button.id;
-        button.textContent = tempSelectedOptions.size > 0 ? `${defaultText} (${tempSelectedOptions.size})` : defaultText;
+        button.textContent = selectedCount > 0 ? `${defaultText} (${tempSelectedOptions.size})` : defaultText;
         
         if(view === 'view-san-pham') fetchSanPham(1);
         
@@ -452,12 +488,31 @@ export function initSanPhamView() {
     });
 
     document.getElementById('san-pham-table-body').addEventListener('click', e => {
-         if (e.target.closest('.thumbnail-image')) {
+        if (e.target.closest('.thumbnail-image')) {
             const imgSrc = e.target.closest('.thumbnail-image').dataset.largeSrc;
             document.getElementById('image-viewer-img').src = imgSrc;
             document.getElementById('image-viewer-modal').classList.remove('hidden');
             return;
         }
+
+        const maVtLink = e.target.closest('.san-pham-ma-vt-link');
+        if (maVtLink) {
+            e.preventDefault();
+            const ma_vt = maVtLink.dataset.maVt;
+            if (ma_vt) {
+                const tonKhoState = viewStates['view-ton-kho'];
+                
+                tonKhoState.searchTerm = '';
+                tonKhoState.filters = { ma_vt: [ma_vt], lot: [], date: [], tinh_trang: [], nganh: [], phu_trach: [] };
+
+                tonKhoState.stockAvailability = 'all';
+                sessionStorage.setItem('tonKhoStockAvailability', 'all');
+
+                showView('view-ton-kho');
+            }
+            return; 
+        }
+
         const row = e.target.closest('tr');
         if (!row || !row.dataset.id) return;
         const id = row.dataset.id;

@@ -1,4 +1,5 @@
 
+
 import { sb, cache, viewStates, currentUser, showLoading, showToast, debounce, renderPagination, filterButtonDefaultTexts, showView } from './app.js';
 import { openDonHangModal } from './don-hang.js';
 
@@ -112,11 +113,13 @@ function renderChiTietTable(data) {
     if (!tableBody) return;
 
     if (data && data.length > 0) {
-        tableBody.innerHTML = data.map(ct => `
+        tableBody.innerHTML = data.map(ct => {
+            const maNxClass = ct.ma_nx ? (ct.ma_nx.endsWith('-') ? 'text-yellow-600 font-semibold' : 'text-green-600 font-semibold') : '';
+            return `
             <tr class="hover:bg-gray-50">
                 <td class="px-1 py-2 border border-gray-300 text-center">${formatDateToDDMMYYYY(ct.thoi_gian)}</td>
                 <td class="px-1 py-2 border border-gray-300 text-center cursor-pointer text-blue-600 hover:underline ma-kho-cell">${ct.ma_kho}</td>
-                <td class="px-1 py-2 border border-gray-300 text-center">${ct.ma_nx}</td>
+                <td class="px-1 py-2 border border-gray-300 text-center ${maNxClass}">${ct.ma_nx}</td>
                 <td class="px-1 py-2 border border-gray-300 text-left">${ct.ma_vach}</td>
                 <td class="px-1 py-2 border border-gray-300 text-left cursor-pointer text-blue-600 hover:underline ma-vt-cell">${ct.ma_vt}</td>
                 <td class="px-1 py-2 border border-gray-300 text-left break-words">${ct.ten_vt}</td>
@@ -131,7 +134,7 @@ function renderChiTietTable(data) {
                 <td class="chi-tiet-col-nganh px-1 py-2 border border-gray-300 text-center">${ct.nganh || ''}</td>
                 <td class="chi-tiet-col-phu-trach px-1 py-2 border border-gray-300 text-center">${ct.phu_trach || ''}</td>
             </tr>
-        `).join('');
+        `}).join('');
     } else {
         tableBody.innerHTML = '<tr><td colspan="16" class="text-center py-4">Không có dữ liệu</td></tr>';
     }
