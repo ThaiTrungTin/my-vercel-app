@@ -1,5 +1,5 @@
 
-import { sb, cache, viewStates, showLoading, showToast, showConfirm, debounce, renderPagination, sanitizeFileName, filterButtonDefaultTexts, currentUser, openAutocomplete } from './app.js';
+import { sb, cache, viewStates, showLoading, showToast, showConfirm, debounce, renderPagination, sanitizeFileName, filterButtonDefaultTexts, currentUser, openAutocomplete, addJobToOfflineQueue } from './app.js';
 
 let selectedDonHangFiles = []; 
 let initialExistingFiles = []; 
@@ -994,75 +994,111 @@ async function syncChiTietDonHang(ma_kho_don_hang, donHangInfo) {
     }
 }
 
+const fileToBase64 = file => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+});
+
+async function saveOrderForOfflineSync() {
+    showLoading(true);
+    try {
+        const ma_kho_orig = document.getElementById('don-hang-edit-mode-ma-kho').value;
+        const isEdit = !!ma_kho_orig;
+
+        const donHangData = {
+            ma_kho: document.getElementById('don-hang-modal-ma-kho').value.trim(),
+            thoi_gian: document.getElementById('don-hang-modal-thoi-gian').value,
+            ma_nx: document.getElementById('don-hang-modal-ma-nx').value.trim(),
+            yeu_cau: document.getElementById('don-hang-modal-yeu-cau').value.trim(),
+            nganh: document.getElementById('don-hang-modal-nganh').value.trim(),
+            muc_dich: document.getElementById('don-hang-modal-muc-dich').value.trim(),
+            ghi_chu: document.getElementById('don-hang-modal-ghi-chu').value.trim(),
+            file: [] 
+        };
+
+        const newFilesPromises = selectedDonHangFiles.map(async file => ({
+            name: file.name,
+            type: file.type,
+            base64: await fileToBase64(file)
+        }));
+        const newFiles = await Promise.all(newFilesPromises);
+
+        const jobPayload = {
+            isEdit,
+            ma_kho_orig,
+            donHangData,
+            chiTietItems: JSON.parse(JSON.stringify(chiTietItems)),
+            initialChiTietItems: JSON.parse(JSON.stringify(initialChiTietItems)),
+            newFiles,
+            initialExistingFiles,
+            currentExistingFiles
+        };
+
+        addJobToOfflineQueue({
+            type: 'save-don-hang',
+            payload: jobPayload
+        });
+
+        showToast('Mất kết nối. Đơn hàng đã được lưu tạm và sẽ tự động đồng bộ.', 'info');
+        forceCloseDonHangModal();
+    } catch (error) {
+        showToast(`Lỗi khi lưu offline: ${error.message}`, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+
 async function handleSaveDonHang(e) {
     e.preventDefault();
-    if (document.getElementById('save-don-hang-btn').disabled) {
-        showToast('Mã Kho hoặc Mã NX không hợp lệ hoặc đang được kiểm tra.', 'error');
-        return;
-    }
-    const ma_kho_orig = document.getElementById('don-hang-edit-mode-ma-kho').value;
-    const isEdit = !!ma_kho_orig;
 
-    const donHangData = {
-        ma_kho: document.getElementById('don-hang-modal-ma-kho').value.trim(),
-        thoi_gian: document.getElementById('don-hang-modal-thoi-gian').value,
-        ma_nx: document.getElementById('don-hang-modal-ma-nx').value.trim(),
-        yeu_cau: document.getElementById('don-hang-modal-yeu-cau').value.trim(),
-        nganh: document.getElementById('don-hang-modal-nganh').value.trim(),
-        muc_dich: document.getElementById('don-hang-modal-muc-dich').value.trim(),
-        ghi_chu: document.getElementById('don-hang-modal-ghi-chu').value.trim(),
-    };
-    const loai_don = document.getElementById('don-hang-modal-loai-don').value;
-    
-    if (!loai_don) {
-        showToast('Vui lòng chọn Loại Đơn.', 'error');
-        return;
-    }
     const requiredFields = { thoi_gian: "Thời Gian", yeu_cau: "Yêu Cầu", nganh: "Ngành", ma_nx: "Mã NX", muc_dich: "Mục Đích" };
     for (const [field, name] of Object.entries(requiredFields)) {
-        if (!donHangData[field]) {
+        if (!document.getElementById(`don-hang-modal-${field.replace(/_/g, '-')}`).value) {
             showToast(`Trường "${name}" là bắt buộc.`, 'error');
             return;
         }
     }
     
-    const validChiTietItems = chiTietItems.filter(Boolean);
-    if (validChiTietItems.length === 0) {
+    if (chiTietItems.filter(Boolean).length === 0) {
         showToast('Phải có ít nhất một vật tư trong đơn hàng.', 'error');
         return;
     }
 
-    for (const [index, item] of validChiTietItems.entries()) {
-        if (!item.ma_vt || !item.yc_sl || (item.sl === null || item.sl === undefined) || !item.loai) {
-            showToast(`Vui lòng điền đầy đủ các trường bắt buộc (*) cho vật tư ở dòng ${index + 1}.`, 'error');
-            return;
-        }
-        
-        if (loai_don === 'Xuat') {
-            if (!item.tonKhoData) {
-                showToast(`Không tìm thấy thông tin tồn kho cho vật tư "${item.ma_vt}" ở dòng ${index + 1}.`, 'error');
-                return;
-            }
-            const tonKhoValue = item.tonKhoData.ton_cuoi || 0;
-            const slValue = parseFloat(item.sl) || 0;
-            if (tonKhoValue - slValue < 0) {
-                showToast(`Tồn kho không đủ cho vật tư "${item.ma_vt}" ở dòng ${index + 1}.`, 'error');
-                return;
-            }
-        }
+    if (!navigator.onLine) {
+        await saveOrderForOfflineSync();
+        return;
+    }
+
+    if (document.getElementById('save-don-hang-btn').disabled) {
+        showToast('Mã Kho hoặc Mã NX không hợp lệ hoặc đang được kiểm tra.', 'error');
+        return;
     }
     
     showLoading(true);
     try {
+        const ma_kho_orig = document.getElementById('don-hang-edit-mode-ma-kho').value;
+        const isEdit = !!ma_kho_orig;
+        const donHangData = {
+            ma_kho: document.getElementById('don-hang-modal-ma-kho').value.trim(),
+            thoi_gian: document.getElementById('don-hang-modal-thoi-gian').value,
+            ma_nx: document.getElementById('don-hang-modal-ma-nx').value.trim(),
+            yeu_cau: document.getElementById('don-hang-modal-yeu-cau').value.trim(),
+            nganh: document.getElementById('don-hang-modal-nganh').value.trim(),
+            muc_dich: document.getElementById('don-hang-modal-muc-dich').value.trim(),
+            ghi_chu: document.getElementById('don-hang-modal-ghi-chu').value.trim(),
+        };
+        const loai_don = document.getElementById('don-hang-modal-loai-don').value;
+        
         const filesToRemove = initialExistingFiles.filter(url => !currentExistingFiles.includes(url));
         if (filesToRemove.length > 0) {
             const filePathsToRemove = filesToRemove.map(url => {
                 try {
                     const path = new URL(url).pathname.split('/file_don_hang/')[1];
                     return path ? decodeURIComponent(path) : null;
-                } catch (e) {
-                    console.error("Invalid URL for file deletion:", url, e); return null;
-                }
+                } catch (e) { console.error("Invalid URL for file deletion:", url, e); return null; }
             }).filter(Boolean);
             if(filePathsToRemove.length > 0) await sb.storage.from('file_don_hang').remove(filePathsToRemove);
         }
@@ -1095,7 +1131,7 @@ async function handleSaveDonHang(e) {
         const pageToFetch = isEdit ? viewStates['view-don-hang'].currentPage : 1;
         fetchDonHang(pageToFetch, false);
     } catch (error) {
-        if (error.code === '23505') showToast(`Mã kho "${donHangData.ma_kho}" đã tồn tại.`, 'error');
+        if (error.code === '23505') showToast(`Mã kho "${document.getElementById('don-hang-modal-ma-kho').value}" đã tồn tại.`, 'error');
         else showToast(`Lỗi: ${error.message}`, 'error');
         console.error("Save error:", error);
     } finally {
@@ -1589,4 +1625,54 @@ export function initDonHangView() {
     };
     pageInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); handlePageJump(); e.target.blur(); }});
     pageInput.addEventListener('change', handlePageJump);
+}
+
+export async function executeSaveOrderJob(payload) {
+    const { isEdit, ma_kho_orig, donHangData, newFiles, initialExistingFiles, currentExistingFiles } = payload;
+    
+    // Temporarily set global state for sync function
+    chiTietItems = payload.chiTietItems;
+    initialChiTietItems = payload.initialChiTietItems;
+
+    // 1. Handle file uploads
+    const filesToRemove = initialExistingFiles.filter(url => !currentExistingFiles.includes(url));
+    if (filesToRemove.length > 0) {
+        const filePathsToRemove = filesToRemove.map(url => {
+            try {
+                const path = new URL(url).pathname.split('/file_don_hang/')[1];
+                return path ? decodeURIComponent(path) : null;
+            } catch (e) { console.error("Invalid URL for file deletion:", url, e); return null; }
+        }).filter(Boolean);
+        if(filePathsToRemove.length > 0) await sb.storage.from('file_don_hang').remove(filePathsToRemove);
+    }
+
+    let uploadedFileUrls = [];
+    if (newFiles.length > 0) {
+        const uploadPromises = newFiles.map(async (fileData) => {
+            const response = await fetch(fileData.base64);
+            const blob = await response.blob();
+            const file = new File([blob], fileData.name, { type: fileData.type });
+
+            const safeFileName = sanitizeFileName(file.name);
+            const filePath = `${donHangData.ma_kho}/${Date.now()}-${safeFileName}`;
+            return sb.storage.from('file_don_hang').upload(filePath, file);
+        });
+        const uploadResults = await Promise.all(uploadPromises);
+        for (const result of uploadResults) {
+            if (result.error) throw new Error(`Lỗi tải file: ${result.error.message}`);
+            const { data: urlData } = sb.storage.from('file_don_hang').getPublicUrl(result.data.path);
+            uploadedFileUrls.push(urlData.publicUrl);
+        }
+    }
+    donHangData.file = [...currentExistingFiles, ...uploadedFileUrls];
+
+    // 2. Upsert don_hang
+    const { error: donHangError } = isEdit
+        ? await sb.from('don_hang').update(donHangData).eq('ma_kho', ma_kho_orig)
+        : await sb.from('don_hang').insert(donHangData);
+    if (donHangError) throw donHangError;
+
+    // 3. Sync chi_tiet
+    const loai_don = donHangData.ma_kho.startsWith('IN') ? 'Nhap' : 'Xuat';
+    await syncChiTietDonHang(donHangData.ma_kho, { ...donHangData, loai_don });
 }

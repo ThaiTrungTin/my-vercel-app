@@ -200,7 +200,33 @@
 
             <div id="main-content-area" class="relative flex-1 flex flex-col ml-64 transition-all duration-300 ease-in-out">
                 <div id="main-header" class="flex-shrink-0 bg-green-100 shadow-md px-4 py-2 flex justify-between items-center gap-4">
-                    <h1 id="view-title" class="text-xl font-bold text-red-700"></h1>
+                    <div class="flex items-center gap-2">
+                        <h1 id="view-title" class="text-xl font-bold text-red-700"></h1>
+                        <div id="network-status-indicator" class="flex items-center gap-1.5" title="Kiểm tra kết nối...">
+                            <svg id="wifi-icon" class="w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <g id="wifi-offline-group" class="hidden">
+                                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                                    <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.28"></path>
+                                    <path d="M5 12.28A10.94 10.94 0 0 1 7.28 11.06"></path>
+                                    <path d="M10.7 7.29C11.19 7.12 11.69 7 12.22 7c.52 0 1.02.12 1.52.29"></path>
+                                    <path d="M4.34 4.34A15.91 15.91 0 0 1 12.22 2c5.52 0 10.22 2.91 11.93 7.11"></path>
+                                    <path d="M2.07 7.11A15.91 15.91 0 0 1 12.22 2c.2 0 .39.02.59.04"></path>
+                                    <line x1="23" y1="1" x2="1" y2="23"></line>
+                                </g>
+                                <g id="wifi-online-group">
+                                    <path id="wifi-bar-3" d="M1.42 9a16 16 0 0 1 21.16 0"></path>
+                                    <path id="wifi-bar-2" d="M5 12.55a11 11 0 0 1 14.08 0"></path>
+                                    <path id="wifi-bar-1" d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+                                    <line id="wifi-dot" x1="12" y1="20" x2="12.01" y2="20"></line>
+                                </g>
+                            </svg>
+                            <span id="latency-text" class="text-xs font-mono text-gray-500 w-12 text-right">-- ms</span>
+                        </div>
+                         <div id="offline-sync-indicator" class="hidden flex items-center gap-1.5 ml-2 p-1 bg-blue-100 rounded-full" title="Các thay đổi đang chờ đồng bộ">
+                            <svg class="w-5 h-5 text-blue-600 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M12 12v9m-4-4l4 4 4-4"></path></svg>
+                            <span id="offline-sync-count" class="text-xs font-mono font-bold text-blue-700 pr-2"></span>
+                        </div>
+                    </div>
                     <div id="notification-bar" class="text-sm text-gray-800 text-right whitespace-nowrap overflow-hidden flex-grow">
                     </div>
                 </div>

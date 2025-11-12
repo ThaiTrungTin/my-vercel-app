@@ -92,6 +92,60 @@ export const filterButtonDefaultTexts = {
 };
 let activeAutocompletePopover = null;
 
+// --- OFFLINE QUEUE MANAGEMENT ---
+const OFFLINE_QUEUE_KEY = 'offlineQueue';
+const getOfflineQueue = () => JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY)) || [];
+const saveOfflineQueue = (queue) => localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
+
+export function updateOfflineIndicator() {
+    const queue = getOfflineQueue();
+    const indicator = document.getElementById('offline-sync-indicator');
+    const countEl = document.getElementById('offline-sync-count');
+    if (indicator && countEl) {
+        if (queue.length > 0) {
+            indicator.classList.remove('hidden');
+            countEl.textContent = queue.length;
+        } else {
+            indicator.classList.add('hidden');
+        }
+    }
+}
+
+export async function processOfflineQueue() {
+    if (!navigator.onLine) return;
+    let queue = getOfflineQueue();
+    if (queue.length === 0) return;
+
+    showToast(`Đang đồng bộ ${queue.length} thay đổi offline...`, 'info');
+    const { executeSaveOrderJob } = await import('./don-hang.js');
+
+    const failedJobs = [];
+    for (const job of queue) {
+        try {
+            if (job.type === 'save-don-hang') {
+                await executeSaveOrderJob(job.payload);
+                showToast(`Đồng bộ thành công đơn hàng: ${job.payload.donHangData.ma_kho}`, 'success');
+            }
+        } catch (error) {
+            console.error('Offline sync failed for job:', job.id, error);
+            showToast(`Đồng bộ thất bại cho đơn hàng ${job.payload.donHangData.ma_kho}. Sẽ thử lại sau.`, 'error');
+            failedJobs.push(job); 
+        }
+    }
+
+    saveOfflineQueue(failedJobs);
+    updateOfflineIndicator();
+}
+
+export function addJobToOfflineQueue(job) {
+    const queue = getOfflineQueue();
+    job.id = job.id || `job-${Date.now()}`;
+    queue.push(job);
+    saveOfflineQueue(queue);
+    updateOfflineIndicator();
+}
+// --- END OFFLINE QUEUE ---
+
 
 export const showLoading = (show) => document.getElementById('loading-bar').classList.toggle('hidden', !show);
 
@@ -665,7 +719,11 @@ function updateOnlineStatusUI() {
     }
     
     if (currentView === 'view-cai-dat') {
-        fetchUsers();
+        import('./caidat.js').then(({ fetchUsers }) => {
+            if (fetchUsers) {
+                fetchUsers();
+            }
+        }).catch(err => console.error("Failed to load caidat.js for presence update:", err));
     }
 }
 
@@ -746,6 +804,109 @@ document.addEventListener('DOMContentLoaded', async () => {
         setSidebarState(!isCollapsed);
     });
 
+    // --- NETWORK STATUS INDICATOR ---
+    function updateNetworkStatusIndicator(status, latency = null) {
+        const indicator = document.getElementById('network-status-indicator');
+        const wifiIcon = document.getElementById('wifi-icon');
+        const latencyText = document.getElementById('latency-text');
+        const offlineGroup = document.getElementById('wifi-offline-group');
+        const onlineGroup = document.getElementById('wifi-online-group');
+
+        const bar1 = document.getElementById('wifi-bar-1');
+        const bar2 = document.getElementById('wifi-bar-2');
+        const bar3 = document.getElementById('wifi-bar-3');
+
+        if (!indicator || !wifiIcon || !latencyText || !offlineGroup || !onlineGroup) return;
+        
+        // Reset classes
+        wifiIcon.classList.remove('text-green-500', 'text-yellow-500', 'text-red-500', 'text-gray-400');
+        latencyText.classList.remove('text-green-600', 'text-yellow-600', 'text-red-600', 'text-gray-500');
+        [bar1, bar2, bar3].forEach(bar => bar.style.opacity = '1');
+
+        switch (status) {
+            case 'good':
+                onlineGroup.classList.remove('hidden');
+                offlineGroup.classList.add('hidden');
+                wifiIcon.classList.add('text-green-500');
+                latencyText.textContent = `${latency} ms`;
+                latencyText.classList.add('text-green-600');
+                indicator.title = `Kết nối tốt (${latency}ms)`;
+                break;
+
+            case 'slow':
+                onlineGroup.classList.remove('hidden');
+                offlineGroup.classList.add('hidden');
+                wifiIcon.classList.add('text-yellow-500');
+                bar3.style.opacity = '0.3'; // Dim the outer bar
+                latencyText.textContent = `${latency} ms`;
+                latencyText.classList.add('text-yellow-600');
+                indicator.title = `Kết nối chậm (${latency}ms)`;
+                break;
+
+            case 'offline':
+                onlineGroup.classList.add('hidden');
+                offlineGroup.classList.remove('hidden');
+                wifiIcon.classList.add('text-red-500');
+                latencyText.textContent = 'offline';
+                latencyText.classList.add('text-red-600');
+                indicator.title = 'Mất kết nối mạng';
+                break;
+            
+            default: // Initial state
+                onlineGroup.classList.remove('hidden');
+                offlineGroup.classList.add('hidden');
+                wifiIcon.classList.add('text-gray-400');
+                 [bar1, bar2, bar3].forEach(bar => bar.style.opacity = '0.3');
+                latencyText.textContent = '-- ms';
+                latencyText.classList.add('text-gray-500');
+                indicator.title = 'Đang kiểm tra kết nối...';
+                break;
+        }
+    }
+
+    async function checkNetworkLatency() {
+        if (!navigator.onLine) {
+            updateNetworkStatusIndicator('offline');
+            return;
+        }
+
+        const startTime = Date.now();
+        try {
+            // Use a valid, authenticated endpoint to avoid CORS issues.
+            // A HEAD request to the base of the REST API is lightweight and effective.
+            await fetch(`${SUPABASE_URL}/rest/v1/`, {
+                method: 'HEAD',
+                headers: {
+                    'apikey': SUPABASE_KEY
+                },
+                cache: 'no-store',
+                signal: AbortSignal.timeout(5000) // Timeout after 5s
+            });
+            
+            const latency = Date.now() - startTime;
+            
+            if (latency < 400) {
+                updateNetworkStatusIndicator('good', latency);
+            } else { // Anything over 400ms is considered slow, not offline.
+                updateNetworkStatusIndicator('slow', latency);
+            }
+
+        } catch (error) {
+            // Any fetch error (CORS, network error, timeout) means we can't reach the service.
+            updateNetworkStatusIndicator('offline');
+        }
+    }
+
+    updateNetworkStatusIndicator('initial');
+    checkNetworkLatency();
+    window.addEventListener('online', () => {
+        checkNetworkLatency();
+        processOfflineQueue();
+    });
+    window.addEventListener('offline', () => updateNetworkStatusIndicator('offline'));
+    setInterval(checkNetworkLatency, 10000);
+    // --- END NETWORK STATUS INDICATOR ---
+
     try {
         const userJson = sessionStorage.getItem('loggedInUser');
         if (userJson) {
@@ -765,6 +926,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             const lastView = sessionStorage.getItem('lastViewId') || 'view-phat-trien';
             await showView(lastView);
+            
+            updateOfflineIndicator();
+            setTimeout(processOfflineQueue, 2000);
 
             userChannel = sb.channel('public:user')
                 .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'user', filter: 'gmail=eq.'+currentUser.gmail }, payload => {
@@ -814,7 +978,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         if(payload.new.stt === 'Chờ Duyệt') {
                             showToast(`Có tài khoản mới "${payload.new.ho_ten}" đang chờ duyệt.`, 'info');
                             if(currentView === 'view-cai-dat') {
-                                fetchUsers();
+                                import('./caidat.js').then(({ fetchUsers }) => fetchUsers());
                             }
                         }
                     })
