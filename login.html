@@ -39,12 +39,12 @@
                 </div>
                 <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Đăng nhập</h2>
                 <div class="mb-4">
-                    <label for="login-gmail" class="block text-gray-700 text-sm font-bold mb-2">Gmail</label>
-                    <input type="email" id="login-gmail" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <label for="login-gmail" class="block text-gray-700 text-sm font-bold mb-2">Gmail / Tên đăng nhập</label>
+                    <input type="text" id="login-gmail" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
-                <div class="mb-6">
+                <div class="mb-2">
                     <label for="login-password" class="block text-gray-700 text-sm font-bold mb-2">Mật khẩu</label>
-                    <div class="relative mb-3">
+                    <div class="relative">
                         <input type="password" id="login-password" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10">
                         <button type="button" data-toggle-password="login-password" class="password-toggle-btn absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 hover:text-gray-700">
                             <svg class="w-5 h-5 toggle-icon-show" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -56,6 +56,12 @@
                             </svg>
                         </button>
                     </div>
+                </div>
+                <div class="flex items-center justify-between mb-6">
+                    <label for="login-remember-me" class="flex items-center text-sm">
+                        <input type="checkbox" id="login-remember-me" class="form-checkbox h-4 w-4 text-blue-600 rounded">
+                        <span class="ml-2 text-gray-700">Ghi nhớ đăng nhập</span>
+                    </label>
                 </div>
                 <button type="submit" class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-200">
                     Đăng nhập
@@ -79,11 +85,11 @@
                     </select>
                 </div>
                 <div class="mb-4">
-                    <label for="register-gmail" class="block text-gray-700 text-sm font-bold mb-2">Gmail</label>
+                    <label for="register-gmail" class="block text-gray-700 text-sm font-bold mb-2">Gmail (dùng để đăng nhập)</label>
                     <input type="email" id="register-gmail" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                  <div class="mb-4">
-                    <label for="register-ho-ten" class="block text-gray-700 text-sm font-bold mb-2">Họ tên</label>
+                    <label for="register-ho-ten" class="block text-gray-700 text-sm font-bold mb-2">Họ tên (dùng để đăng nhập)</label>
                     <input type="text" id="register-ho-ten" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <p class="text-xs text-gray-500 mt-1">Vui lòng nhập đúng Họ Tên để tiện tra cứu.</p>
                 </div>
@@ -139,27 +145,34 @@
 
         async function handleLogin(e) {
             e.preventDefault();
-            const gmail = document.getElementById('login-gmail').value;
+            const identifier = document.getElementById('login-gmail').value;
             const password = document.getElementById('login-password').value;
+            const rememberMe = document.getElementById('login-remember-me').checked;
             
             const { data: user, error } = await sb
                 .from('user')
                 .select('*')
-                .eq('gmail', gmail)
+                .or(`gmail.eq.${identifier},ho_ten.eq.${identifier}`)
                 .single();
 
             if (error || !user) {
-                showMessage('Gmail hoặc mật khẩu không đúng.');
+                showMessage('Tên đăng nhập/Gmail hoặc mật khẩu không đúng.');
                 return;
             }
 
             if (user.mat_khau !== password) {
-                showMessage('Gmail hoặc mật khẩu không đúng.');
+                showMessage('Tên đăng nhập/Gmail hoặc mật khẩu không đúng.');
                 return;
             }
             
             switch (user.stt) {
                 case 'Đã Duyệt':
+                    if (rememberMe) {
+                        localStorage.setItem('rememberedUser', identifier);
+                    } else {
+                        localStorage.removeItem('rememberedUser');
+                    }
+
                     const active_session_id = crypto.randomUUID();
                     const { error: updateError } = await sb
                         .from('user')
@@ -258,6 +271,12 @@
             if (sessionStorage.getItem('loggedInUser')) {
                 window.location.href = 'index.html';
                 return;
+            }
+
+            const rememberedUser = localStorage.getItem('rememberedUser');
+            if (rememberedUser) {
+                document.getElementById('login-gmail').value = rememberedUser;
+                document.getElementById('login-remember-me').checked = true;
             }
 
             const loginForm = document.getElementById('login-form');
