@@ -83,7 +83,7 @@ export async function fetchChiTiet(page = viewStates['view-chi-tiet'].currentPag
         const from = (page - 1) * itemsPerPage;
         const to = from + itemsPerPage - 1;
 
-        const query = buildChiTietQuery().order('thoi_gian', { ascending: false }).range(from, to);
+        const query = buildChiTietQuery().order('thoi_gian', { ascending: false }).order('ma_nx', { ascending: true }).order('stt', { ascending: true }).range(from, to);
         
         const [queryResult, _] = await Promise.all([
             query,
@@ -191,23 +191,80 @@ async function openChiTietFilterPopover(button, view) {
     const optionsList = popover.querySelector('.filter-options-list');
     const applyBtn = popover.querySelector('.filter-apply-btn');
     const searchInput = popover.querySelector('.filter-search-input');
+    const selectionCountEl = popover.querySelector('.filter-selection-count');
+    const toggleAllBtn = popover.querySelector('.filter-toggle-all-btn');
     
+    const tempSelectedOptions = new Set(state.filters[filterKey] || []);
+
+    const updateSelectionCount = () => {
+        const count = tempSelectedOptions.size;
+        selectionCountEl.textContent = count > 0 ? `Đã chọn: ${count}` : '';
+    };
+
+    const updateToggleAllButtonState = () => {
+        const visibleCheckboxes = optionsList.querySelectorAll('.filter-option-cb');
+        if (visibleCheckboxes.length === 0) {
+            toggleAllBtn.textContent = 'Tất cả';
+            toggleAllBtn.disabled = true;
+            return;
+        }
+        toggleAllBtn.disabled = false;
+        const allVisibleSelected = [...visibleCheckboxes].every(cb => cb.checked);
+        toggleAllBtn.textContent = allVisibleSelected ? 'Bỏ chọn' : 'Tất cả';
+    };
+
     const renderOptions = (options) => {
         const searchTerm = searchInput.value.toLowerCase();
         const filteredOptions = options.filter(option => 
             option && String(option).toLowerCase().includes(searchTerm)
         );
-        if (filteredOptions.length > 0) {
-            optionsList.innerHTML = filteredOptions.map(option => `
-                <label class="flex items-center space-x-2 px-2 py-1 hover:bg-gray-100 rounded">
-                    <input type="checkbox" value="${option}" class="filter-option-cb" ${state.filters[filterKey]?.includes(String(option)) ? 'checked' : ''}>
-                    <span class="text-sm">${option}</span>
-                </label>
-            `).join('');
-        } else {
-             optionsList.innerHTML = '<div class="text-center p-4 text-sm text-gray-500">Không có tùy chọn.</div>';
-        }
+        optionsList.innerHTML = filteredOptions.length > 0 ? filteredOptions.map(option => `
+            <label class="flex items-center space-x-2 px-2 py-1 hover:bg-gray-100 rounded">
+                <input type="checkbox" value="${option}" class="filter-option-cb" ${tempSelectedOptions.has(String(option)) ? 'checked' : ''}>
+                <span class="text-sm">${option}</span>
+            </label>
+        `).join('') : '<div class="text-center p-4 text-sm text-gray-500">Không có tùy chọn.</div>';
+        updateToggleAllButtonState();
     };
+    
+    const setupEventListeners = (allOptions) => {
+        searchInput.addEventListener('input', () => renderOptions(allOptions));
+        
+        optionsList.addEventListener('change', e => {
+            const cb = e.target;
+            if (cb.type === 'checkbox' && cb.classList.contains('filter-option-cb')) {
+                if (cb.checked) {
+                    tempSelectedOptions.add(cb.value);
+                } else {
+                    tempSelectedOptions.delete(cb.value);
+                }
+                updateSelectionCount();
+                updateToggleAllButtonState();
+            }
+        });
+        
+        toggleAllBtn.onclick = () => {
+            const searchTerm = searchInput.value.toLowerCase();
+            const visibleOptions = allOptions.filter(option => 
+                option && String(option).toLowerCase().includes(searchTerm)
+            );
+            
+            const isSelectAllAction = toggleAllBtn.textContent === 'Tất cả';
+            
+            visibleOptions.forEach(option => {
+                if (isSelectAllAction) {
+                    tempSelectedOptions.add(String(option));
+                } else {
+                    tempSelectedOptions.delete(String(option));
+                }
+            });
+
+            renderOptions(allOptions);
+            updateSelectionCount();
+        };
+    };
+
+    updateSelectionCount();
     
     optionsList.innerHTML = '<div class="text-center p-4 text-sm text-gray-500">Đang tải...</div>';
     applyBtn.disabled = true;
@@ -231,7 +288,7 @@ async function openChiTietFilterPopover(button, view) {
         
         const uniqueOptions = Array.isArray(data) ? data.map(item => item.option) : [];
         renderOptions(uniqueOptions);
-        searchInput.addEventListener('input', () => renderOptions(uniqueOptions));
+        setupEventListeners(uniqueOptions);
         applyBtn.disabled = false;
     } catch (error) {
         optionsList.innerHTML = '<div class="text-center p-4 text-sm text-red-500">Lỗi tải bộ lọc.</div>';
@@ -246,11 +303,10 @@ async function openChiTietFilterPopover(button, view) {
     };
 
     applyBtn.onclick = () => {
-        const selectedOptions = Array.from(popover.querySelectorAll('.filter-option-cb:checked')).map(cb => cb.value);
-        state.filters[filterKey] = selectedOptions;
+        state.filters[filterKey] = [...tempSelectedOptions];
         
         const defaultText = filterButtonDefaultTexts[button.id] || button.id;
-        button.textContent = selectedOptions.length > 0 ? `${defaultText} (${selectedOptions.length})` : defaultText;
+        button.textContent = tempSelectedOptions.size > 0 ? `${defaultText} (${tempSelectedOptions.size})` : defaultText;
         
         if(view === 'view-chi-tiet') fetchChiTiet(1);
         
