@@ -85,13 +85,13 @@
                     </select>
                 </div>
                 <div class="mb-4">
-                    <label for="register-gmail" class="block text-gray-700 text-sm font-bold mb-2">Gmail (dùng để đăng nhập)</label>
-                    <input type="email" id="register-gmail" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <label for="register-gmail" class="block text-gray-700 text-sm font-bold mb-2">Gmail / Tên đăng nhập</label>
+                    <input type="text" id="register-gmail" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                  <div class="mb-4">
-                    <label for="register-ho-ten" class="block text-gray-700 text-sm font-bold mb-2">Họ tên (dùng để đăng nhập)</label>
+                    <label for="register-ho-ten" class="block text-gray-700 text-sm font-bold mb-2">Họ và Tên</label>
                     <input type="text" id="register-ho-ten" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <p class="text-xs text-gray-500 mt-1">Vui lòng nhập đúng Họ Tên để tiện tra cứu.</p>
+                    <p class="text-xs text-gray-500 mt-1">Vui lòng nhập đúng Họ Tên để tiện tra cứu dữ liệu.</p>
                 </div>
                 <div class="mb-4">
                     <label for="register-password" class="block text-gray-700 text-sm font-bold mb-2">Mật khẩu</label>
@@ -152,25 +152,26 @@
             const { data: user, error } = await sb
                 .from('user')
                 .select('*')
-                .or(`gmail.eq.${identifier},ho_ten.eq.${identifier}`)
+                .eq('gmail', identifier)
                 .single();
 
             if (error || !user) {
-                showMessage('Tên đăng nhập/Gmail hoặc mật khẩu không đúng.');
+                showMessage('Gmail/Tên đăng nhập hoặc mật khẩu không đúng.');
                 return;
             }
 
             if (user.mat_khau !== password) {
-                showMessage('Tên đăng nhập/Gmail hoặc mật khẩu không đúng.');
+                showMessage('Gmail/Tên đăng nhập hoặc mật khẩu không đúng.');
                 return;
             }
             
             switch (user.stt) {
                 case 'Đã Duyệt':
                     if (rememberMe) {
-                        localStorage.setItem('rememberedUser', identifier);
+                        const credentials = { identifier: identifier, password: password };
+                        localStorage.setItem('rememberedCredentials', JSON.stringify(credentials));
                     } else {
-                        localStorage.removeItem('rememberedUser');
+                        localStorage.removeItem('rememberedCredentials');
                     }
 
                     const active_session_id = crypto.randomUUID();
@@ -202,46 +203,59 @@
 
         async function handleRegister(e) {
             e.preventDefault();
-            const gmail = document.getElementById('register-gmail').value;
+            const gmail = document.getElementById('register-gmail').value.trim();
             const password = document.getElementById('register-password').value;
             const confirmPassword = document.getElementById('register-confirm-password').value;
             const ho_ten = document.getElementById('register-ho-ten').value.trim();
             const phan_quyen = document.getElementById('register-role').value;
 
+            if (!gmail) {
+                showMessage('Gmail / Tên đăng nhập không được để trống.');
+                return;
+            }
             if (password !== confirmPassword) {
                 showMessage('Mật khẩu không khớp.');
                 return;
             }
              if (ho_ten.length < 3) {
-                showMessage('Họ tên phải có ít nhất 3 ký tự.');
+                showMessage('Họ và Tên phải có ít nhất 3 ký tự.');
                 return;
             }
 
-            // Validate username if role is 'User'
-            if (phan_quyen === 'User') {
-                 const { count, error: spError } = await sb
-                    .from('san_pham')
-                    .select('phu_trach', { count: 'exact', head: true })
-                    .eq('phu_trach', ho_ten);
-                
-                if (spError || count === 0) {
-                    showMessage('Bạn không được sử dụng tên này (Tên không có trong danh sách Phụ trách).');
-                    return;
-                }
+            // Check for uniqueness of the identifier (in gmail column)
+            const { count: existingIdentifier, error: checkIdentifierError } = await sb
+                .from('user')
+                .select('gmail', { count: 'exact', head: true })
+                .eq('gmail', gmail);
+            
+            if (checkIdentifierError) {
+                showMessage('Lỗi kiểm tra thông tin: ' + checkIdentifierError.message);
+                return;
+            }
 
-                const { count: userCount, error: userError } = await sb
-                    .from('user')
-                    .select('ho_ten', { count: 'exact', head: true })
-                    .eq('ho_ten', ho_ten);
+            if (existingIdentifier > 0) {
+                showMessage('Gmail hoặc Tên đăng nhập này đã được đăng ký.');
+                return;
+            }
 
-                if (userError || userCount > 0) {
-                    showMessage('Bạn không được sử dụng tên này (Tên đã được người khác đăng ký).');
-                    return;
-                }
+            // Check for uniqueness of ho_ten
+            const { count: existingHoTen, error: checkHoTenError } = await sb
+                .from('user')
+                .select('ho_ten', { count: 'exact', head: true })
+                .eq('ho_ten', ho_ten);
+
+            if (checkHoTenError) {
+                showMessage('Lỗi kiểm tra Họ và Tên: ' + checkHoTenError.message);
+                return;
+            }
+
+            if (existingHoTen > 0) {
+                showMessage('Họ và Tên này đã được người khác đăng ký.');
+                return;
             }
 
             const newUser = {
-                gmail: gmail,
+                gmail: gmail, // Identifier is stored in the gmail column
                 mat_khau: password,
                 ho_ten: ho_ten,
                 phan_quyen: phan_quyen,
@@ -251,11 +265,7 @@
             const { data, error } = await sb.from('user').insert(newUser).select().single();
 
             if (error) {
-                if (error.code === '23505') { // Unique constraint violation
-                    showMessage('Gmail này đã được đăng ký.');
-                } else {
-                    showMessage('Lỗi đăng ký: ' + error.message);
-                }
+                showMessage('Lỗi đăng ký: ' + error.message);
             } else {
                 document.getElementById('register-form').reset();
                 document.getElementById('register-form').classList.add('hidden');
@@ -273,10 +283,16 @@
                 return;
             }
 
-            const rememberedUser = localStorage.getItem('rememberedUser');
-            if (rememberedUser) {
-                document.getElementById('login-gmail').value = rememberedUser;
-                document.getElementById('login-remember-me').checked = true;
+            const rememberedCredentialsJSON = localStorage.getItem('rememberedCredentials');
+            if (rememberedCredentialsJSON) {
+                try {
+                    const credentials = JSON.parse(rememberedCredentialsJSON);
+                    document.getElementById('login-gmail').value = credentials.identifier || '';
+                    document.getElementById('login-password').value = credentials.password || '';
+                    document.getElementById('login-remember-me').checked = true;
+                } catch (e) {
+                    localStorage.removeItem('rememberedCredentials');
+                }
             }
 
             const loginForm = document.getElementById('login-form');
