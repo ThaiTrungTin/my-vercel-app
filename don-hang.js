@@ -487,6 +487,25 @@ async function fetchChiTietDonHang(ma_kho_don_hang) {
     return data || [];
 }
 
+function toggleDonHangModalColumns() {
+    const loaiDon = document.getElementById('don-hang-modal-loai-don').value;
+    const isNhap = loaiDon === 'Nhap';
+
+    // Toggle "Loại" column visibility
+    document.getElementById('don-hang-chi-tiet-loai-header')?.classList.toggle('hidden', isNhap);
+    document.querySelectorAll('.chi-tiet-loai-cell').forEach(cell => cell.classList.toggle('hidden', isNhap));
+    
+    // Toggle bulk fill button visibility
+    document.getElementById('don-hang-fill-sl-all-btn')?.classList.toggle('hidden', !isNhap);
+
+    // Update SL header text
+    const slHeaderTextEl = document.getElementById('don-hang-sl-header-text');
+    if (slHeaderTextEl) {
+        slHeaderTextEl.textContent = isNhap ? 'Nhập' : 'SL';
+    }
+}
+
+
 function renderChiTietTable() {
     const tbody = document.getElementById('don-hang-chi-tiet-body');
     const loaiDon = document.getElementById('don-hang-modal-loai-don').value;
@@ -545,7 +564,7 @@ function renderChiTietTable() {
                 <td class="p-1 border align-top">
                     <input type="number" value="${(item.sl === null || item.sl === undefined) ? '' : item.sl}" min="0" class="w-full p-1 border rounded chi-tiet-input ${slColorClass}" data-field="sl" ${isViewMode ? 'disabled' : ''}>
                 </td>
-                <td class="p-1 border align-top">
+                <td class="p-1 border align-top chi-tiet-loai-cell">
                     <select class="w-full p-1 border rounded chi-tiet-input" data-field="loai" ${isViewMode ? 'disabled' : ''}>
                         <option value="" disabled ${!item.loai ? 'selected' : ''}>-- Chọn --</option>
                         <option value="Tiêu Hao" ${item.loai === 'Tiêu Hao' ? 'selected' : ''}>Tiêu Hao</option>
@@ -572,6 +591,7 @@ function renderChiTietTable() {
         `;
     }).join('');
 
+    toggleDonHangModalColumns();
     updateChiTietSummary();
 }
 
@@ -633,6 +653,13 @@ function openLotSelectorPopover(inputElement, item) {
             item.nganh = selectedOptionData.nganh;
             item.phu_trach = selectedOptionData.phu_trach;
             item.ma_vach_valid = true;
+
+            const loaiDon = document.getElementById('don-hang-modal-loai-don').value;
+            if (loaiDon === 'Xuat') {
+                const availableStock = item.tonKhoData?.ton_cuoi || 0;
+                const requestedQty = parseFloat(item.yc_sl) || 0;
+                item.sl = Math.min(availableStock, requestedQty);
+            }
         }
         closeActiveLotPopover();
         renderChiTietTable();
@@ -1398,8 +1425,12 @@ export function initDonHangView() {
 
     document.getElementById('don-hang-modal-loai-don').addEventListener('change', () => {
         updateGeneratedCodes();
-        document.getElementById('don-hang-sl-header').textContent = document.getElementById('don-hang-modal-loai-don').value === 'Nhap' ? 'Nhập' : 'SL';
-        renderChiTietTable(); 
+        toggleDonHangModalColumns();
+        // Clear all "sl" values when type changes to prevent carry-over issues
+        chiTietItems.forEach(item => {
+            if (item) item.sl = 0;
+        });
+        renderChiTietTable();
     });
     document.getElementById('don-hang-modal-nganh').addEventListener('input', debounce(updateGeneratedCodes, 300));
 
@@ -1534,6 +1565,19 @@ export function initDonHangView() {
 
         renderChiTietTable();
         showToast(`Đã áp dụng "${firstItemLoai}" cho tất cả các dòng.`, 'success');
+    });
+
+    document.getElementById('don-hang-fill-sl-all-btn').addEventListener('click', () => {
+        const loaiDon = document.getElementById('don-hang-modal-loai-don').value;
+        if (loaiDon !== 'Nhap' || chiTietItems.length === 0) return;
+    
+        chiTietItems.forEach(item => {
+            if (item) {
+                item.sl = item.yc_sl || 0;
+            }
+        });
+        renderChiTietTable();
+        showToast('Đã điền tất cả số lượng Nhập bằng Yêu cầu.', 'success');
     });
 
     chiTietBody.addEventListener('click', (e) => {

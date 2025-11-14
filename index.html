@@ -104,6 +104,23 @@
         input[type=number] {
           -moz-appearance: textfield; 
         }
+
+        /* Tùy chỉnh thanh cuộn mỏng hơn cho danh sách cảnh báo */
+        #tq-alerts-list::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        #tq-alerts-list::-webkit-scrollbar-thumb {
+            background: #cbd5e1; /* Màu của thanh cuộn */
+            border-radius: 10px;
+        }
+        #tq-alerts-list::-webkit-scrollbar-track {
+            background: #f1f5f9; /* Màu nền của rãnh cuộn */
+        }
+        #tq-alerts-list {
+            scrollbar-width: thin; /* Dành cho Firefox */
+            scrollbar-color: #cbd5e1 #f1f5f9; /* Dành cho Firefox */
+        }
     </style>
 <script type="importmap">
 {
@@ -236,57 +253,63 @@
                             <!-- Stat Cards -->
                             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                                 <!-- Đơn đang xử lý -->
-                                <div id="tq-card-don-hang" class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between hover:bg-yellow-50 cursor-pointer transition-colors">
+                                <div id="tq-card-don-hang" class="bg-white p-6 rounded-lg shadow-md flex justify-between items-start hover:bg-yellow-50 cursor-pointer transition-colors">
                                     <div>
                                         <p class="text-sm font-medium text-gray-500">Đơn Đang Xử Lý</p>
-                                        <p id="tq-stat-don-hang" class="text-3xl font-bold text-yellow-600">...</p>
-                                        <p id="tq-trend-don-hang" class="text-xs text-gray-500 mt-1 h-4"></p>
+                                        <p id="tq-stat-don-hang" class="text-3xl font-bold text-yellow-600 mt-1">...</p>
                                     </div>
-                                    <div class="bg-yellow-100 p-3 rounded-full">
-                                        <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    <div class="flex items-center gap-2">
+                                        <p id="tq-sub-stat-don-hang" class="text-xs text-gray-500 whitespace-nowrap text-right"></p>
+                                        <div class="bg-yellow-100 p-3 rounded-full flex-shrink-0">
+                                            <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        </div>
                                     </div>
                                 </div>
                                 <!-- Tổng sản phẩm -->
-                                <div id="tq-card-san-pham" class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between hover:bg-blue-50 cursor-pointer transition-colors">
+                                <div id="tq-card-san-pham" class="bg-white p-6 rounded-lg shadow-md flex justify-between items-start hover:bg-blue-50 cursor-pointer transition-colors">
                                     <div>
                                         <p class="text-sm font-medium text-gray-500">Tổng Sản Phẩm</p>
-                                        <p id="tq-stat-san-pham" class="text-3xl font-bold text-blue-600">...</p>
-                                        <p id="tq-sub-stat-san-pham" class="text-sm text-gray-500 -mt-1"></p>
+                                        <p id="tq-stat-san-pham" class="text-3xl font-bold text-blue-600 mt-1">...</p>
                                     </div>
-                                    <div class="bg-blue-100 p-3 rounded-full">
-                                        <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                                    <div class="flex items-center gap-2">
+                                        <p id="tq-sub-stat-san-pham" class="text-sm font-medium text-gray-700 whitespace-nowrap text-right"></p>
+                                        <div class="bg-blue-100 p-3 rounded-full flex-shrink-0">
+                                            <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                                        </div>
                                     </div>
                                 </div>
                                 <!-- Cận Date -->
-                                <div id="tq-card-can-date" class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between hover:bg-indigo-50 cursor-pointer transition-colors">
+                                <div id="tq-card-can-date" class="bg-white p-6 rounded-lg shadow-md flex justify-between items-start hover:bg-indigo-50 cursor-pointer transition-colors">
                                     <div>
                                         <p class="text-sm font-medium text-gray-500">Cận Date</p>
-                                        <p id="tq-stat-can-date" class="text-3xl font-bold text-indigo-600">...</p>
-                                        <p id="tq-sub-stat-can-date" class="text-sm text-gray-500 -mt-1"></p>
-                                        <p id="tq-trend-can-date" class="text-xs text-gray-500 mt-1 h-4"></p>
+                                        <p id="tq-stat-can-date" class="text-3xl font-bold text-indigo-600 mt-1">...</p>
                                     </div>
-                                    <div class="bg-indigo-100 p-3 rounded-full">
-                                        <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                    <div class="flex items-center gap-2">
+                                        <p id="tq-sub-stat-can-date" class="text-sm font-medium text-gray-700 whitespace-nowrap text-right"></p>
+                                        <div class="bg-indigo-100 p-3 rounded-full flex-shrink-0">
+                                            <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                        </div>
                                     </div>
                                 </div>
                                 <!-- Hết hạn -->
-                                <div id="tq-card-het-han" class="bg-white p-6 rounded-lg shadow-md flex items-center justify-between hover:bg-red-50 cursor-pointer transition-colors">
+                                <div id="tq-card-het-han" class="bg-white p-6 rounded-lg shadow-md flex justify-between items-start hover:bg-red-50 cursor-pointer transition-colors">
                                     <div>
                                         <p class="text-sm font-medium text-gray-500">Hết Hạn trong tháng này</p>
-                                        <p id="tq-stat-het-han" class="text-3xl font-bold text-red-600">...</p>
-                                        <p id="tq-sub-stat-het-han" class="text-sm text-gray-500 -mt-1"></p>
-                                        <p id="tq-trend-het-han" class="text-xs text-gray-500 mt-1 h-4"></p>
+                                        <p id="tq-stat-het-han" class="text-3xl font-bold text-red-600 mt-1">...</p>
                                     </div>
-                                    <div class="bg-red-100 p-3 rounded-full">
-                                        <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
+                                    <div class="flex items-center gap-2">
+                                        <p id="tq-sub-stat-het-han" class="text-sm font-medium text-gray-700 whitespace-nowrap text-right"></p>
+                                        <div class="bg-red-100 p-3 rounded-full flex-shrink-0">
+                                            <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                             
                             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                 <!-- Alerts & Suggestions -->
-                                <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
-                                    <div class="flex justify-between items-center mb-4 pb-4 border-b">
+                                <div class="lg:col-span-2 bg-white pt-6 px-6 pb-3 rounded-lg shadow-md flex flex-col">
+                                    <div class="flex justify-between items-center mb-2">
                                         <h3 class="text-lg font-semibold text-gray-800 flex items-center">
                                             <svg class="w-6 h-6 mr-2 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                             Cảnh Báo & Gợi Ý
@@ -297,7 +320,8 @@
                                              <div class="relative"><button id="tq-alert-filter-phu-trach-btn" data-filter-key="phu_trach" data-context="alerts" class="filter-btn text-left px-3 py-2 border rounded-md bg-white w-36">Phụ Trách</button></div>
                                         </div>
                                     </div>
-                                    <ul id="tq-alerts-list" class="space-y-3 max-h-56 overflow-y-auto">
+                                    <!-- ĐÃ THAY ĐỔI: Bỏ 'flex-grow' và thêm 'h-72' (18rem) để giới hạn chiều cao và cho phép cuộn -->
+                                    <ul id="tq-alerts-list" class="space-y-3 overflow-y-auto h-72">
                                         <li class="text-center text-gray-500 py-4">Đang kiểm tra...</li>
                                     </ul>
                                 </div>
@@ -339,6 +363,45 @@
                                     </ul>
                                 </div>
                             </div>
+
+                            <!-- Unreturned Display Items -->
+                            <div class="mt-6 bg-white p-6 rounded-lg shadow-md">
+                                <div class="flex justify-between items-center mb-4">
+                                    <div class="flex items-center gap-4">
+                                        <h3 class="text-lg font-semibold text-gray-800">Hàng Trưng Bày Chưa Trả</h3>
+                                        <span id="tq-unreturned-total-sl" class="hidden text-sm font-bold text-blue-600 bg-blue-100 px-3 py-1 rounded-full"></span>
+                                    </div>
+                                    <div class="flex items-center gap-4">
+                                        <input type="text" id="tq-unreturned-search" placeholder="Tìm kiếm..." class="px-3 py-2 border rounded-md w-64">
+                                        <button id="tq-unreturned-export-btn" class="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md" title="Xuất Excel">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                            <span>Excel</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="max-h-96 overflow-y-auto">
+                                    <table class="min-w-full border-collapse text-sm">
+                                        <thead class="bg-gray-200 sticky top-0">
+                                            <tr>
+                                                <th class="p-2 border text-center" style="width: 5%;">Thời Gian</th>
+                                                <th class="p-2 border text-center" style="width: 8%;">Mã NX</th>
+                                                <th class="p-2 border text-center" style="width: 6%;">Mã VT</th>
+                                                <th class="p-2 border text-center" style="width: 15%;">Tên VT</th>
+                                                <th class="p-2 border text-center" style="width: 5%;">LOT</th>
+                                                <th class="p-2 border text-center" style="width: 5%;">Date</th>
+                                                <th class="p-2 border text-center" style="width: 4%;">Xuất</th>
+                                                <th class="p-2 border text-center" style="width: 10%;">Yêu Cầu</th>
+                                                <th class="p-2 border text-center" style="width: 18%;">Mục Đích</th>
+                                                <th class="p-2 border text-center" style="width: 4%;">Ngành</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tq-unreturned-table-body">
+                                            <tr><td colspan="10" class="text-center p-4 text-gray-500">Đang tải dữ liệu...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
                     
@@ -582,7 +645,112 @@
                     </div>
 
                     <div id="view-cai-dat" class="app-view hidden">
-                        <!-- Content will be loaded dynamically -->
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-1 bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-xl font-semibold mb-4 text-gray-800">Thông tin cá nhân</h2>
+        <form id="profile-form" class="space-y-4">
+             <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Ảnh đại diện</label>
+                <div class="flex items-center space-x-4">
+                     <div id="profile-image-paste-area" tabindex="0" class="w-24 h-24 border-2 border-dashed rounded-full flex items-center justify-center cursor-pointer bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <img id="profile-image-preview" src="" alt="Xem trước" class="w-full h-full object-cover rounded-full pointer-events-none">
+                    </div>
+                    <div class="flex flex-col space-y-2">
+                        <label for="profile-image-upload" class="cursor-pointer bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <span>Tải ảnh lên</span>
+                            <input id="profile-image-upload" type="file" class="sr-only" accept="image/*">
+                        </label>
+                        <button type="button" id="profile-remove-image-btn" class="hidden text-sm text-red-600 hover:text-red-800">Xóa ảnh</button>
+                    </div>
+                </div>
+                <input type="hidden" id="profile-current-avatar-url">
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div><label for="profile-ho-ten" class="block text-sm font-medium text-gray-700">Họ và Tên</label><input type="text" id="profile-ho-ten" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></div>
+                <div><label for="profile-old-password" class="block text-sm font-medium text-gray-700">Mật khẩu cũ</label><input type="password" id="profile-old-password" required placeholder="Nhập mật khẩu hiện tại để thay đổi" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div><label for="profile-new-password" class="block text-sm font-medium text-gray-700">Mật khẩu mới</label><input type="password" id="profile-new-password" placeholder="Bỏ trống nếu không đổi" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></div>
+                <div><label for="profile-confirm-password" class="block text-sm font-medium text-gray-700">Xác nhận mật khẩu mới</label><input type="password" id="profile-confirm-password" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></div>
+            </div>
+            <div class="grid grid-cols-2 gap-4 !mt-6">
+                 <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md">Cập nhật thông tin</button>
+                 <button type="button" id="logout-btn" class="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>Đăng xuất</button>
+            </div>
+        </form>
+        
+        <!-- Backup and Restore Section -->
+        <div id="backup-restore-panel" class="hidden mt-6 pt-6 border-t">
+             <h3 class="text-lg font-semibold text-gray-800 mb-4">Sao lưu & Khôi phục</h3>
+             <div class="space-y-4">
+                 <div>
+                     <h4 class="text-md font-medium text-gray-700 mb-2">Sao lưu</h4>
+                     <p class="text-sm text-gray-500 mb-2">Tải xuống toàn bộ dữ liệu. Excel gộp các bảng vào các sheet khác nhau. CSV sẽ tạo một tệp ZIP chứa các tệp CSV riêng biệt cho mỗi bảng.</p>
+                     <div class="grid grid-cols-2 gap-2">
+                         <button id="backup-excel-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md">
+                            Xuất Excel
+                         </button>
+                         <button id="backup-csv-btn" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-4 rounded-md">
+                            Xuất CSV (ZIP)
+                         </button>
+                     </div>
+                 </div>
+                 <div>
+                     <h4 class="text-md font-medium text-gray-700 mb-2">Khôi phục</h4>
+                     <p class="text-sm text-gray-500 mb-2">
+                        <strong class="text-red-600">CẢNH BÁO:</strong> Thao tác này sẽ xóa tất cả dữ liệu hiện có và thay thế bằng dữ liệu từ tệp sao lưu.
+                     </p>
+                     <input type="file" id="restore-file-input" class="hidden" accept=".xlsx, .xls">
+                     <label for="restore-file-input" class="w-full text-center block cursor-pointer bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-md">
+                        Chọn tệp Excel để khôi phục
+                     </label>
+                     <p id="restore-file-name" class="text-sm text-gray-600 mt-2"></p>
+                 </div>
+             </div>
+        </div>
+    </div>
+    <div id="admin-panel" class="hidden lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-xl font-semibold mb-4 text-gray-800">Quản lý người dùng</h2>
+        <div class="max-h-96 overflow-y-auto border rounded-lg p-2 bg-gray-50/50">
+            <div id="user-list-body" class="space-y-4">
+            </div>
+        </div>
+        
+        <!-- Template Management Panel -->
+        <div id="template-management-panel" class="mt-8 pt-6 border-t">
+            <h2 class="text-xl font-semibold mb-6 text-gray-800">Quản lý Template</h2>
+            <div class="space-y-4">
+                <!-- Phiếu Nhập Kho -->
+                <div class="bg-gray-50 p-4 rounded-lg border">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <h3 class="text-lg font-medium text-gray-900">Phiếu Nhập Kho</h3>
+                            <button type="button" id="pnk-upload-btn" class="text-gray-500 hover:text-blue-600" title="Tải tệp lên">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                            </button>
+                            <input id="pnk-upload" type="file" class="hidden" accept=".xlsx, .xls, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel">
+                        </div>
+                        <p id="pnk-status" class="text-sm text-gray-600 font-medium"></p>
+                    </div>
+                </div>
+
+                <!-- Phiếu Xuất Kho -->
+                <div class="bg-gray-50 p-4 rounded-lg border">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <h3 class="text-lg font-medium text-gray-900">Phiếu Xuất Kho</h3>
+                            <button type="button" id="pxk-upload-btn" class="text-gray-500 hover:text-blue-600" title="Tải tệp lên">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                            </button>
+                            <input id="pxk-upload" type="file" class="hidden" accept=".xlsx, .xls, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel">
+                        </div>
+                        <p id="pxk-status" class="text-sm text-gray-600 font-medium"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
                     </div>
                     
                     <div id="view-image-edit" class="app-view hidden">
@@ -777,8 +945,16 @@
                                 <th class="p-2 border font-bold" style="width: 10%">LOT <span class="text-red-500 font-bold">*</span></th>
                                 <th class="p-2 border font-bold" style="width: 10%">Date</th>
                                 <th class="p-2 border font-bold" style="width: 8%">Y/c <span class="text-red-500 font-bold">*</span></th>
-                                <th id="don-hang-sl-header" class="p-2 border font-bold" style="width: 8%">SL <span class="text-red-500 font-bold">*</span></th>
-                                <th class="p-2 border font-bold" style="width: 10%">
+                                <th class="p-2 border font-bold" style="width: 8%">
+                                    <div class="flex items-center justify-center gap-1">
+                                        <span id="don-hang-sl-header-text">SL</span>
+                                        <span class="text-red-500 font-bold">*</span>
+                                        <button type="button" id="don-hang-fill-sl-all-btn" class="hidden p-0.5 rounded hover:bg-gray-300" title="Điền tất cả SL bằng Y/C">
+                                            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        </button>
+                                    </div>
+                                </th>
+                                <th id="don-hang-chi-tiet-loai-header" class="p-2 border font-bold" style="width: 10%">
                                     <div class="flex items-center justify-center gap-1">
                                         <span>Loại <span class="text-red-500 font-bold">*</span></span>
                                         <button type="button" id="don-hang-chi-tiet-fill-loai-all" class="p-0.5 rounded hover:bg-gray-300" title="Áp dụng loại ở dòng đầu tiên cho tất cả">

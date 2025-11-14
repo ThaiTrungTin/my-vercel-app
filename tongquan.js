@@ -1,6 +1,5 @@
 
-
-import { sb, viewStates, showView, currentUser, cache } from './app.js';
+import { sb, viewStates, showView, currentUser, cache, showToast } from './app.js';
 
 let activityChart = null;
 let inventoryStatusChart = null;
@@ -9,6 +8,7 @@ let chartMode = 'quantity'; // 'quantity' or 'transaction'
 let last30DaysChiTiet = []; // Store chart data to avoid re-fetching
 let allAlertsData = null;
 let allNganhOptions = []; // Cache for inventory filter
+let unreturnedItemsCache = []; // To store the full list for searching
 
 const tongQuanState = {
     alerts: {
@@ -342,46 +342,6 @@ function renderAlerts(alerts) {
     }
 }
 
-function renderStats(stats) {
-    document.getElementById('tq-stat-don-hang').textContent = stats.donHangCount?.toLocaleString() ?? '0';
-    document.getElementById('tq-stat-san-pham').textContent = stats.sanPhamLoai?.toLocaleString() ?? '0';
-    document.getElementById('tq-sub-stat-san-pham').textContent = `Tồn kho: ${(stats.sanPhamTon ?? 0).toLocaleString()}`;
-    document.getElementById('tq-stat-can-date').textContent = stats.canDateLo?.toLocaleString() ?? '0';
-    document.getElementById('tq-sub-stat-can-date').textContent = `Số lượng: ${(stats.canDateSl ?? 0).toLocaleString()}`;
-    document.getElementById('tq-stat-het-han').textContent = stats.hetHanLo?.toLocaleString() ?? '0';
-    document.getElementById('tq-sub-stat-het-han').textContent = `Số lượng: ${(stats.hetHanSl ?? 0).toLocaleString()}`;
-
-    // Render Trends
-    const renderTrend = (elementId, trendValue, positiveIsGood = true, unit = 'đơn') => {
-        const el = document.getElementById(elementId);
-        if (!el) return;
-        if (trendValue === undefined || isNaN(trendValue)) {
-            el.innerHTML = ''; return;
-        }
-
-        let arrow, colorClass, text;
-        if (trendValue > 0) {
-            arrow = '↑';
-            colorClass = positiveIsGood ? 'text-green-600' : 'text-red-600';
-            text = `tăng ${trendValue} ${unit}`;
-        } else if (trendValue < 0) {
-            arrow = '↓';
-            colorClass = positiveIsGood ? 'text-red-600' : 'text-green-600';
-            text = `giảm ${Math.abs(trendValue)} ${unit}`;
-        } else {
-            arrow = '→';
-            colorClass = 'text-gray-500';
-            text = 'không đổi';
-        }
-        el.innerHTML = `<span class="${colorClass} font-semibold">${arrow} ${text}</span> so với tuần trước`;
-    };
-
-    renderTrend('tq-trend-don-hang', stats.donHangTrend, false, 'đơn');
-    renderTrend('tq-trend-can-date', stats.canDateTrend, false, 'lô');
-    renderTrend('tq-trend-het-han', stats.hetHanTrend, false, 'lô');
-}
-
-
 function renderActivityChart() {
     const ctxEl = document.getElementById('tq-activity-chart');
     if (!ctxEl) return;
@@ -646,159 +606,261 @@ function updateAlertFiltersAndRender() {
     renderAlerts(displayedAlerts);
 }
 
+async function fetchAndRenderUnreturnedItems() {
+    const tableBody = document.getElementById('tq-unreturned-table-body');
+    if (!tableBody) return;
+    tableBody.innerHTML = '<tr><td colspan="10" class="text-center p-4 text-gray-500">Đang tải dữ liệu...</td></tr>';
+
+    try {
+        const { data: returnChiTietNotes, error: returnChiTietError } = await sb.from('chi_tiet')
+            .select('muc_dich')
+            .gt('nhap', 0);
+        if (returnChiTietError) throw returnChiTietError;
+
+        const { data: returnDonHangNotes, error: returnDonHangError } = await sb.from('don_hang')
+            .select('ghi_chu, muc_dich')
+            .ilike('ma_kho', 'IN.%');
+        if (returnDonHangError) throw returnDonHangError;
+        
+        const allReturnStrings = [];
+        (returnChiTietNotes || []).forEach(n => {
+            if (n.muc_dich) allReturnStrings.push(n.muc_dich.toLowerCase());
+        });
+        (returnDonHangNotes || []).forEach(n => {
+            if (n.muc_dich) allReturnStrings.push(n.muc_dich.toLowerCase());
+            if (n.ghi_chu) allReturnStrings.push(n.ghi_chu.toLowerCase());
+        });
+
+        let displayExportQuery = sb.from('chi_tiet')
+            .select('stt, thoi_gian, ma_nx, ma_vt, ten_vt, lot, date, xuat, yeu_cau, muc_dich, nganh')
+            .gt('xuat', 0)
+            .eq('loai', 'Trưng Bày')
+            .order('thoi_gian', { ascending: false })
+            .order('ma_nx', { ascending: true })
+            .order('stt', { ascending: true });
+
+        if (currentUser.phan_quyen === 'View') {
+            displayExportQuery = displayExportQuery.eq('phu_trach', currentUser.ho_ten);
+        }
+
+        const { data: displayExports, error: displayExportsError } = await displayExportQuery;
+        if (displayExportsError) throw displayExportsError;
+
+        if (!displayExports || displayExports.length === 0) {
+            unreturnedItemsCache = [];
+            renderUnreturnedItemsTable([]);
+            return;
+        }
+
+        const unreturnedItems = displayExports.filter(exportItem => {
+            if (!exportItem.ma_nx) return true;
+            const maNxToSearch = exportItem.ma_nx.trim().toLowerCase();
+            if (!maNxToSearch) return true;
+            const isReturned = allReturnStrings.some(returnString => returnString.includes(maNxToSearch));
+            return !isReturned;
+        });
+
+        unreturnedItemsCache = unreturnedItems;
+        renderUnreturnedItemsTable(unreturnedItems);
+
+    } catch (error) {
+        console.error("Error fetching unreturned display items:", error);
+        tableBody.innerHTML = '<tr><td colspan="10" class="text-center p-4 text-red-500">Lỗi tải dữ liệu.</td></tr>';
+    }
+}
+
+function renderUnreturnedItemsTable(items) {
+    const tableBody = document.getElementById('tq-unreturned-table-body');
+    const totalEl = document.getElementById('tq-unreturned-total-sl');
+    if (!tableBody || !totalEl) return;
+
+    if (!items || items.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="10" class="text-center p-4 text-gray-500">Không có hàng trưng bày nào chưa trả.</td></tr>';
+        totalEl.classList.add('hidden');
+        return;
+    }
+    
+    const totalSl = items.reduce((sum, item) => sum + (item.xuat || 0), 0);
+    totalEl.textContent = `Tổng SL: ${totalSl.toLocaleString()}`;
+    totalEl.classList.remove('hidden');
+
+    const formatDate = (dateString) => {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+    };
+
+    tableBody.innerHTML = items.map(item => `
+        <tr class="hover:bg-gray-50">
+            <td class="p-2 border whitespace-nowrap">${formatDate(item.thoi_gian)}</td>
+            <td class="p-2 border">${item.ma_nx || ''}</td>
+            <td class="p-2 border">${item.ma_vt || ''}</td>
+            <td class="p-2 border">${item.ten_vt || ''}</td>
+            <td class="p-2 border">${item.lot || ''}</td>
+            <td class="p-2 border">${item.date || ''}</td>
+            <td class="p-2 border text-center font-bold text-red-600">${item.xuat}</td>
+            <td class="p-2 border">${item.yeu_cau || ''}</td>
+            <td class="p-2 border">${item.muc_dich || ''}</td>
+            <td class="p-2 border">${item.nganh || ''}</td>
+        </tr>
+    `).join('');
+}
+
+function resetStatsUI() {
+    const idsToReset = ['tq-stat-don-hang', 'tq-stat-san-pham', 'tq-stat-can-date', 'tq-stat-het-han'];
+    idsToReset.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = '...';
+    });
+    
+    const subIdsToReset = ['tq-sub-stat-don-hang', 'tq-sub-stat-san-pham', 'tq-sub-stat-can-date', 'tq-sub-stat-het-han'];
+    subIdsToReset.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = '&nbsp;';
+    });
+}
 
 export async function fetchTongQuanData() {
-    renderStats({});
+    resetStatsUI();
     document.getElementById('tq-recent-orders-list').innerHTML = '<li class="text-center text-gray-500">Đang tải...</li>';
     document.getElementById('tq-alerts-list').innerHTML = '<li class="text-center text-gray-500 py-4">Đang kiểm tra...</li>';
 
+    // Part 1: Fetch and render primary stats immediately
     try {
         const isViewRole = currentUser.phan_quyen === 'View';
         const userName = currentUser.ho_ten;
 
-        // --- DEFINE TIME RANGES ---
+        // --- PROCESSING ORDERS TREND ---
         const today = new Date();
-        today.setHours(0,0,0,0);
-        const sevenDaysAgo = new Date(today); sevenDaysAgo.setDate(today.getDate() - 7);
-        const fourteenDaysAgo = new Date(today); fourteenDaysAgo.setDate(today.getDate() - 14);
-        const thirtyDaysAgo = new Date(today); thirtyDaysAgo.setDate(today.getDate() - 30);
-        const threeMonthsFromNow = new Date(today); threeMonthsFromNow.setMonth(today.getMonth() + 3);
-        const threeMonthsSevenDaysAgo = new Date(sevenDaysAgo); threeMonthsSevenDaysAgo.setMonth(sevenDaysAgo.getMonth() + 3);
+        const startOfWeek = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1)); // Monday as start of week
+        startOfWeek.setHours(0, 0, 0, 0);
+        const startOfLastWeek = new Date(startOfWeek);
+        startOfLastWeek.setDate(startOfLastWeek.getDate() - 7);
 
-        // --- PREPARE QUERIES ---
-        // 1. Đơn hàng đang xử lý (current count)
-        let donHangQuery = sb.from('don_hang').select('ma_kho', { count: 'exact', head: true }).like('ma_nx', '%-');
-        if (isViewRole) donHangQuery = donHangQuery.eq('yeu_cau', userName);
+        let thisWeekQuery = sb.from('don_hang').select('ma_kho', { count: 'exact', head: true }).like('ma_nx', '%-').gte('thoi_gian', startOfWeek.toISOString());
+        let lastWeekQuery = sb.from('don_hang').select('ma_kho', { count: 'exact', head: true }).like('ma_nx', '%-').gte('thoi_gian', startOfLastWeek.toISOString()).lt('thoi_gian', startOfWeek.toISOString());
+        
+        // --- QUERIES FOR OTHER CARDS ---
+        let sanPhamCountQuery = sb.from('san_pham').select('ma_vt', { count: 'exact', head: true });
+        let tonKhoQuery = sb.from('ton_kho_update').select('ma_vt, date, ton_cuoi, tinh_trang');
 
-        // 1.1. Đơn hàng đang xử lý (trend)
-        let donHangThisWeekQuery = sb.from('don_hang').select('ma_kho', { count: 'exact', head: true }).like('ma_nx', '%-').gte('thoi_gian', sevenDaysAgo.toISOString());
-        let donHangLastWeekQuery = sb.from('don_hang').select('ma_kho', { count: 'exact', head: true }).like('ma_nx', '%-').gte('thoi_gian', fourteenDaysAgo.toISOString()).lt('thoi_gian', sevenDaysAgo.toISOString());
-        if(isViewRole) {
-            donHangThisWeekQuery = donHangThisWeekQuery.eq('yeu_cau', userName);
-            donHangLastWeekQuery = donHangLastWeekQuery.eq('yeu_cau', userName);
+        if (isViewRole) {
+            thisWeekQuery = thisWeekQuery.eq('yeu_cau', userName);
+            lastWeekQuery = lastWeekQuery.eq('yeu_cau', userName);
+            sanPhamCountQuery = sanPhamCountQuery.eq('phu_trach', userName);
+            tonKhoQuery = tonKhoQuery.eq('phu_trach', userName);
         }
 
-        // 2. Tổng sản phẩm
-        let sanPhamLoaiQuery = sb.from('san_pham').select('ma_vt', { count: 'exact', head: true });
-        let sanPhamTonQuery = sb.from('ton_kho_update').select('ton_cuoi');
-        if (isViewRole) {
-            sanPhamLoaiQuery = sanPhamLoaiQuery.eq('phu_trach', userName);
-            sanPhamTonQuery = sanPhamTonQuery.eq('phu_trach', userName);
+        const [thisWeekRes, lastWeekRes, sanPhamCountRes, tonKhoRes] = await Promise.all([thisWeekQuery, lastWeekQuery, sanPhamCountQuery, tonKhoQuery]);
+        
+        const primaryErrors = [thisWeekRes.error, lastWeekRes.error, sanPhamCountRes.error, tonKhoRes.error].filter(Boolean);
+        if (primaryErrors.length > 0) throw new Error(primaryErrors.map(e => e.message).join('; '));
+
+        // -- Card 1: Processing Orders --
+        const thisWeekCount = thisWeekRes.count ?? 0;
+        const lastWeekCount = lastWeekRes.count ?? 0;
+        const trend = thisWeekCount - lastWeekCount;
+        document.getElementById('tq-stat-don-hang').textContent = thisWeekCount.toLocaleString();
+        const trendEl = document.getElementById('tq-sub-stat-don-hang');
+        if (trend > 0) {
+            trendEl.innerHTML = `<span class="text-green-600 font-semibold">▲ ${trend}</span> vs. tuần trước`;
+        } else if (trend < 0) {
+            trendEl.innerHTML = `<span class="text-red-600 font-semibold">▼ ${Math.abs(trend)}</span> vs. tuần trước`;
+        } else {
+            trendEl.innerHTML = `Bằng tuần trước`;
         }
         
-        // 3 & 4. Data for Cận Date & Hết Hạn trends (current and last week)
-        let tonKhoForTrendQuery = sb.from('ton_kho_update').select('date, ton_cuoi').gt('ton_cuoi', 0);
-        if (isViewRole) tonKhoForTrendQuery = tonKhoForTrendQuery.eq('phu_trach', userName);
+        // -- Card 2: Stock Stats (REVISED LOGIC) --
+        const totalSanPhamCount = sanPhamCountRes.count ?? 0;
+        const allStockItems = tonKhoRes.data || [];
+        const khaDungStock = allStockItems
+            .filter(item => (item.ton_cuoi || 0) > 0)
+            .reduce((sum, item) => sum + item.ton_cuoi, 0);
+            
+        document.getElementById('tq-stat-san-pham').textContent = totalSanPhamCount.toLocaleString();
+        document.getElementById('tq-sub-stat-san-pham').innerHTML = `<span class="text-gray-500">Khả dụng:</span> ${khaDungStock.toLocaleString()}`;
 
-        // 5. For chart and recent orders
+        // -- Card 3: Cận Date --
+        const canDateItems = allStockItems.filter(item => item.tinh_trang === 'Cận date' && item.ton_cuoi > 0);
+        const canDateProductCount = new Set(canDateItems.map(i => i.ma_vt)).size;
+        const canDateQuantity = canDateItems.reduce((sum, i) => sum + i.ton_cuoi, 0);
+        document.getElementById('tq-stat-can-date').textContent = `${canDateProductCount} mặt hàng`;
+        document.getElementById('tq-sub-stat-can-date').innerHTML = `<span class="text-gray-500">Số lượng:</span> ${canDateQuantity.toLocaleString()}`;
+
+        // -- Card 4: Hết Hạn this month --
+        const parseDate = (dateString) => {
+            if (!dateString || !/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) return null;
+            const [day, month, year] = dateString.split('/').map(Number);
+            return new Date(year, month - 1, day);
+        };
+        const todayForExpiry = new Date(); 
+        todayForExpiry.setHours(0,0,0,0);
+        const currentMonth = todayForExpiry.getMonth();
+        const currentYear = todayForExpiry.getFullYear();
+        
+        const hetHanItems = allStockItems.filter(item => {
+            const expiryDate = parseDate(item.date);
+            return expiryDate && expiryDate.getMonth() === currentMonth && expiryDate.getFullYear() === currentYear && expiryDate <= todayForExpiry;
+        });
+        const hetHanProductCount = new Set(hetHanItems.map(i => i.ma_vt)).size;
+        const hetHanQuantity = hetHanItems.reduce((sum, i) => sum + i.ton_cuoi, 0);
+        document.getElementById('tq-stat-het-han').textContent = `${hetHanProductCount} mặt hàng`;
+        document.getElementById('tq-sub-stat-het-han').innerHTML = `<span class="text-gray-500">Số lượng:</span> ${hetHanQuantity.toLocaleString()}`;
+        
+        currentStats = {
+            donHangCount: thisWeekCount,
+            sanPhamLoai: totalSanPhamCount,
+            canDateLo: canDateProductCount,
+            hetHanLo: hetHanProductCount,
+        };
+
+    } catch (error) {
+        console.error("Failed to fetch primary overview data:", error);
+        const errorText = "Lỗi";
+        ['tq-stat-don-hang', 'tq-stat-san-pham', 'tq-stat-can-date', 'tq-stat-het-han'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = errorText;
+        });
+    }
+    
+    // Part 2: Fetch and render secondary data independently
+    try {
+        const isViewRole = currentUser.phan_quyen === 'View';
+        const userName = currentUser.ho_ten;
+        const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        
         let chiTietQuery = sb.from('chi_tiet').select('thoi_gian, nhap, xuat').gte('thoi_gian', thirtyDaysAgo.toISOString());
         let ordersQuery = sb.from('don_hang').select('*').order('thoi_gian', { ascending: false }).limit(5);
         if (isViewRole) {
             chiTietQuery = chiTietQuery.eq('phu_trach', userName);
             ordersQuery = ordersQuery.eq('yeu_cau', userName);
         }
-
-        // 6. For inventory chart filter
         let nganhQuery = sb.from('ton_kho_update').select('nganh');
         if (isViewRole) nganhQuery = nganhQuery.eq('phu_trach', userName);
 
-        // --- EXECUTE QUERIES ---
-        const [
-            donHangRes, donHangThisWeekRes, donHangLastWeekRes,
-            sanPhamLoaiRes, sanPhamTonRes,
-            tonKhoForTrendRes,
-            chiTietRes, ordersRes,
-            alertsData, nganhRes
-        ] = await Promise.all([
-            donHangQuery, donHangThisWeekQuery, donHangLastWeekQuery,
-            sanPhamLoaiQuery, sanPhamTonQuery,
-            tonKhoForTrendQuery,
-            chiTietQuery, ordersQuery,
-            fetchAlerts(), nganhQuery
+        const [chiTietRes, ordersRes, alertsData, nganhRes] = await Promise.all([
+             chiTietQuery, ordersQuery, fetchAlerts(), nganhQuery
         ]);
-
-        const errors = [donHangRes.error, sanPhamLoaiRes.error, sanPhamTonRes.error, chiTietRes.error, ordersRes.error, tonKhoForTrendRes.error, nganhRes.error].filter(Boolean);
-        if (errors.length > 0) throw new Error(errors.map(e => e.message).join('; '));
-
-        // --- PROCESS RESULTS ---
-        const parseDate = (dateString) => {
-            if (!dateString || !/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) return null;
-            const [day, month, year] = dateString.split('/').map(Number);
-            return new Date(year, month - 1, day);
-        };
-
-        let currentCanDateCount = 0, lastWeekCanDateCount = 0;
-        let canDateSl = 0;
-        
-        let allTimeExpiredCount = 0;
-        let expiredAsOfLastWeekCount = 0;
-        let thisMonthExpiredLo = 0;
-        let thisMonthExpiredSl = 0;
-        
-        const currentMonth = today.getMonth();
-        const currentYear = today.getFullYear();
-
-        (tonKhoForTrendRes.data || []).forEach(item => {
-            const expiryDate = parseDate(item.date);
-            if (!expiryDate) return;
-
-            // Cận Date Logic
-            if (expiryDate > today && expiryDate <= threeMonthsFromNow) {
-                currentCanDateCount++;
-                canDateSl += item.ton_cuoi;
-            }
-            if (expiryDate > sevenDaysAgo && expiryDate <= threeMonthsSevenDaysAgo) {
-                lastWeekCanDateCount++;
-            }
-
-            // Hết Hạn Logic
-            if (expiryDate <= today) {
-                allTimeExpiredCount++;
-                if (expiryDate.getMonth() === currentMonth && expiryDate.getFullYear() === currentYear) {
-                    thisMonthExpiredLo++;
-                    thisMonthExpiredSl += item.ton_cuoi;
-                }
-            }
-            if (expiryDate <= sevenDaysAgo) {
-                expiredAsOfLastWeekCount++;
-            }
-        });
-
-        currentStats = {
-            donHangCount: donHangRes.count ?? 0,
-            donHangTrend: (donHangThisWeekRes.count ?? 0) - (donHangLastWeekRes.count ?? 0),
-            sanPhamLoai: sanPhamLoaiRes.count ?? 0,
-            sanPhamTon: (sanPhamTonRes.data || []).reduce((sum, p) => sum + (p.ton_cuoi || 0), 0),
-            canDateLo: currentCanDateCount,
-            canDateSl: canDateSl,
-            canDateTrend: currentCanDateCount - lastWeekCanDateCount,
-            hetHanLo: thisMonthExpiredLo,
-            hetHanSl: thisMonthExpiredSl,
-            hetHanTrend: allTimeExpiredCount - expiredAsOfLastWeekCount
-        };
         
         last30DaysChiTiet = chiTietRes.data || [];
         allAlertsData = alertsData;
         allNganhOptions = [...new Set((nganhRes.data || []).map(item => item.nganh).filter(Boolean))].sort();
 
-
-        // RENDER EVERYTHING
-        renderStats(currentStats);
-        updateTQFilterButtonTexts();
         renderActivityChart();
         renderRecentOrders(ordersRes.data || []);
         updateAlertFiltersAndRender();
         renderInventoryStatusChart();
+        fetchAndRenderUnreturnedItems();
 
     } catch (error) {
-        console.error("Failed to fetch overview data:", error);
-        const errorText = "Lỗi";
-        if(document.getElementById('tq-stat-don-hang')) document.getElementById('tq-stat-don-hang').textContent = errorText;
-        if(document.getElementById('tq-stat-san-pham')) document.getElementById('tq-stat-san-pham').textContent = errorText;
-        if(document.getElementById('tq-stat-can-date')) document.getElementById('tq-stat-can-date').textContent = errorText;
-        if(document.getElementById('tq-stat-het-han')) document.getElementById('tq-stat-het-han').textContent = errorText;
+        console.error("Failed to fetch secondary overview data:", error);
+        showToast("Lỗi tải một số thành phần trên trang Tổng Quan.", "error");
     }
 }
+
 
 export function initTongQuanView() {
     const view = document.getElementById('view-phat-trien');
@@ -829,6 +891,12 @@ export function initTongQuanView() {
                         else if (typeof state.filters[key] === 'string') state.filters[key] = '';
                     });
                     Object.assign(state.filters, filters);
+                    if (viewId === 'view-ton-kho') {
+                        // If filtering by a status, default to 'available' view. otherwise 'all' might be better.
+                        const hasStatusFilter = filters.tinh_trang && filters.tinh_trang.length > 0;
+                        state.stockAvailability = hasStatusFilter ? 'available' : 'all';
+                        sessionStorage.setItem('tonKhoStockAvailability', state.stockAvailability);
+                    }
                     showView(viewId);
                 }
             };
@@ -837,16 +905,20 @@ export function initTongQuanView() {
                 resetAndShow('view-don-hang', { trang_thai_xu_ly: ['Đang xử lý'] });
                 return;
             }
-            if (cardSanPham && currentStats.sanPhamLoai > 0) {
-                resetAndShow('view-ton-kho', { ton_cuoi: ['Còn Hàng'] });
+            if (cardSanPham) {
+                 resetAndShow('view-ton-kho', {});
+                 const tonKhoState = viewStates['view-ton-kho'];
+                 tonKhoState.stockAvailability = 'available';
+                 sessionStorage.setItem('tonKhoStockAvailability', 'available');
+                 showView('view-ton-kho');
                 return;
             }
             if (cardCanDate && currentStats.canDateLo > 0) {
-                resetAndShow('view-ton-kho', { ton_cuoi: ['Còn Hàng'], tinh_trang: ['Cận date'] });
+                resetAndShow('view-ton-kho', { tinh_trang: ['Cận date'] });
                 return;
             }
             if (cardHetHan && currentStats.hetHanLo > 0) {
-                resetAndShow('view-ton-kho', { ton_cuoi: ['Còn Hàng'], tinh_trang: ['Hết hạn sử dụng'] });
+                resetAndShow('view-ton-kho', { tinh_trang: ['Hết hạn sử dụng'] });
                 return;
             }
 
@@ -859,7 +931,6 @@ export function initTongQuanView() {
                 
                 const newFilters = { [filterKey]: [value] };
                 if (targetView === 'view-don-hang') newFilters.trang_thai_xu_ly = ['Đang xử lý'];
-                if (targetView === 'view-ton-kho') newFilters.ton_cuoi = ['Còn Hàng'];
                 
                 resetAndShow(targetView, newFilters);
                 return;
@@ -870,6 +941,43 @@ export function initTongQuanView() {
                 return;
             }
         });
+        
+        const unreturnedSearch = document.getElementById('tq-unreturned-search');
+        const unreturnedExportBtn = document.getElementById('tq-unreturned-export-btn');
+
+        if (unreturnedSearch) {
+            unreturnedSearch.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                const filteredItems = unreturnedItemsCache.filter(item => 
+                    Object.values(item).some(val => 
+                        String(val).toLowerCase().includes(searchTerm)
+                    )
+                );
+                renderUnreturnedItemsTable(filteredItems);
+            });
+        }
+
+        if (unreturnedExportBtn) {
+            unreturnedExportBtn.addEventListener('click', () => {
+                const searchTerm = unreturnedSearch.value.toLowerCase();
+                const itemsToExport = unreturnedItemsCache.filter(item => 
+                    Object.values(item).some(val => 
+                        String(val).toLowerCase().includes(searchTerm)
+                    )
+                );
+        
+                if (itemsToExport.length === 0) {
+                    showToast('Không có dữ liệu để xuất.', 'info');
+                    return;
+                }
+        
+                const worksheet = XLSX.utils.json_to_sheet(itemsToExport);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "HangTrungBayChuaTra");
+                XLSX.writeFile(workbook, `HangTrungBayChuaTra_${new Date().toISOString().slice(0,10)}.xlsx`);
+            });
+        }
+
         view.dataset.listenerAttached = 'true';
     }
 

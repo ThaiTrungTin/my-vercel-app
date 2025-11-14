@@ -1,5 +1,6 @@
 
 
+
 const { createClient } = supabase;
 const SUPABASE_URL = "https://uefydnefprcannlviimp.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVlZnlkbmVmcHJjYW5ubHZpaW1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwNTcwMDUsImV4cCI6MjA3NjYzMzAwNX0.X274J_1_crUknJEOT1WWUD1h0HM9WdYScDW2eWWsiLk";
@@ -590,14 +591,14 @@ export async function showView(viewId) {
             await fetchTongQuanData();
         } else if (viewId === 'view-cai-dat') {
             if (!isViewInitialized['view-cai-dat']) {
-                const response = await fetch(`cai-dat.html`);
-                if (!response.ok) throw new Error(`Could not load cai-dat.html`);
-                viewContainer.innerHTML = await response.text();
-                const oldTitle = viewContainer.querySelector('h1');
-                if (oldTitle) oldTitle.remove();
                 const { initCaiDatView } = await import('./caidat.js');
                 initCaiDatView();
-                document.getElementById('logout-btn').addEventListener('click', handleLogout);
+                document.getElementById('logout-btn').addEventListener('click', async () => {
+                    const confirmed = await showConfirm('Bạn có chắc chắn muốn đăng xuất?', 'Xác nhận');
+                    if (confirmed) {
+                        handleLogout();
+                    }
+                });
                 isViewInitialized['view-cai-dat'] = true;
             }
             const { initProfileAvatarState, fetchUsers } = await import('./caidat.js');

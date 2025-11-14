@@ -496,6 +496,116 @@ export function initProfileAvatarState() {
     removeBtn.classList.toggle('hidden', !currentAvatarUrl);
 }
 
+async function fetchAndDisplayTemplates() {
+    const buckets = [
+        { name: 'pnk', statusElId: 'pnk-status' },
+        { name: 'pxk', statusElId: 'pxk-status' }
+    ];
+
+    for (const bucket of buckets) {
+        const statusEl = document.getElementById(bucket.statusElId);
+        if (!statusEl) continue;
+
+        statusEl.textContent = 'Đang kiểm tra...';
+        
+        try {
+            const { data: fileList, error: listError } = await sb.storage.from(bucket.name).list('', {
+                limit: 10,
+                search: 'template.xlsx'
+            });
+
+            if (listError) throw listError;
+            
+            const templateFile = fileList.find(f => f.name === 'template.xlsx');
+
+            if (templateFile) {
+                const { data: urlData } = sb.storage.from(bucket.name).getPublicUrl('template.xlsx');
+                if (urlData.publicUrl) {
+                    statusEl.innerHTML = `<a href="${urlData.publicUrl}" target="_blank" download class="text-blue-600 hover:underline font-medium">template.xlsx</a>`;
+                } else {
+                    statusEl.textContent = 'Lỗi lấy URL file template.';
+                }
+            } else {
+                statusEl.textContent = 'Chưa có file template.';
+            }
+        } catch (error) {
+            console.error(`Error fetching template from ${bucket.name}:`, error);
+            statusEl.textContent = 'Lỗi khi tải template.';
+            statusEl.classList.add('text-red-500');
+        }
+    }
+}
+
+async function handleTemplateUpload(event, bucketName) {
+    const file = event.target.files[0];
+    const input = event.target;
+    
+    if (!file) {
+        input.value = '';
+        return;
+    }
+    
+    const allowedTypes = [
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+        'application/vnd.ms-excel' // .xls
+    ];
+    if (!/\.(xlsx|xls)$/i.test(file.name) && !allowedTypes.includes(file.type)) {
+        showToast('Chỉ chấp nhận file Excel (.xlsx, .xls).', 'error');
+        input.value = '';
+        return;
+    }
+
+    const templateName = bucketName === 'pnk' ? 'Phiếu Nhập Kho' : 'Phiếu Xuất Kho';
+    const confirmed = await showConfirm(`Bạn có chắc muốn thay thế template "${templateName}" hiện tại bằng file "${file.name}"? File cũ sẽ bị ghi đè.`);
+
+    if (!confirmed) {
+        input.value = '';
+        return;
+    }
+    
+    showLoading(true);
+    showToast(`Đang tải lên template cho ${templateName}...`, 'info');
+
+    try {
+        const { error } = await sb.storage
+            .from(bucketName)
+            .upload('template.xlsx', file, {
+                cacheControl: '3600',
+                upsert: true,
+            });
+
+        if (error) throw error;
+        
+        showToast('Tải lên template thành công!', 'success');
+        await fetchAndDisplayTemplates();
+
+    } catch (error) {
+        showToast(`Tải lên thất bại: ${error.message}`, 'error');
+        console.error('Template upload error:', error);
+    } finally {
+        showLoading(false);
+        input.value = '';
+    }
+}
+
+function initTemplateManagement() {
+    const pnkUpload = document.getElementById('pnk-upload');
+    const pxkUpload = document.getElementById('pxk-upload');
+    const pnkUploadBtn = document.getElementById('pnk-upload-btn');
+    const pxkUploadBtn = document.getElementById('pxk-upload-btn');
+
+    if (pnkUploadBtn && pnkUpload) {
+        pnkUploadBtn.addEventListener('click', () => pnkUpload.click());
+        pnkUpload.addEventListener('change', (e) => handleTemplateUpload(e, 'pnk'));
+    }
+    if (pxkUploadBtn && pxkUpload) {
+        pxkUploadBtn.addEventListener('click', () => pxkUpload.click());
+        pxkUpload.addEventListener('change', (e) => handleTemplateUpload(e, 'pxk'));
+    }
+    
+    fetchAndDisplayTemplates();
+}
+
 export function initCaiDatView() {
     document.getElementById('profile-form').addEventListener('submit', handleProfileUpdate);
     document.getElementById('user-list-body').addEventListener('change', e => {
@@ -585,4 +695,6 @@ export function initCaiDatView() {
         document.getElementById('profile-remove-image-btn').classList.add('hidden');
         document.getElementById('profile-current-avatar-url').value = '';
     });
+    
+    initTemplateManagement();
 }
