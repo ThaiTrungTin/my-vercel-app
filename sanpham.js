@@ -450,7 +450,7 @@ async function openFilterPopover(button, view) {
         state.filters[filterKey] = [...tempSelectedOptions];
         
         const defaultText = filterButtonDefaultTexts[button.id] || button.id;
-        button.textContent = selectedCount > 0 ? `${defaultText} (${tempSelectedOptions.size})` : defaultText;
+        button.textContent = tempSelectedOptions.size > 0 ? `${defaultText} (${tempSelectedOptions.size})` : defaultText;
         
         if(view === 'view-san-pham') fetchSanPham(1);
         

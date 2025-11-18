@@ -1,6 +1,7 @@
 
 
-import { sb, cache, viewStates, showLoading, showToast, showConfirm, debounce, renderPagination, sanitizeFileName, filterButtonDefaultTexts, currentUser, openAutocomplete, addJobToOfflineQueue } from './app.js';
+
+import { sb, cache, viewStates, showLoading, showToast, showConfirm, debounce, renderPagination, sanitizeFileName, filterButtonDefaultTexts, currentUser, openAutocomplete, addJobToOfflineQueue, openPrintPreviewModal } from './app.js';
 
 let selectedDonHangFiles = []; 
 let initialExistingFiles = []; 
@@ -10,10 +11,76 @@ let initialChiTietItems = [];
 let initialDonHangData = {}; 
 let chiTietSortable = null; 
 let activeLotPopover = null;
-let saveDonHangBtn;
+let saveDonHangBtn, saveAndPrintBtn;
+let currentPrintChoiceMaKho = null;
+
+// Helper function to safely get an element's value
+const getElValue = (id, trim = false) => {
+    const el = document.getElementById(id);
+    if (!el) {
+        console.error(`Lỗi nghiêm trọng: Không tìm thấy phần tử với ID "${id}".`);
+        // Return a unique string to indicate the element is missing. This helps in debugging
+        // and prevents crashes, while ensuring change detection logic remains safe.
+        return `__MISSING_ELEMENT_${id}__`;
+    }
+    const value = el.value;
+    return trim ? value.trim() : value;
+};
+
+
+function showPrintChoiceModal(ma_kho) {
+    currentPrintChoiceMaKho = ma_kho;
+    const modal = document.getElementById('print-choice-modal');
+    modal.classList.remove('hidden');
+}
+
+function hidePrintChoiceModal() {
+    currentPrintChoiceMaKho = null;
+    const modal = document.getElementById('print-choice-modal');
+    modal.classList.add('hidden');
+}
+
+async function getReservedQuantitiesByMaVach(maVachList, currentMaKho) {
+    const reservedMap = new Map();
+    if (!maVachList || maVachList.length === 0) return reservedMap;
+
+    let otherPendingOrdersQuery = sb.from('don_hang')
+        .select('ma_kho')
+        .like('ma_nx', '%-')
+        .ilike('ma_kho', 'OUT.%');
+    
+    if (currentMaKho) {
+        otherPendingOrdersQuery = otherPendingOrdersQuery.neq('ma_kho', currentMaKho);
+    }
+
+    const { data: otherOrders, error: ordersError } = await otherPendingOrdersQuery;
+    if (ordersError || !otherOrders || otherOrders.length === 0) {
+        return reservedMap;
+    }
+
+    const otherMaKhoList = otherOrders.map(o => o.ma_kho);
+    const { data: otherChiTiet, error: chiTietError } = await sb.from('chi_tiet')
+        .select('ma_vach, xuat')
+        .in('ma_kho', otherMaKhoList)
+        .in('ma_vach', maVachList);
+
+    if (chiTietError) {
+        console.error("Error fetching other pending details:", chiTietError);
+        return reservedMap;
+    }
+
+    (otherChiTiet || []).forEach(item => {
+        const currentReserved = reservedMap.get(item.ma_vach) || 0;
+        reservedMap.set(item.ma_vach, currentReserved + (item.xuat || 0));
+    });
+
+    return reservedMap;
+}
+
 
 const debouncedValidateMaKho = debounce(async (ma_kho) => {
     if (!saveDonHangBtn) saveDonHangBtn = document.getElementById('save-don-hang-btn');
+    if (!saveAndPrintBtn) saveAndPrintBtn = document.getElementById('save-and-print-btn');
     const statusEl = document.getElementById('don-hang-modal-ma-kho-status');
     const inputEl = document.getElementById('don-hang-modal-ma-kho');
     const ma_kho_orig = document.getElementById('don-hang-edit-mode-ma-kho').value;
@@ -21,6 +88,7 @@ const debouncedValidateMaKho = debounce(async (ma_kho) => {
     if (!ma_kho) {
         statusEl.textContent = '';
         saveDonHangBtn.disabled = true;
+        if (saveAndPrintBtn) saveAndPrintBtn.disabled = true;
         return;
     }
     
@@ -32,6 +100,7 @@ const debouncedValidateMaKho = debounce(async (ma_kho) => {
         inputEl.classList.remove('text-red-600');
         inputEl.classList.add('text-green-600');
         saveDonHangBtn.disabled = false;
+        if (saveAndPrintBtn) saveAndPrintBtn.disabled = false;
         return;
     }
 
@@ -42,21 +111,26 @@ const debouncedValidateMaKho = debounce(async (ma_kho) => {
         statusEl.textContent = 'Lỗi kiểm tra';
         statusEl.className = 'text-xs mt-1 h-4 text-red-600';
         saveDonHangBtn.disabled = true;
+        if (saveAndPrintBtn) saveAndPrintBtn.disabled = true;
     } else if (count > 0) {
         statusEl.textContent = 'Mã Kho bị trùng';
         statusEl.className = 'text-xs mt-1 h-4 text-red-600';
         inputEl.classList.add('text-red-600');
         saveDonHangBtn.disabled = true;
+        if (saveAndPrintBtn) saveAndPrintBtn.disabled = true;
     } else {
         statusEl.textContent = 'Hợp lệ';
         statusEl.className = 'text-xs mt-1 h-4 text-green-600';
         inputEl.classList.add('text-green-600');
-        saveDonHangBtn.disabled = document.getElementById('don-hang-modal-ma-nx').classList.contains('text-red-600');
+        const isDisabled = document.getElementById('don-hang-modal-ma-nx').classList.contains('text-red-600');
+        saveDonHangBtn.disabled = isDisabled;
+        if (saveAndPrintBtn) saveAndPrintBtn.disabled = isDisabled;
     }
 }, 500);
 
 const debouncedValidateMaNx = debounce(async (ma_nx) => {
     if (!saveDonHangBtn) saveDonHangBtn = document.getElementById('save-don-hang-btn');
+    if (!saveAndPrintBtn) saveAndPrintBtn = document.getElementById('save-and-print-btn');
     const statusEl = document.getElementById('don-hang-modal-ma-nx-status');
     const inputEl = document.getElementById('don-hang-modal-ma-nx');
     const ma_kho_orig = document.getElementById('don-hang-edit-mode-ma-kho').value;
@@ -65,6 +139,7 @@ const debouncedValidateMaNx = debounce(async (ma_nx) => {
         statusEl.textContent = '';
         inputEl.classList.remove('text-red-600', 'text-yellow-600', 'text-green-600');
         saveDonHangBtn.disabled = true;
+        if (saveAndPrintBtn) saveAndPrintBtn.disabled = true;
         return;
     }
 
@@ -76,7 +151,9 @@ const debouncedValidateMaNx = debounce(async (ma_nx) => {
         statusEl.className = 'text-xs mt-1 h-4 text-green-600';
         inputEl.classList.add('text-yellow-600');
         // Enable save as long as ma_kho is not invalid
-        saveDonHangBtn.disabled = document.getElementById('don-hang-modal-ma-kho').classList.contains('text-red-600');
+        const isDisabled = document.getElementById('don-hang-modal-ma-kho').classList.contains('text-red-600');
+        saveDonHangBtn.disabled = isDisabled;
+        if (saveAndPrintBtn) saveAndPrintBtn.disabled = isDisabled;
         return; // Exit early
     }
 
@@ -92,16 +169,20 @@ const debouncedValidateMaNx = debounce(async (ma_nx) => {
         statusEl.textContent = 'Lỗi kiểm tra';
         statusEl.className = 'text-xs mt-1 h-4 text-red-600';
         saveDonHangBtn.disabled = true;
+        if (saveAndPrintBtn) saveAndPrintBtn.disabled = true;
     } else if (count > 0) {
         statusEl.textContent = 'Mã NX bị trùng';
         statusEl.className = 'text-xs mt-1 h-4 text-red-600';
         inputEl.classList.add('text-red-600');
         saveDonHangBtn.disabled = true;
+        if (saveAndPrintBtn) saveAndPrintBtn.disabled = true;
     } else {
         statusEl.textContent = 'Đã xử lý';
         statusEl.className = 'text-xs mt-1 h-4 text-green-600';
         inputEl.classList.add('text-green-600');
-        saveDonHangBtn.disabled = document.getElementById('don-hang-modal-ma-kho').classList.contains('text-red-600');
+        const isDisabled = document.getElementById('don-hang-modal-ma-kho').classList.contains('text-red-600');
+        saveDonHangBtn.disabled = isDisabled;
+        if (saveAndPrintBtn) saveAndPrintBtn.disabled = isDisabled;
     }
 }, 500);
 
@@ -329,6 +410,10 @@ function buildDonHangQuery() {
     const state = viewStates['view-don-hang'];
     let query = sb.from('don_hang').select('*', { count: 'exact' });
 
+    if (currentUser.phan_quyen === 'View') {
+        query = query.eq('yeu_cau', currentUser.ho_ten);
+    }
+
     if (state.filters.from_date) query = query.gte('thoi_gian', state.filters.from_date);
     if (state.filters.to_date) query = query.lte('thoi_gian', state.filters.to_date);
 
@@ -512,19 +597,19 @@ function renderChiTietTable() {
     const isViewMode = document.getElementById('save-don-hang-btn').classList.contains('hidden');
     
     tbody.innerHTML = chiTietItems.filter(Boolean).map((item, index) => {
-        const tonKhoInfo = item.tonKhoData ? `Tồn: <span class="font-bold text-blue-600">${item.tonKhoData.ton_cuoi}</span>` : 'Tồn: ?';
-        const slValue = isNaN(parseFloat(item.sl)) ? 0 : parseFloat(item.sl);
         const tonKhoValue = item.tonKhoData?.ton_cuoi || 0;
+        const tonKhoInfo = item.tonKhoData ? `Tồn: <span class="font-bold text-blue-600">${tonKhoValue.toLocaleString()}</span>` : 'Tồn: ?';
+        const slValue = isNaN(parseFloat(item.sl)) ? 0 : parseFloat(item.sl);
         const trayInfo = item.tonKhoData ? `Tray: <span class="font-bold text-indigo-600">${item.tonKhoData.tray || '?'}</span>` : '';
 
         let projectedStock;
         let projectedStockText;
         if (loaiDon === 'Nhap') {
             projectedStock = tonKhoValue + slValue;
-            projectedStockText = `Sau Nhập: <span class="font-bold text-green-600">${projectedStock}</span>`;
+            projectedStockText = `Sau Nhập: <span class="font-bold text-green-600">${projectedStock.toLocaleString()}</span>`;
         } else {
             projectedStock = tonKhoValue - slValue;
-            projectedStockText = `Sau Xuất: <span class="font-bold text-red-600">${projectedStock}</span>`;
+            projectedStockText = `Sau Xuất: <span class="font-bold ${projectedStock < 0 ? 'text-red-600' : 'text-green-600'}">${projectedStock.toLocaleString()}</span>`;
         }
 
 
@@ -701,19 +786,15 @@ function updateDonHangActionButtonsState() {
     
     if (editBtn) editBtn.disabled = selectedCount !== 1;
     if (deleteBtn) deleteBtn.disabled = selectedCount === 0;
+    
+    const isPrintDisabled = selectedCount !== 1;
+    if (printBtn) printBtn.disabled = isPrintDisabled;
 
-    if (printBtn) {
-        if (selectedCount !== 1) {
-            printBtn.disabled = true;
-        } else {
-            if (currentUser.phan_quyen === 'View') {
-                const selectedId = [...viewStates['view-don-hang'].selected][0];
-                const selectedOrder = cache.donHangList.find(dh => dh.ma_kho === selectedId);
-                printBtn.disabled = !selectedOrder || selectedOrder.yeu_cau !== currentUser.ho_ten;
-            } else {
-                printBtn.disabled = false; 
-            }
-        }
+    if (!isPrintDisabled && currentUser.phan_quyen === 'View') {
+        const selectedId = [...viewStates['view-don-hang'].selected][0];
+        const selectedOrder = cache.donHangList.find(dh => dh.ma_kho === selectedId);
+        const isDisabledForView = !selectedOrder || selectedOrder.yeu_cau !== currentUser.ho_ten;
+        if (printBtn) printBtn.disabled = isDisabledForView;
     }
 }
 
@@ -848,17 +929,53 @@ export async function openDonHangModal(dh = null, mode = 'add') {
     document.getElementById('don-hang-them-vat-tu-btn').classList.toggle('hidden', !isEditOrAdd || !(currentUser.phan_quyen === 'Admin' || currentUser.phan_quyen === 'User'));
 
     saveDonHangBtn = document.getElementById('save-don-hang-btn');
+    saveAndPrintBtn = document.getElementById('save-and-print-btn');
+    const printViewBtn = document.getElementById('print-don-hang-view-btn');
+
     saveDonHangBtn.classList.toggle('hidden', isViewMode);
+    if (saveAndPrintBtn) saveAndPrintBtn.classList.toggle('hidden', isViewMode);
+    if (printViewBtn) printViewBtn.classList.toggle('hidden', !isViewMode);
+
     saveDonHangBtn.disabled = true;
+    if (saveAndPrintBtn) saveAndPrintBtn.disabled = true;
 
     document.getElementById('cancel-don-hang-btn').classList.toggle('hidden', isViewMode);
     document.getElementById('close-don-hang-view-btn').classList.toggle('hidden', !isViewMode);
 
-    const { data: nganhData, error } = await sb.from('ton_kho').select('nganh');
-    if(!error && nganhData){
-         const uniqueNganh = [...new Set(nganhData.map(item => item.nganh).filter(Boolean))];
-         document.getElementById('nganh-list').innerHTML = uniqueNganh.map(nganh => `<option value="${nganh}"></option>`).join('');
+    let uniqueNganhList = [];
+    const { data: nganhPhuTrachData, error: nganhError } = await sb.from('san_pham').select('nganh, phu_trach').neq('nganh', null).neq('nganh', '');
+    if (!nganhError && nganhPhuTrachData) {
+        const nganhMap = new Map();
+        nganhPhuTrachData.forEach(item => {
+            if (!nganhMap.has(item.nganh)) {
+                nganhMap.set(item.nganh, item.phu_trach || '');
+            }
+        });
+        uniqueNganhList = Array.from(nganhMap, ([nganh, phu_trach]) => ({ nganh, phu_trach })).sort((a,b) => a.nganh.localeCompare(b.nganh));
     }
+
+    const nganhInput = document.getElementById('don-hang-modal-nganh');
+    const handleNganhAutocomplete = () => {
+        const inputValue = nganhInput.value.toLowerCase();
+        const suggestions = uniqueNganhList.filter(item => 
+            item.nganh.toLowerCase().includes(inputValue) || 
+            (item.phu_trach && item.phu_trach.toLowerCase().includes(inputValue))
+        );
+        
+        openAutocomplete(nganhInput, suggestions, {
+            valueKey: 'nganh',
+            primaryTextKey: 'nganh',
+            secondaryTextKey: 'phu_trach',
+            width: '400px',
+            onSelect: (selectedValue) => {
+                nganhInput.value = selectedValue;
+                updateGeneratedCodes();
+            }
+        });
+    };
+    
+    nganhInput.addEventListener('focus', handleNganhAutocomplete);
+    nganhInput.addEventListener('input', debounce(handleNganhAutocomplete, 200));
     
     if (mode === 'add') {
         document.getElementById('don-hang-modal-title').textContent = 'Thêm Đơn Hàng Mới';
@@ -877,7 +994,7 @@ export async function openDonHangModal(dh = null, mode = 'add') {
             nganh: document.getElementById('don-hang-modal-nganh').value,
             ma_nx: document.getElementById('don-hang-modal-ma-nx').value,
             muc_dich: document.getElementById('don-hang-modal-muc-dich').value,
-            ghi_chu: document.getElementById('don-hang-modal-ghi-chu').value,
+            ghi_chu: getElValue('don-hang-modal-ghi-chu'),
         };
         initialChiTietItems = [];
 
@@ -922,6 +1039,17 @@ export async function openDonHangModal(dh = null, mode = 'add') {
             fetchedChiTiet.map(item => [item.ma_vach, item.nhap || item.xuat])
         );
         
+        const maVtsInOrder = [...new Set(fetchedChiTiet.map(item => item.ma_vt).filter(Boolean))];
+        let allMaVachsInOrder = [];
+        if (maVtsInOrder.length > 0) {
+            const { data: vachData } = await sb.from('ton_kho_update').select('ma_vach').in('ma_vt', maVtsInOrder);
+            if (vachData) {
+                allMaVachsInOrder = vachData.map(v => v.ma_vach);
+            }
+        }
+        
+        const reservedQuantities = await getReservedQuantitiesByMaVach(allMaVachsInOrder, dh.ma_kho);
+
         const chiTietPromises = fetchedChiTiet.map(async (item) => {
             let lotOptions = [];
             let tonKhoData = null;
@@ -933,10 +1061,13 @@ export async function openDonHangModal(dh = null, mode = 'add') {
                 if (lotData) {
                     const adjustedLotData = lotData.map(lot => {
                         const originalQty = originalQuantities.get(lot.ma_vach);
-                        if (originalQty && loaiDon === 'Xuat') { 
-                            return { ...lot, ton_cuoi: lot.ton_cuoi + originalQty };
+                        const reservedQty = reservedQuantities.get(lot.ma_vach) || 0;
+                        let adjustedTonCuoi = lot.ton_cuoi + reservedQty;
+                        
+                        if (originalQty && loaiDon === 'Xuat') {
+                            adjustedTonCuoi += originalQty;
                         }
-                        return lot;
+                        return { ...lot, ton_cuoi: adjustedTonCuoi };
                     });
                     
                     lotOptions = adjustedLotData;
@@ -959,7 +1090,6 @@ export async function openDonHangModal(dh = null, mode = 'add') {
     renderFileList();
     renderChiTietTable();
     modal.classList.remove('hidden');
-    document.addEventListener('keydown', handleDonHangModalEsc, { capture: true });
 }
 
 async function syncChiTietDonHang(ma_kho_don_hang, donHangInfo) {
@@ -1036,13 +1166,13 @@ async function saveOrderForOfflineSync() {
         const isEdit = !!ma_kho_orig;
 
         const donHangData = {
-            ma_kho: document.getElementById('don-hang-modal-ma-kho').value.trim(),
-            thoi_gian: document.getElementById('don-hang-modal-thoi-gian').value,
-            ma_nx: document.getElementById('don-hang-modal-ma-nx').value.trim(),
-            yeu_cau: document.getElementById('don-hang-modal-yeu-cau').value.trim(),
-            nganh: document.getElementById('don-hang-modal-nganh').value.trim(),
-            muc_dich: document.getElementById('don-hang-modal-muc-dich').value.trim(),
-            ghi_chu: document.getElementById('don-hang-modal-ghi-chu').value.trim(),
+            ma_kho: getElValue('don-hang-modal-ma-kho', true),
+            thoi_gian: getElValue('don-hang-modal-thoi-gian'),
+            ma_nx: getElValue('don-hang-modal-ma-nx', true),
+            yeu_cau: getElValue('don-hang-modal-yeu-cau', true),
+            nganh: getElValue('don-hang-modal-nganh', true),
+            muc_dich: getElValue('don-hang-modal-muc-dich', true),
+            ghi_chu: getElValue('don-hang-modal-ghi-chu', true),
             file: [] 
         };
 
@@ -1079,12 +1209,24 @@ async function saveOrderForOfflineSync() {
 }
 
 
-async function handleSaveDonHang(e) {
+async function handleSaveDonHang(e, printAction = null) {
     e.preventDefault();
 
-    const requiredFields = { thoi_gian: "Thời Gian", yeu_cau: "Yêu Cầu", nganh: "Ngành", ma_nx: "Mã NX", muc_dich: "Mục Đích" };
-    for (const [field, name] of Object.entries(requiredFields)) {
-        if (!document.getElementById(`don-hang-modal-${field.replace(/_/g, '-')}`).value) {
+    const requiredFields = {
+        'don-hang-modal-thoi-gian': "Thời Gian",
+        'don-hang-modal-yeu-cau': "Yêu Cầu",
+        'don-hang-modal-nganh': "Ngành",
+        'don-hang-modal-ma-nx': "Mã NX",
+        'don-hang-modal-muc-dich': "Mục Đích"
+    };
+
+    for (const [id, name] of Object.entries(requiredFields)) {
+        const el = document.getElementById(id);
+        if (!el) {
+            showToast(`Lỗi cấu hình: Thiếu trường "${name}" (id: ${id}).`, 'error');
+            return;
+        }
+        if (!el.value) {
             showToast(`Trường "${name}" là bắt buộc.`, 'error');
             return;
         }
@@ -1107,18 +1249,27 @@ async function handleSaveDonHang(e) {
     
     showLoading(true);
     try {
-        const ma_kho_orig = document.getElementById('don-hang-edit-mode-ma-kho').value;
+        const ma_kho_orig = getElValue('don-hang-edit-mode-ma-kho');
         const isEdit = !!ma_kho_orig;
+
         const donHangData = {
-            ma_kho: document.getElementById('don-hang-modal-ma-kho').value.trim(),
-            thoi_gian: document.getElementById('don-hang-modal-thoi-gian').value,
-            ma_nx: document.getElementById('don-hang-modal-ma-nx').value.trim(),
-            yeu_cau: document.getElementById('don-hang-modal-yeu-cau').value.trim(),
-            nganh: document.getElementById('don-hang-modal-nganh').value.trim(),
-            muc_dich: document.getElementById('don-hang-modal-muc-dich').value.trim(),
-            ghi_chu: document.getElementById('don-hang-modal-ghi-chu').value.trim(),
+            ma_kho: getElValue('don-hang-modal-ma-kho', true),
+            thoi_gian: getElValue('don-hang-modal-thoi-gian'),
+            ma_nx: getElValue('don-hang-modal-ma-nx', true),
+            yeu_cau: getElValue('don-hang-modal-yeu-cau', true),
+            nganh: getElValue('don-hang-modal-nganh', true),
+            muc_dich: getElValue('don-hang-modal-muc-dich', true),
+            ghi_chu: getElValue('don-hang-modal-ghi-chu', true),
         };
-        const loai_don = document.getElementById('don-hang-modal-loai-don').value;
+        
+        // Check for missing elements before proceeding
+        for (const key in donHangData) {
+            if (typeof donHangData[key] === 'string' && donHangData[key].startsWith('__MISSING_ELEMENT_')) {
+                throw new Error(`Không thể lưu: Thiếu phần tử DOM cho trường ${key}.`);
+            }
+        }
+
+        const loai_don = getElValue('don-hang-modal-loai-don');
         
         const filesToRemove = initialExistingFiles.filter(url => !currentExistingFiles.includes(url));
         if (filesToRemove.length > 0) {
@@ -1155,11 +1306,21 @@ async function handleSaveDonHang(e) {
         await syncChiTietDonHang(donHangData.ma_kho, { ...donHangData, loai_don });
 
         showToast('Lưu đơn hàng thành công!', 'success');
+        
+        if (printAction === 'print') {
+            const isXuat = donHangData.ma_kho.startsWith('OUT');
+            if (isXuat) {
+                showPrintChoiceModal(donHangData.ma_kho);
+            } else { // Is Nhap
+                openPrintPreviewModal(`print.html?ma_kho=${donHangData.ma_kho}`, `Phiếu Nhập Kho - ${donHangData.ma_kho}`);
+            }
+        }
+        
         forceCloseDonHangModal();
         const pageToFetch = isEdit ? viewStates['view-don-hang'].currentPage : 1;
         fetchDonHang(pageToFetch, false);
     } catch (error) {
-        if (error.code === '23505') showToast(`Mã kho "${document.getElementById('don-hang-modal-ma-kho').value}" đã tồn tại.`, 'error');
+        if (error.code === '23505') showToast(`Mã kho "${getElValue('don-hang-modal-ma-kho')}" đã tồn tại.`, 'error');
         else showToast(`Lỗi: ${error.message}`, 'error');
         console.error("Save error:", error);
     } finally {
@@ -1216,8 +1377,17 @@ async function updateItemFromMaVt(item, ma_vt) {
         showToast(`Lỗi khi tải LOT cho ${ma_vt}.`, 'error');
         item.ten_vt = 'Lỗi tải dữ liệu';
     } else if (lotData && lotData.length > 0) {
-        item.lotOptions = lotData;
-        item.ten_vt = lotData[0]?.ten_vt || '';
+        const ma_kho_orig = document.getElementById('don-hang-edit-mode-ma-kho').value;
+        const allMaVachs = lotData.map(l => l.ma_vach);
+        const reservedQuantities = await getReservedQuantitiesByMaVach(allMaVachs, ma_kho_orig);
+
+        const adjustedLotData = lotData.map(lot => {
+            const reservedQty = reservedQuantities.get(lot.ma_vach) || 0;
+            return { ...lot, ton_cuoi: lot.ton_cuoi + reservedQty };
+        });
+        
+        item.lotOptions = adjustedLotData;
+        item.ten_vt = adjustedLotData[0]?.ten_vt || '';
     } else {
         const { data: sanPham } = await sb.from('san_pham').select('ten_vt').eq('ma_vt', ma_vt).single();
         item.ten_vt = sanPham?.ten_vt || 'Không rõ';
@@ -1258,30 +1428,19 @@ async function handleMaVtAutocomplete(input) {
     });
 }
 
-const handleDonHangModalEsc = (e) => {
-    if (e.key === 'Escape') {
-        const modal = document.getElementById('don-hang-modal');
-        if (!modal.classList.contains('hidden')) {
-            e.preventDefault();
-            e.stopPropagation();
-            closeDonHangModalWithConfirm();
-        }
-    }
-};
-
 function hasDonHangChanges() {
     const currentData = {
-        thoi_gian: document.getElementById('don-hang-modal-thoi-gian').value,
-        loai_don: document.getElementById('don-hang-modal-loai-don').value,
-        yeu_cau: document.getElementById('don-hang-modal-yeu-cau').value.trim(),
-        nganh: document.getElementById('don-hang-modal-nganh').value.trim(),
-        ma_nx: document.getElementById('don-hang-modal-ma-nx').value.trim(),
-        muc_dich: document.getElementById('don-hang-modal-muc-dich').value.trim(),
-        ghi_chu: document.getElementById('don-hang-modal-ghi-chu').value.trim(),
+        thoi_gian: getElValue('don-hang-modal-thoi-gian'),
+        loai_don: getElValue('don-hang-modal-loai-don'),
+        yeu_cau: getElValue('don-hang-modal-yeu-cau', true),
+        nganh: getElValue('don-hang-modal-nganh', true),
+        ma_nx: getElValue('don-hang-modal-ma-nx', true),
+        muc_dich: getElValue('don-hang-modal-muc-dich', true),
+        ghi_chu: getElValue('don-hang-modal-ghi-chu', true),
     };
 
     for (const key in initialDonHangData) {
-        if (initialDonHangData[key] !== currentData[key]) {
+        if (initialDonHangData[key] !== currentData[key] && !String(currentData[key]).startsWith('__MISSING_ELEMENT_')) {
             return true;
         }
     }
@@ -1292,17 +1451,20 @@ function hasDonHangChanges() {
     if (chiTietItems.length !== initialChiTietItems.length) return true;
 
     const getComparableItem = ({ ma_vt, lot, yc_sl, sl, loai }) => ({ ma_vt, lot, yc_sl, sl, loai });
-    const initialChiTietString = JSON.stringify(initialChiTietItems.map(getComparableItem));
-    const currentChiTietString = JSON.stringify(chiTietItems.map(getComparableItem));
-
-    if (initialChiTietString !== currentChiTietString) return true;
+    try {
+        const initialChiTietString = JSON.stringify(initialChiTietItems.map(getComparableItem));
+        const currentChiTietString = JSON.stringify(chiTietItems.map(getComparableItem));
+        if (initialChiTietString !== currentChiTietString) return true;
+    } catch(e) {
+        console.error("Error comparing chi tiet items:", e);
+        return true; // Assume changes if something goes wrong
+    }
 
     return false;
 }
 
 function forceCloseDonHangModal() {
     document.getElementById('don-hang-modal').classList.add('hidden');
-    document.removeEventListener('keydown', handleDonHangModalEsc, { capture: true });
 }
 
 async function closeDonHangModalWithConfirm() {
@@ -1411,13 +1573,51 @@ export function initDonHangView() {
         const selectedIds = [...viewStates['view-don-hang'].selected];
         if (selectedIds.length === 1) {
             const ma_kho = selectedIds[0];
-            window.open(`print.html?ma_kho=${ma_kho}`, '_blank');
+            if (ma_kho.startsWith('IN')) {
+                openPrintPreviewModal(`print.html?ma_kho=${ma_kho}`, `Phiếu Nhập Kho - ${ma_kho}`);
+            } else { // Starts with OUT
+                showPrintChoiceModal(ma_kho);
+            }
         }
     });
 
+    const printViewBtn = document.getElementById('print-don-hang-view-btn');
+    if (printViewBtn) {
+        printViewBtn.addEventListener('click', () => {
+            const ma_kho = document.getElementById('don-hang-edit-mode-ma-kho').value;
+            if (ma_kho) {
+                if (ma_kho.startsWith('IN')) {
+                    openPrintPreviewModal(`print.html?ma_kho=${ma_kho}`, `Phiếu Nhập Kho - ${ma_kho}`);
+                } else { // Starts with OUT
+                    showPrintChoiceModal(ma_kho);
+                }
+            }
+        });
+    }
+
+    // Listeners for the new choice modal
+    document.getElementById('print-choice-do-btn').addEventListener('click', () => {
+        if (currentPrintChoiceMaKho) {
+            openPrintPreviewModal(`print.html?ma_kho=${currentPrintChoiceMaKho}`, `Phiếu Xuất Kho - ${currentPrintChoiceMaKho}`);
+            hidePrintChoiceModal();
+        }
+    });
+
+    document.getElementById('print-choice-pkl-btn').addEventListener('click', () => {
+        if (currentPrintChoiceMaKho) {
+            openPrintPreviewModal(`print-pkl.html?ma_kho=${currentPrintChoiceMaKho}`, `Phiếu Lấy Hàng - ${currentPrintChoiceMaKho}`);
+            hidePrintChoiceModal();
+        }
+    });
+
+    document.getElementById('print-choice-cancel-btn').addEventListener('click', hidePrintChoiceModal);
+
+
     document.getElementById('cancel-don-hang-btn').addEventListener('click', closeDonHangModalWithConfirm);
     document.getElementById('close-don-hang-view-btn').addEventListener('click', closeDonHangModalWithConfirm);
-    document.getElementById('don-hang-form').addEventListener('submit', handleSaveDonHang);
+    
+    document.getElementById('save-don-hang-btn').addEventListener('click', (e) => handleSaveDonHang(e, null));
+    document.getElementById('save-and-print-btn').addEventListener('click', (e) => handleSaveDonHang(e, 'print'));
 
     document.getElementById('don-hang-modal-ma-nx').addEventListener('input', (e) => {
         debouncedValidateMaNx(e.target.value);

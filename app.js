@@ -1,6 +1,7 @@
 
 
 
+
 const { createClient } = supabase;
 const SUPABASE_URL = "https://uefydnefprcannlviimp.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVlZnlkbmVmcHJjYW5ubHZpaW1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwNTcwMDUsImV4cCI6MjA3NjYzMzAwNX0.X274J_1_crUknJEOT1WWUD1h0HM9WdYScDW2eWWsiLk";
@@ -97,6 +98,25 @@ let activeAutocompletePopover = null;
 const OFFLINE_QUEUE_KEY = 'offlineQueue';
 const getOfflineQueue = () => JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY)) || [];
 const saveOfflineQueue = (queue) => localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
+
+export function openPrintPreviewModal(url, title = 'Xem trước khi in') {
+    const modal = document.getElementById('print-preview-modal');
+    const iframe = document.getElementById('print-preview-iframe');
+    const titleEl = document.getElementById('print-preview-title');
+    const maximizeBtn = document.getElementById('print-preview-maximize-btn');
+
+    if (!modal || !iframe || !titleEl || !maximizeBtn) return;
+    
+    // Reset position in case it was dragged off-screen
+    modal.style.left = '10vw';
+    modal.style.top = '5vh';
+    modal.style.transform = '';
+
+    iframe.src = url;
+    titleEl.textContent = title;
+    maximizeBtn.dataset.url = url;
+    modal.classList.remove('hidden');
+}
 
 export function updateOfflineIndicator() {
     const queue = getOfflineQueue();
@@ -289,12 +309,13 @@ export function openAutocomplete(inputElement, suggestions, config) {
     const popover = popoverContent.querySelector('div'); 
     
     const optionsList = popover.querySelector('.autocomplete-options-list');
-    const secondaryTextHTML = (item) => config.secondaryTextKey ? `<p class="text-xs text-gray-500 pointer-events-none">${item[config.secondaryTextKey] || ''}</p>` : '';
 
     optionsList.innerHTML = suggestions.map(item => `
         <div class="px-3 py-2 cursor-pointer hover:bg-gray-100 autocomplete-option" data-value="${item[config.valueKey]}">
-            <p class="text-sm font-medium text-gray-900 pointer-events-none">${item[config.primaryTextKey]}</p>
-            ${secondaryTextHTML(item)}
+            <div class="flex justify-between items-center pointer-events-none gap-4">
+                <p class="text-sm font-medium text-gray-900 truncate">${item[config.primaryTextKey]}</p>
+                ${config.secondaryTextKey ? `<p class="text-xs text-gray-500 truncate text-right">${item[config.secondaryTextKey] || ''}</p>` : ''}
+            </div>
         </div>
     `).join('');
 
@@ -805,6 +826,43 @@ document.addEventListener('DOMContentLoaded', async () => {
         setSidebarState(!isCollapsed);
     });
 
+    // --- Global Escape Key Handler for Modals & Popovers ---
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            // Modals are checked from likely top-most to bottom-most based on z-index
+            const modals = [
+                { id: 'print-preview-modal', closeBtnId: 'print-preview-close-btn' },
+                { id: 'image-viewer-modal', closeBtnId: 'close-image-viewer-btn' },
+                { id: 'confirm-modal', closeBtnId: 'confirm-cancel-btn' },
+                { id: 'print-choice-modal', closeBtnId: 'print-choice-cancel-btn' },
+                { id: 'excel-export-modal', closeBtnId: 'excel-export-cancel-btn' },
+                { id: 'password-reset-modal', closeBtnId: 'cancel-reset-btn' },
+                { id: 'don-hang-modal', closeBtnId: 'cancel-don-hang-btn' },
+                { id: 'san-pham-modal', closeBtnId: 'cancel-san-pham-btn' },
+                { id: 'ton-kho-modal', closeBtnId: 'cancel-ton-kho-btn' },
+            ];
+
+            for (const modalInfo of modals) {
+                const modalEl = document.getElementById(modalInfo.id);
+                if (modalEl && !modalEl.classList.contains('hidden')) {
+                    const closeBtn = document.getElementById(modalInfo.closeBtnId);
+                    if (closeBtn) {
+                        closeBtn.click();
+                    } else { // Fallback just in case
+                        modalEl.classList.add('hidden');
+                    }
+                    e.preventDefault(); 
+                    return; // Stop after handling the top-most modal
+                }
+            }
+
+            // Handle popovers if no modal was open
+            if (activeAutocompletePopover) {
+                closeActiveAutocompletePopover();
+            }
+        }
+    });
+
     // --- NETWORK STATUS INDICATOR ---
     function updateNetworkStatusIndicator(status, latency = null) {
         const indicator = document.getElementById('network-status-indicator');
@@ -1049,4 +1107,66 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('image-viewer-modal').classList.add('hidden');
         document.getElementById('image-viewer-img').src = '';
     });
+
+    // --- Print Preview Modal Logic ---
+    const printPreviewModal = document.getElementById('print-preview-modal');
+    const printPreviewHeader = document.getElementById('print-preview-header');
+    const printPreviewCloseBtn = document.getElementById('print-preview-close-btn');
+    const printPreviewMaximizeBtn = document.getElementById('print-preview-maximize-btn');
+    const printPreviewIframe = document.getElementById('print-preview-iframe');
+
+    if (printPreviewModal && printPreviewHeader && printPreviewCloseBtn && printPreviewMaximizeBtn) {
+        printPreviewCloseBtn.addEventListener('click', () => {
+            printPreviewModal.classList.add('hidden');
+            if (printPreviewIframe) {
+                printPreviewIframe.src = 'about:blank'; // Clear iframe to stop any processes
+            }
+        });
+
+        printPreviewMaximizeBtn.addEventListener('click', (e) => {
+            const url = e.currentTarget.dataset.url;
+            if (url) {
+                window.open(url, '_blank');
+            }
+        });
+
+        // Dragging logic
+        let isDragging = false;
+        let offset = { x: 0, y: 0 };
+
+        printPreviewHeader.addEventListener('mousedown', (e) => {
+            // Only drag with left mouse button, and not on buttons
+            if (e.button !== 0 || e.target.closest('button')) return;
+            
+            isDragging = true;
+            const rect = printPreviewModal.getBoundingClientRect();
+            offset.x = e.clientX - rect.left;
+            offset.y = e.clientY - rect.top;
+            
+            // To prevent text selection while dragging
+            e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            
+            let newX = e.clientX - offset.x;
+            let newY = e.clientY - offset.y;
+
+            // Constrain to viewport to prevent dragging it off-screen
+            const maxX = window.innerWidth - printPreviewModal.offsetWidth;
+            const maxY = window.innerHeight - printPreviewModal.offsetHeight;
+            
+            newX = Math.max(0, Math.min(newX, maxX));
+            newY = Math.max(0, Math.min(newY, maxY));
+            
+            printPreviewModal.style.left = `${newX}px`;
+            printPreviewModal.style.top = `${newY}px`;
+            printPreviewModal.style.transform = 'none'; // Ensure transform is not interfering
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+    }
 });
