@@ -9,7 +9,7 @@ let currentView = 'view-phat-trien';
 let userChannel = null; 
 let adminNotificationChannel = null;
 let presenceChannel = null;
-let dataChannel = null; // Channel cho dữ liệu nghiệp vụ
+let dataChannel = null; 
 export const onlineUsers = new Map();
 export const DEFAULT_AVATAR_URL = 'https://t4.ftcdn.net/jpg/05/49/98/39/360_F_549983970_bRCkYfk0P6PP5fKbMhZMIb07vs1cACai.jpg';
 export const PLACEHOLDER_IMAGE_URL = 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Placeholder_view_vector.svg/681px-Placeholder_view_vector.svg.png';
@@ -105,7 +105,6 @@ export function openPrintPreviewModal(url, title = 'Xem trước khi in') {
 
     if (!modal || !iframe || !titleEl || !maximizeBtn) return;
     
-    // Reset position in case it was dragged off-screen
     modal.style.left = '10vw';
     modal.style.top = '5vh';
     modal.style.transform = '';
@@ -227,7 +226,7 @@ export const debounce = (func, delay) => {
     return (...args) => {
         clearTimeout(timeoutId);
         timeoutId = setTimeout(() => {
-            func.apply(this, args);
+            func.apply(null, args);
         }, delay);
     };
 };
@@ -757,83 +756,61 @@ function setupDataRealtime() {
         sb.removeChannel(dataChannel);
     }
 
-    const triggerUpdate = debounce(async (table) => {
-        showToast('Dữ liệu đã được cập nhật từ máy chủ.', 'info');
+    // Hàm refresh dữ liệu cho view hiện tại một cách "quyết liệt"
+    const refreshCurrentViewData = async () => {
+        showLoading(true); // Hiển thị thanh loading để báo hiệu
         
-        // Luôn refresh Dashboard nếu có thay đổi
+        // 1. Refresh Dashboard (luôn cần vì là tổng quan)
         if (currentView === 'view-phat-trien') {
             const { fetchTongQuanData } = await import('./tongquan.js');
-            fetchTongQuanData();
+            await fetchTongQuanData();
+        } 
+        
+        // 2. Refresh các view danh sách cụ thể
+        else if (currentView === 'view-san-pham') {
+            const { fetchSanPham } = await import('./sanpham.js');
+            // false = không hiện overlay loading toàn màn hình, chỉ thanh loading bar
+            await fetchSanPham(viewStates['view-san-pham'].currentPage, false);
+        } else if (currentView === 'view-don-hang') {
+            const { fetchDonHang } = await import('./don-hang.js');
+            await fetchDonHang(viewStates['view-don-hang'].currentPage, false);
+        } else if (currentView === 'view-ton-kho') {
+            const { fetchTonKho } = await import('./tonkho.js');
+            await fetchTonKho(viewStates['view-ton-kho'].currentPage, false);
+        } else if (currentView === 'view-chi-tiet') {
+            const { fetchChiTiet } = await import('./chitiet.js');
+            await fetchChiTiet(viewStates['view-chi-tiet'].currentPage, false);
         }
 
-        // Logic cập nhật theo bảng và view hiện tại
-        switch (table) {
-            case 'san_pham':
-                // Reset cache để đảm bảo dữ liệu mới
-                cache.sanPhamList = []; 
-                if (currentView === 'view-san-pham') {
-                    const { fetchSanPham } = await import('./sanpham.js');
-                    fetchSanPham(viewStates['view-san-pham'].currentPage, false);
-                } else if (currentView === 'view-phat-trien') {
-                     const { fetchTongQuanData } = await import('./tongquan.js');
-                     fetchTongQuanData();
-                }
-                break;
+        showLoading(false); // Tắt loading bar
+    };
 
-            case 'don_hang':
-                cache.donHangList = [];
-                if (currentView === 'view-don-hang') {
-                    const { fetchDonHang } = await import('./don-hang.js');
-                    fetchDonHang(viewStates['view-don-hang'].currentPage, false);
-                } else if (currentView === 'view-phat-trien') {
-                     const { fetchTongQuanData } = await import('./tongquan.js');
-                     fetchTongQuanData();
+    const handleRealtimeEvent = async (tableName) => {
+        showToast('Phát hiện thay đổi dữ liệu...', 'info');
+        
+        // Đợi 1 chút để DB cập nhật hoàn tất trước khi fetch lại
+        setTimeout(async () => {
+            await refreshCurrentViewData();
+            
+            // Xử lý các phụ thuộc chéo (Cross-dependency refresh)
+            // Ví dụ: Chi tiết thay đổi -> Ảnh hưởng Tồn kho và Đơn hàng
+            if (tableName === 'chi_tiet') {
+                if (currentView !== 'view-chi-tiet') {
+                    // Nếu đang xem tồn kho, cần refresh lại dù view chính không phải chi tiết
+                    if (currentView === 'view-ton-kho') {
+                         const { fetchTonKho } = await import('./tonkho.js');
+                         fetchTonKho(viewStates['view-ton-kho'].currentPage, false);
+                    }
                 }
-                break;
-
-            case 'ton_kho':
-            case 'ton_kho_update': // Bắt sự kiện trên view/table tồn kho
-                cache.tonKhoList = [];
-                if (currentView === 'view-ton-kho') {
-                    const { fetchTonKho } = await import('./tonkho.js');
-                    fetchTonKho(viewStates['view-ton-kho'].currentPage, false);
-                } else if (currentView === 'view-phat-trien') {
-                     const { fetchTongQuanData } = await import('./tongquan.js');
-                     fetchTongQuanData();
-                }
-                // Tồn kho thay đổi có thể ảnh hưởng đến SP (số lượng tổng)
-                if (currentView === 'view-san-pham') {
-                    const { fetchSanPham } = await import('./sanpham.js');
-                    fetchSanPham(viewStates['view-san-pham'].currentPage, false);
-                }
-                break;
-
-            case 'chi_tiet':
-                // Chi tiết thay đổi ảnh hưởng đến Tồn kho và Dashboard
-                cache.chiTietList = [];
-                if (currentView === 'view-chi-tiet') {
-                    const { fetchChiTiet } = await import('./chitiet.js');
-                    fetchChiTiet(viewStates['view-chi-tiet'].currentPage, false);
-                }
-                // Nếu đang xem tồn kho, cũng cần update vì chi tiết làm thay đổi số lượng
-                if (currentView === 'view-ton-kho') {
-                    const { fetchTonKho } = await import('./tonkho.js');
-                    fetchTonKho(viewStates['view-ton-kho'].currentPage, false);
-                }
-                // Dashboard cần update biểu đồ
-                if (currentView === 'view-phat-trien') {
-                     const { fetchTongQuanData } = await import('./tongquan.js');
-                     fetchTongQuanData();
-                }
-                break;
-        }
-    }, 500); // Debounce 500ms để tránh spam request khi có nhiều thay đổi
+            }
+        }, 500); 
+    };
 
     dataChannel = sb.channel('public-data-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'san_pham' }, () => triggerUpdate('san_pham'))
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'don_hang' }, () => triggerUpdate('don_hang'))
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'ton_kho' }, () => triggerUpdate('ton_kho'))
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'chi_tiet' }, () => triggerUpdate('chi_tiet'))
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'san_pham' }, () => handleRealtimeEvent('san_pham'))
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'don_hang' }, () => handleRealtimeEvent('don_hang'))
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'ton_kho' }, () => handleRealtimeEvent('ton_kho'))
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'chi_tiet' }, () => handleRealtimeEvent('chi_tiet'))
         .subscribe((status) => {
             if (status === 'SUBSCRIBED') {
                 console.log('Đã kết nối Realtime Dữ liệu.');
