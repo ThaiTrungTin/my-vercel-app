@@ -1,7 +1,4 @@
 
-
-
-
 const { createClient } = supabase;
 const SUPABASE_URL = "https://uefydnefprcannlviimp.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVlZnlkbmVmcHJjYW5ubHZpaW1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwNTcwMDUsImV4cCI6MjA3NjYzMzAwNX0.X274J_1_crUknJEOT1WWUD1h0HM9WdYScDW2eWWsiLk";
@@ -12,6 +9,7 @@ let currentView = 'view-phat-trien';
 let userChannel = null; 
 let adminNotificationChannel = null;
 let presenceChannel = null;
+let dataChannel = null; // Channel cho dữ liệu nghiệp vụ
 export const onlineUsers = new Map();
 export const DEFAULT_AVATAR_URL = 'https://t4.ftcdn.net/jpg/05/49/98/39/360_F_549983970_bRCkYfk0P6PP5fKbMhZMIb07vs1cACai.jpg';
 export const PLACEHOLDER_IMAGE_URL = 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Placeholder_view_vector.svg/681px-Placeholder_view_vector.svg.png';
@@ -566,6 +564,10 @@ async function handleLogout() {
         await sb.removeChannel(presenceChannel);
         presenceChannel = null;
     }
+    if (dataChannel) {
+        await sb.removeChannel(dataChannel);
+        dataChannel = null;
+    }
     sessionStorage.clear();
     window.location.href = 'login.html';
 }
@@ -747,6 +749,96 @@ function updateOnlineStatusUI() {
             }
         }).catch(err => console.error("Failed to load caidat.js for presence update:", err));
     }
+}
+
+// --- REALTIME DATA SYNC ---
+function setupDataRealtime() {
+    if (dataChannel) {
+        sb.removeChannel(dataChannel);
+    }
+
+    const triggerUpdate = debounce(async (table) => {
+        showToast('Dữ liệu đã được cập nhật từ máy chủ.', 'info');
+        
+        // Luôn refresh Dashboard nếu có thay đổi
+        if (currentView === 'view-phat-trien') {
+            const { fetchTongQuanData } = await import('./tongquan.js');
+            fetchTongQuanData();
+        }
+
+        // Logic cập nhật theo bảng và view hiện tại
+        switch (table) {
+            case 'san_pham':
+                // Reset cache để đảm bảo dữ liệu mới
+                cache.sanPhamList = []; 
+                if (currentView === 'view-san-pham') {
+                    const { fetchSanPham } = await import('./sanpham.js');
+                    fetchSanPham(viewStates['view-san-pham'].currentPage, false);
+                } else if (currentView === 'view-phat-trien') {
+                     const { fetchTongQuanData } = await import('./tongquan.js');
+                     fetchTongQuanData();
+                }
+                break;
+
+            case 'don_hang':
+                cache.donHangList = [];
+                if (currentView === 'view-don-hang') {
+                    const { fetchDonHang } = await import('./don-hang.js');
+                    fetchDonHang(viewStates['view-don-hang'].currentPage, false);
+                } else if (currentView === 'view-phat-trien') {
+                     const { fetchTongQuanData } = await import('./tongquan.js');
+                     fetchTongQuanData();
+                }
+                break;
+
+            case 'ton_kho':
+            case 'ton_kho_update': // Bắt sự kiện trên view/table tồn kho
+                cache.tonKhoList = [];
+                if (currentView === 'view-ton-kho') {
+                    const { fetchTonKho } = await import('./tonkho.js');
+                    fetchTonKho(viewStates['view-ton-kho'].currentPage, false);
+                } else if (currentView === 'view-phat-trien') {
+                     const { fetchTongQuanData } = await import('./tongquan.js');
+                     fetchTongQuanData();
+                }
+                // Tồn kho thay đổi có thể ảnh hưởng đến SP (số lượng tổng)
+                if (currentView === 'view-san-pham') {
+                    const { fetchSanPham } = await import('./sanpham.js');
+                    fetchSanPham(viewStates['view-san-pham'].currentPage, false);
+                }
+                break;
+
+            case 'chi_tiet':
+                // Chi tiết thay đổi ảnh hưởng đến Tồn kho và Dashboard
+                cache.chiTietList = [];
+                if (currentView === 'view-chi-tiet') {
+                    const { fetchChiTiet } = await import('./chitiet.js');
+                    fetchChiTiet(viewStates['view-chi-tiet'].currentPage, false);
+                }
+                // Nếu đang xem tồn kho, cũng cần update vì chi tiết làm thay đổi số lượng
+                if (currentView === 'view-ton-kho') {
+                    const { fetchTonKho } = await import('./tonkho.js');
+                    fetchTonKho(viewStates['view-ton-kho'].currentPage, false);
+                }
+                // Dashboard cần update biểu đồ
+                if (currentView === 'view-phat-trien') {
+                     const { fetchTongQuanData } = await import('./tongquan.js');
+                     fetchTongQuanData();
+                }
+                break;
+        }
+    }, 500); // Debounce 500ms để tránh spam request khi có nhiều thay đổi
+
+    dataChannel = sb.channel('public-data-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'san_pham' }, () => triggerUpdate('san_pham'))
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'don_hang' }, () => triggerUpdate('don_hang'))
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'ton_kho' }, () => triggerUpdate('ton_kho'))
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'chi_tiet' }, () => triggerUpdate('chi_tiet'))
+        .subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+                console.log('Đã kết nối Realtime Dữ liệu.');
+            }
+        });
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -1089,6 +1181,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
             });
 
+            // Initialize Data Realtime Subscription
+            setupDataRealtime();
 
         } else {
             window.location.href = 'login.html';
