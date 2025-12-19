@@ -1,4 +1,3 @@
-
 import { sb, cache, viewStates, currentUser, showLoading, showToast, debounce, renderPagination, filterButtonDefaultTexts, showView } from './app.js';
 
 // Configuration for toggleable columns on Desktop
@@ -82,7 +81,7 @@ const VIEW_HTML = `
                 <div class="flex flex-wrap gap-2 items-center w-full md:w-auto justify-end mt-2 md:mt-0">
                     <button id="chi-tiet-reset-filters" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md text-[10px] md:text-sm">Xóa Lọc</button>
                     <button id="chi-tiet-btn-settings" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-3 rounded-md text-[10px] md:text-sm flex items-center gap-1" title="Cài đặt cột hiển thị">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 00 1.066-2.573c-.94-1.543.826 3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path></svg>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 0 0-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 0 0-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 0 0-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 0 0 1.066-2.573c-.94-1.543.826 3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path></svg>
                         <span class="hidden lg:inline">Cài Đặt Cột</span>
                     </button>
                     <button id="chi-tiet-btn-excel" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md text-[10px] md:text-sm">Excel</button>
@@ -90,8 +89,8 @@ const VIEW_HTML = `
             </div>
         </div>
     </div>
-    <div class="flex-grow bg-white rounded-lg shadow-md overflow-hidden">
-        <div class="table-container min-w-full overflow-auto">
+    <div class="flex-1 min-h-0 bg-white rounded-lg shadow-md flex flex-col overflow-hidden">
+        <div class="table-container min-w-full overflow-auto flex-1">
             <table class="min-w-full border-collapse table-fixed md:table-auto">
                 <thead class="bg-gray-200 sticky top-0 z-30"><tr>
                     <th class="px-2 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300 w-24">Thời Gian</th>
