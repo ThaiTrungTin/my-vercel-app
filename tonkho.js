@@ -106,7 +106,7 @@ async function updateTonKhoHeaderCounts() {
     if (!dauEl || !nhapEl || !xuatEl || !cuoiEl) return;
 
     [dauEl, nhapEl, xuatEl, cuoiEl].forEach(el => el.textContent = '(...)');
-    if (mobileSummaryEl) mobileSummaryEl.innerHTML = '<span class="text-gray-400 font-normal">...</span>';
+    if (mobileSummaryEl) mobileSummaryEl.innerHTML = '<span class="text-gray-400 font-normal text-[8px]">...</span>';
 
     try {
         let query = buildTonKhoQuery();
@@ -139,7 +139,6 @@ async function updateTonKhoHeaderCounts() {
         cuoiEl.classList.toggle('text-green-600', totalCuoi <= 0);
 
         if (mobileSummaryEl) {
-            // Sử dụng CSS class đã định nghĩa để ưu tiên hiển thị bên phải
             mobileSummaryEl.innerHTML = `
                 <div class="mobile-summary-container">
                     <div class="mobile-summary-content flex items-center gap-1 sm:gap-1.5 text-[7px] sm:text-[9px] font-bold border-x border-gray-100 px-1">
@@ -153,12 +152,19 @@ async function updateTonKhoHeaderCounts() {
                     </div>
                 </div>
             `;
+            // Tự động cuộn về bên phải để ưu tiên hiển thị số liệu 'Cuối'
+            const container = mobileSummaryEl.querySelector('.mobile-summary-container');
+            if (container) {
+                setTimeout(() => {
+                    container.scrollLeft = container.scrollWidth;
+                }, 50);
+            }
         }
 
     } catch (err) {
         console.error("Error updating counts:", err);
         [dauEl, nhapEl, xuatEl, cuoiEl].forEach(el => el.textContent = '(lỗi)');
-        if (mobileSummaryEl) mobileSummaryEl.innerHTML = '<span class="text-red-500">Lỗi</span>';
+        if (mobileSummaryEl) mobileSummaryEl.innerHTML = '<span class="text-red-500 text-[8px]">Lỗi</span>';
     }
 }
 
