@@ -1,4 +1,5 @@
-﻿<!DOCTYPE html>
+﻿
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -26,7 +27,6 @@
         }
         button:disabled { opacity: 0.5; cursor: not-allowed; }
         
-        /* Cải tiến Table Container để fix lỗi phân trang trên Mobile */
         .table-container { 
             flex: 1;
             min-height: 0;
@@ -61,7 +61,6 @@
                 box-shadow: 0 1px 2px rgba(0,0,0,0.1);
             }
 
-            /* Fix header mobile nhỏ gọn */
             #main-header {
                 height: 40px !important;
                 padding: 0 8px !important;
@@ -74,7 +73,6 @@
                 font-size: 9px !important;
             }
 
-            /* Ưu tiên hiển thị bên phải cho thanh tính toán tồn kho mobile, cho phép cuộn trái */
             .mobile-summary-container {
                 display: flex;
                 justify-content: flex-end;
@@ -89,14 +87,12 @@
                 min-width: min-content;
             }
             
-            /* Làm sáng nút bộ lọc khi đang active */
             .filter-active-mobile {
                 background-color: #dbeafe !important;
                 color: #2563eb !important;
                 border: 1px solid #bfdbfe !important;
             }
 
-            /* Thu nhỏ Droplist bộ lọc trên Mobile */
             .filter-popover {
                 min-width: 180px !important;
                 padding: 6px !important;
@@ -122,6 +118,18 @@
             .filter-popover .filter-apply-btn {
                 font-size: 10px !important;
                 padding: 2px 8px !important;
+            }
+
+            .sticky-action-col-mobile {
+                position: sticky !important;
+                right: 0 !important;
+                background-color: white !important;
+                z-index: 25 !important;
+                box-shadow: -2px 0 4px rgba(0,0,0,0.1);
+            }
+            th.sticky-action-col-mobile {
+                background-color: #e5e7eb !important;
+                z-index: 35 !important;
             }
         }
 
@@ -153,7 +161,7 @@
 
         .filter-popover {
             position: absolute;
-            z-index: 60; 
+            z-index: 999; 
             background: white;
             border: 1px solid #ccc;
             border-radius: 6px;
@@ -186,6 +194,31 @@
             z-index: 20;
             background-color: #e5e7eb;
         }
+
+        .action-popover {
+            position: absolute;
+            z-index: 999;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            min-width: 140px;
+            overflow: hidden;
+        }
+        .action-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            width: 100%;
+            text-align: left;
+            font-size: 0.875rem;
+            color: #374151;
+            transition: background 0.2s;
+        }
+        .action-item:hover {
+            background-color: #f3f4f6;
+        }
     </style>
 </head>
 <body class="bg-gray-100 font-sans antialiased text-[10px] md:text-sm">
@@ -208,7 +241,6 @@
 
     <div id="main-app" class="hidden">
         <div class="flex h-[100dvh] bg-gray-200 overflow-hidden">
-            <!-- Sidebar -->
             <div id="sidebar" class="hidden md:flex fixed inset-y-0 left-0 z-30 w-64 transform transition-all duration-300 ease-in-out bg-gray-900 text-gray-200 no-scrollbar overflow-y-auto flex-col">
                 <div id="sidebar-header-content" class="flex items-center justify-between p-4 border-b border-gray-700 flex-shrink-0">
                      <div id="user-details" class="flex items-center gap-3">
@@ -251,7 +283,6 @@
                 </nav>
             </div>
 
-            <!-- Main Content Area -->
             <div id="main-content-area" class="relative flex-1 flex flex-col ml-0 md:ml-64 transition-all duration-300 ease-in-out overflow-hidden">
                 <div id="main-header" class="flex-shrink-0 bg-green-100 shadow-sm px-2 md:px-4 py-1.5 flex justify-between items-center gap-2 md:gap-4 h-14 transition-all">
                     <div class="flex items-center gap-2 overflow-hidden flex-shrink-0">
@@ -316,7 +347,7 @@
                                     <div class="flex justify-between items-center mb-0 md:mb-4 flex-shrink-0">
                                         <h3 class="text-sm md:text-lg font-semibold text-gray-800">Tồn Kho</h3>
                                         <div class="relative">
-                                            <button id="tq-inventory-nganh-filter-btn" data-filter-key="nganh" data-context="inventory" class="filter-btn text-center px-2 py-1 md:px-3 md:py-2 border rounded-md bg-white w-24 md:w-32 shadow-sm text-[10px] md:text-sm">Ngành</button>
+                                            <button id="tq-inventory-chart-nganh-filter-btn" data-filter-key="nganh" data-context="inventory" class="filter-btn text-center px-2 py-1 md:px-3 md:py-2 border rounded-md bg-white w-24 md:w-32 shadow-sm text-[10px] md:text-sm">Ngành</button>
                                         </div>
                                     </div>
                                     <div id="tq-inventory-chart-container" class="relative flex-grow flex items-center justify-center min-h-[90px] md:min-h-[250px]">
@@ -342,8 +373,7 @@
                     </div>
                     
                     <div id="view-san-pham" class="app-view hidden flex flex-col h-full overflow-hidden">
-                        <div class="flex-shrink-0">
-                            <!-- Mobile Toolbar -->
+                         <div class="flex-shrink-0">
                             <div id="sp-mobile-toolbar" class="md:hidden flex items-center gap-2 mb-3 bg-white p-2 rounded-lg shadow-sm">
                                 <input type="text" id="san-pham-search-mobile" placeholder="Tìm kiếm..." class="flex-grow px-2 py-1.5 border rounded-md text-[11px] min-w-0">
                                 <button id="sp-mobile-filter-toggle" class="p-1.5 bg-gray-100 rounded-md text-gray-600">
@@ -354,7 +384,6 @@
                                 </button>
                             </div>
                             
-                            <!-- Mobile Filter Drawer -->
                             <div id="sp-filter-drawer-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden transition-opacity duration-300"></div>
                             <div id="sp-filter-drawer" class="fixed inset-y-0 right-0 w-64 bg-white z-50 transform translate-x-full transition-transform duration-300 shadow-xl flex flex-col">
                                 <div class="p-4 border-b flex justify-between items-center">
@@ -502,7 +531,7 @@
                                     <div class="flex flex-wrap gap-2 items-center w-full md:w-auto justify-end mt-2 md:mt-0">
                                         <button id="ton-kho-reset-filters" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md text-[10px] md:text-sm">Xóa Lọc</button>
                                         <button id="ton-kho-btn-settings" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-3 rounded-md text-[10px] md:text-sm flex items-center gap-1" title="Cài đặt cột hiển thị">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 0 0-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 0 0-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 0 0-2.573-1.066c-1.543-.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 0 0 1.066-2.573c-.94-1.543.826 3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path></svg>
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 0 0-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 0 0-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 0 0-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 0 0 1.066-2.573c-.94-1.543.826 3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path></svg>
                                             <span class="hidden lg:inline">Cài Đặt Cột</span>
                                         </button>
                                         <button id="ton-kho-btn-excel" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md text-[10px] md:text-sm">Excel</button>
@@ -526,7 +555,7 @@
                                         <th class="tk-col-tinh-trang hidden md:table-cell px-1 py-2 border border-gray-300 text-center uppercase tracking-wider font-bold">T.Trạng</th>
                                         <th class="tk-col-tray hidden md:table-cell px-1 py-2 border border-gray-300 text-center uppercase tracking-wider font-bold">Tray</th>
                                         <th class="tk-col-nganh hidden md:table-cell px-1 md:px-4 py-2 text-center font-bold text-black uppercase tracking-wider border border-gray-300">Ngành</th>
-                                        <th class="tk-col-phu-trach hidden md:table-cell px-1 py-2 text-sm text-gray-600 border border-gray-300 text-center">${tk.phu_trach || ''}</td>
+                                        <th class="tk-col-phu-trach hidden md:table-cell px-1 py-2 text-sm text-gray-600 border border-gray-300 text-center">Phụ Trách</td>
                                         <th class="tk-col-ghi-chu hidden md:table-cell px-1 py-2 border border-gray-300 text-center">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                         </th>
@@ -564,8 +593,7 @@
                     <div id="view-chi-tiet" class="app-view hidden flex flex-col h-full overflow-hidden"></div>
                     
                     <div id="view-cai-dat" class="app-view hidden h-full overflow-y-auto no-scrollbar">
-                        <div class="flex flex-col lg:flex-row gap-6 items-start">
-                            <!-- Left Column: Personal Info -->
+                         <div class="flex flex-col lg:flex-row gap-6 items-start">
                             <div class="w-full lg:w-1/3 flex flex-col gap-6">
                                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 w-full">
                                     <h2 class="text-lg font-black mb-6 text-gray-800 border-b border-gray-50 pb-3 flex items-center gap-2">
@@ -627,7 +655,6 @@
                                 </div>
                             </div>
 
-                            <!-- Right Column: Admin Panel & Backup -->
                             <div class="flex-1 w-full flex flex-col gap-6">
                                 <div id="admin-panel" class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hidden">
                                     <div class="flex justify-between items-center mb-6 border-b border-gray-50 pb-3">
@@ -685,7 +712,6 @@
             </div>
         </div>
         
-        <!-- Mobile Bottom Navigation -->
         <nav id="bottom-nav" class="fixed bottom-0 left-0 right-0 bg-gray-900 text-gray-400 flex justify-around items-center h-16 md:hidden z-40 border-t border-gray-700 shadow-[0_-2px_10px_rgba(0,0,0,0.3)]">
             <button data-view="view-phat-trien" class="nav-button mobile-nav-btn flex flex-col items-center justify-center w-full h-full active">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 01-2-2v-2z"></path></svg>
@@ -708,6 +734,63 @@
                 <span class="text-[10px] mt-1">Cài Đặt</span>
             </button>
         </nav>
+    </div>
+
+    <div id="chi-tiet-vt-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop">
+        <div class="bg-white rounded-2xl shadow-2xl w-full md:max-w-6xl mx-4 flex flex-col h-[95vh] md:h-[90vh] overflow-hidden">
+            <div class="p-3 md:p-6 border-b bg-gray-50 flex justify-between items-center">
+                <div>
+                    <h3 class="text-lg md:text-2xl font-black text-gray-800 leading-tight">Quản lý phân bổ vật tư</h3>
+                    <p id="ct-vt-info-header" class="mt-0.5"></p>
+                </div>
+                <button type="button" id="close-ct-vt-modal" class="text-gray-400 hover:text-gray-600 text-2xl md:text-3xl">&times;</button>
+            </div>
+            <div class="p-4 md:p-8 overflow-y-auto flex-1 no-scrollbar space-y-4 md:space-y-6">
+                <div id="ct-vt-action-bar" class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 bg-blue-50 p-3 md:p-4 rounded-xl border border-blue-100">
+                    <div class="text-[11px] md:text-lg">
+                        <span class="text-gray-600">Gốc: </span>
+                        <span id="ct-vt-original-qty" class="font-black text-blue-700">0</span>
+                        <span class="mx-2 text-gray-300">|</span>
+                        <span class="text-gray-600">Đã chia: </span>
+                        <span id="ct-vt-distributed-qty" class="font-black text-green-700">0</span>
+                    </div>
+                    <button type="button" id="add-ct-vt-row-btn" class="w-full md:w-auto bg-indigo-600 text-white px-4 md:px-6 py-2 md:py-3 rounded-xl text-[11px] md:text-sm font-black shadow-lg hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 active:scale-95 uppercase tracking-widest">
+                        <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        Thêm người nhận
+                    </button>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse min-w-[500px]">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="border p-2 text-[10px] md:text-sm font-black text-gray-600 text-left w-1/4">Người nhận</th>
+                                <th class="border p-2 text-[10px] md:text-sm font-black text-gray-600 text-left w-1/6">SL</th>
+                                <th class="border p-2 text-[10px] md:text-sm font-black text-gray-600 text-left">Địa điểm</th>
+                                <th class="border p-2 text-[10px] md:text-sm font-black text-gray-600 text-left">Ghi chú</th>
+                                <th class="border p-2 text-[10px] md:text-sm font-black text-gray-600 text-center w-10 ct-vt-col-delete">Xóa</th>
+                            </tr>
+                        </thead>
+                        <tbody id="chi-tiet-vt-table-body"></tbody>
+                    </table>
+                    <div id="ct-vt-empty-state" class="hidden text-center py-12 text-gray-400">Chưa có thông tin phân bổ cho mục này.</div>
+                </div>
+
+                <div class="bg-gray-50 rounded-xl p-3 md:p-4 border border-gray-100">
+                    <h4 class="text-[9px] md:text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-3 md:mb-4 flex items-center gap-2">
+                        <svg class="w-3 h-3 md:w-4 md:h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Lịch sử cập nhật chi tiết
+                    </h4>
+                    <div id="ct-vt-history-list" class="space-y-2 md:space-y-3 max-h-[150px] md:max-h-[200px] overflow-y-auto no-scrollbar pr-1 md:pr-2">
+                        <p class="text-[9px] md:text-xs text-gray-400 italic">Dữ liệu lịch sử sẽ hiển thị tại đây.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="p-3 md:p-4 border-t bg-gray-50 flex justify-end gap-2 md:gap-3">
+                <button type="button" id="cancel-ct-vt-btn" class="px-4 md:px-6 py-2 bg-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-300">Hủy</button>
+                <button type="button" id="save-ct-vt-btn" class="px-6 md:px-8 py-2 bg-blue-600 text-white rounded-xl font-bold shadow-lg hover:bg-blue-700 active:scale-95 transition-all">Lưu</button>
+            </div>
+        </div>
     </div>
 
     <div id="confirm-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop">
@@ -853,7 +936,6 @@
         </div>
     </div>
 
-    <!-- Inventory Column Settings Modal -->
     <div id="ton-kho-settings-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 flex flex-col modal-content-custom">
             <div class="p-4 border-b">
@@ -945,8 +1027,21 @@
     </template>
     
     <template id="autocomplete-popover-template">
-        <div class="absolute z-40 bg-white border border-gray-300 rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto">
+        <div class="absolute z-999 bg-white border border-gray-300 rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto">
             <div class="autocomplete-options-list"></div>
+        </div>
+    </template>
+
+    <template id="chi-tiet-action-menu-template">
+        <div class="action-popover">
+            <button class="action-item ct-action-view-purpose">
+                <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                Xem Phân Bổ
+            </button>
+            <button class="action-item ct-action-edit-vt">
+                <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                Chỉnh Sửa
+            </button>
         </div>
     </template>
 

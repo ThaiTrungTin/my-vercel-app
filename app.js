@@ -318,6 +318,9 @@ function closeActiveAutocompletePopover() {
     }
 }
 
+/**
+ * Cải tiến openAutocomplete để không bị ẩn bởi container overflow
+ */
 export function openAutocomplete(inputElement, suggestions, config) {
     closeActiveAutocompletePopover(); 
     if (suggestions.length === 0) return;
@@ -327,7 +330,6 @@ export function openAutocomplete(inputElement, suggestions, config) {
 
     const popoverContent = popoverTemplate.content.cloneNode(true);
     const popover = popoverContent.querySelector('div'); 
-    
     const optionsList = popover.querySelector('.autocomplete-options-list');
 
     optionsList.innerHTML = suggestions.map(item => `
@@ -339,9 +341,17 @@ export function openAutocomplete(inputElement, suggestions, config) {
         </div>
     `).join('');
 
-    inputElement.parentNode.appendChild(popover);
-    popover.style.width = config.width || `${inputElement.offsetWidth}px`;
+    // --- FIX: Gắn trực tiếp vào body để tránh bị container overflow: hidden che khuất ---
+    document.body.appendChild(popover);
     
+    // Tính toán vị trí tuyệt đối dựa trên input
+    const rect = inputElement.getBoundingClientRect();
+    popover.style.position = 'fixed';
+    popover.style.left = `${rect.left}px`;
+    popover.style.top = `${rect.bottom + 4}px`;
+    popover.style.width = config.width || `${rect.width}px`;
+    popover.style.zIndex = '9999';
+
     optionsList.addEventListener('mousedown', (e) => { 
         const option = e.target.closest('.autocomplete-option');
         if (option) {
@@ -573,7 +583,6 @@ function updateNotificationBar() {
             roleMessage = 'Chào mừng bạn.';
     }
 
-    // Tối ưu cho mobile: Chạy marquee xuyên qua nhưng căn lề hợp lý
     notificationBar.innerHTML = `
         <marquee behavior="scroll" direction="left" scrollamount="4" class="w-full">
             <span class="font-bold text-blue-800">${ho_ten}</span> (${phan_quyen}) - 
@@ -592,15 +601,11 @@ async function handleLogout() {
     window.location.href = 'login.html';
 }
 
-/**
- * Cập nhật hiển thị các menu chức năng dựa trên quyền xem_view của User
- */
 export function applyViewPermissions() {
     if (!currentUser) return;
     const allowedViewsStr = currentUser.xem_view || '';
     const allowedViews = allowedViewsStr.split(',').map(v => v.trim()).filter(Boolean);
     
-    // Luôn cho phép truy cập Cài đặt để user có thể đổi thông tin/đăng xuất
     if (!allowedViews.includes('view-cai-dat')) {
         allowedViews.push('view-cai-dat');
     }
@@ -620,14 +625,11 @@ export function applyViewPermissions() {
 }
 
 export async function showView(viewId) {
-    // Kiểm tra quyền truy cập View
     if (currentUser) {
         const allowedViews = (currentUser.xem_view || '').split(',').map(v => v.trim()).filter(Boolean);
         const managedViews = ['view-phat-trien', 'view-san-pham', 'view-ton-kho', 'view-chi-tiet'];
         
-        // Nếu là view bị quản lý nhưng user không có quyền
         if (managedViews.includes(viewId) && !allowedViews.includes(viewId)) {
-            // Tìm view đầu tiên được phép để chuyển hướng
             const fallbackView = managedViews.find(v => allowedViews.includes(v)) || 'view-cai-dat';
             return showView(fallbackView);
         }
@@ -733,7 +735,6 @@ function updateOnlineStatusUI() {
     const avatarStatusEl = document.getElementById('sidebar-avatar-status');
     if (!avatarStatusEl) return;
 
-    // Cập nhật trạng thái bản thân trên sidebar avatar
     const selfPresence = onlineUsers.get(currentUser.gmail);
     if (selfPresence) {
         const status = selfPresence.status || 'online';
@@ -744,9 +745,6 @@ function updateOnlineStatusUI() {
     }
 }
 
-/**
- * Lắng nghe thay đổi phân quyền Realtime cho bản thân
- */
 function setupUserPermissionRealtime() {
     if (userChannel) sb.removeChannel(userChannel);
     
@@ -758,27 +756,17 @@ function setupUserPermissionRealtime() {
             filter: `gmail=eq.${currentUser.gmail}` 
         }, payload => {
             const newData = payload.new;
-            console.log("Quyền hạn đã thay đổi Realtime:", newData);
-            
-            // Cập nhật state cục bộ
             Object.assign(currentUser, newData);
             sessionStorage.setItem('loggedInUser', JSON.stringify(currentUser));
-            
-            // Cập nhật UI
             showToast("Admin đã cập nhật quyền hạn của bạn.", "info");
             updateNotificationBar();
             updateSidebarAvatar(currentUser.anh_dai_dien_url);
-            applyViewPermissions(); // Cập nhật lại các menu hiển thị
-            
-            // Làm mới view hiện tại để áp dụng quyền mới
+            applyViewPermissions(); 
             showView(currentView);
         })
         .subscribe();
 }
 
-/**
- * Triển khai Presence Realtime
- */
 function setupPresence() {
     if (presenceChannel) sb.removeChannel(presenceChannel);
 
@@ -796,8 +784,6 @@ function setupPresence() {
                 }
             }
             updateOnlineStatusUI();
-            
-            // Nếu đang ở view cài đặt, re-render danh sách user để thấy chấm xanh/vàng
             if (currentView === 'view-cai-dat') {
                 import('./caidat.js').then(m => m.fetchUsers());
             }
@@ -812,7 +798,6 @@ function setupPresence() {
             }
         });
 
-    // Lắng nghe đổi tab
     document.addEventListener('visibilitychange', async () => {
         if (presenceChannel) {
             const status = document.visibilityState === 'visible' ? 'online' : 'away';
@@ -875,7 +860,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const navTexts = document.querySelectorAll('.nav-text');
     const sidebarHeaderContent = document.getElementById('sidebar-header-content');
     const userInfoText = document.getElementById('user-info-text');
-    const sidebarFooter = document.getElementById('sidebar-footer');
 
     const setSidebarState = (isCollapsed) => {
         if (!sidebar || !mainContent || window.innerWidth <= 768) return;
@@ -923,6 +907,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 { id: 'ton-kho-modal', closeBtnId: 'cancel-ton-kho-btn' },
                 { id: 'ton-kho-settings-modal', closeBtnId: 'ton-kho-settings-close-btn' },
                 { id: 'chi-tiet-settings-modal', closeBtnId: 'chi-tiet-settings-close-btn' },
+                { id: 'chi-tiet-vt-modal', closeBtnId: 'close-ct-vt-modal' },
             ];
             for (const modalInfo of modals) {
                 const modalEl = document.getElementById(modalInfo.id);
@@ -947,7 +932,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             updateSidebarAvatar(currentUser.anh_dai_dien_url);
             updateNotificationBar();
-            applyViewPermissions(); // Áp dụng quyền hiển thị menu ngay khi khởi tạo
+            applyViewPermissions(); 
             
             document.getElementById('app-loading')?.classList.add('hidden');
             document.getElementById('main-app')?.classList.remove('hidden');
@@ -957,7 +942,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             const lastView = sessionStorage.getItem('lastViewId') || 'view-phat-trien';
             await showView(lastView);
             
-            // Kích hoạt Realtime & Presence
             setupUserPermissionRealtime();
             setupDataRealtime();
             setupPresence();
