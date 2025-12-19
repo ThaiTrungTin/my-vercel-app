@@ -101,10 +101,12 @@ async function updateTonKhoHeaderCounts() {
     const nhapEl = document.getElementById('ton-kho-header-nhap-count');
     const xuatEl = document.getElementById('ton-kho-header-xuat-count');
     const cuoiEl = document.getElementById('ton-kho-header-cuoi-count');
+    const mobileSummaryEl = document.getElementById('tk-summary-info');
 
     if (!dauEl || !nhapEl || !xuatEl || !cuoiEl) return;
 
     [dauEl, nhapEl, xuatEl, cuoiEl].forEach(el => el.textContent = '(...)');
+    if (mobileSummaryEl) mobileSummaryEl.innerHTML = '<span class="text-gray-400 font-normal">Đang tính...</span>';
 
     try {
         let query = buildTonKhoQuery();
@@ -123,17 +125,35 @@ async function updateTonKhoHeaderCounts() {
             });
         }
 
-        dauEl.textContent = `(${totalDau.toLocaleString()})`;
-        nhapEl.textContent = `(${totalNhap.toLocaleString()})`;
-        xuatEl.textContent = `(${totalXuat.toLocaleString()})`;
-        cuoiEl.textContent = `(${totalCuoi.toLocaleString()})`;
+        const dVal = totalDau.toLocaleString();
+        const nVal = totalNhap.toLocaleString();
+        const xVal = totalXuat.toLocaleString();
+        const cVal = totalCuoi.toLocaleString();
+
+        dauEl.textContent = `(${dVal})`;
+        nhapEl.textContent = `(${nVal})`;
+        xuatEl.textContent = `(${xVal})`;
+        cuoiEl.textContent = `(${cVal})`;
         
         cuoiEl.classList.toggle('text-red-600', totalCuoi > 0);
         cuoiEl.classList.toggle('text-green-600', totalCuoi <= 0);
 
+        if (mobileSummaryEl) {
+            mobileSummaryEl.innerHTML = `
+                <span class="text-blue-600">Đ:${dVal}</span>
+                <span class="mx-0.5 text-gray-300">|</span>
+                <span class="text-green-600">N:${nVal}</span>
+                <span class="mx-0.5 text-gray-300">|</span>
+                <span class="text-red-600">X:${xVal}</span>
+                <span class="mx-0.5 text-gray-300">|</span>
+                <span class="${totalCuoi > 0 ? 'text-red-600' : 'text-green-600'} font-black">C:${cVal}</span>
+            `;
+        }
+
     } catch (err) {
         console.error("Error updating counts:", err);
         [dauEl, nhapEl, xuatEl, cuoiEl].forEach(el => el.textContent = '(lỗi)');
+        if (mobileSummaryEl) mobileSummaryEl.innerHTML = '<span class="text-red-500">Lỗi</span>';
     }
 }
 

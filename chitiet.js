@@ -261,9 +261,9 @@ async function updateChiTietHeaderCounts() {
         
         if (bottomSummaryEl) {
             bottomSummaryEl.innerHTML = `
-                <span class="text-green-600">N: ${nVal}</span>
+                <span class="text-green-600 font-bold">N: ${nVal}</span>
                 <span class="mx-1 text-gray-300">|</span>
-                <span class="text-red-600">X: ${xVal}</span>
+                <span class="text-red-600 font-bold">X: ${xVal}</span>
             `;
         }
     } catch (err) {
@@ -358,7 +358,14 @@ function renderChiTietTable(data) {
             <tr class="hover:bg-gray-50 border-b border-gray-200 text-gray-900">
                 <td class="px-2 py-2 border-r border-gray-300 text-center whitespace-nowrap">${formatDateToDDMMYYYY(ct.thoi_gian)}</td>
                 <td class="hidden md:table-cell ct-col-ma-kho px-2 py-2 border-r border-gray-300 text-center whitespace-nowrap" title="${ct.ma_kho}">${ct.ma_kho}</td>
-                <td class="sticky left-0 z-10 bg-white px-3 py-2 border-r border-gray-300 text-center ${maNxClass} shadow-[2px_0_5px_-2px_rgba(0,0,0,0.2)] whitespace-nowrap min-w-max md:whitespace-normal md:min-w-[180px] w-auto" title="${ct.ma_nx}">${ct.ma_nx}</td>
+                <td class="sticky left-0 z-10 bg-white px-3 py-2 border-r border-gray-300 text-center shadow-[2px_0_5px_-2px_rgba(0,0,0,0.2)] whitespace-nowrap min-w-max md:whitespace-normal md:min-w-[180px] w-auto">
+                    <div class="flex items-center justify-between gap-1.5 w-full">
+                        <span class="${maNxClass}" title="${ct.ma_nx}">${ct.ma_nx}</span>
+                        <button class="copy-ma-nx-btn p-1 text-gray-300 hover:text-blue-500 transition-colors" data-ma-nx="${ct.ma_nx}" title="Copy Mã NX">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                        </button>
+                    </div>
+                </td>
                 <td class="hidden md:table-cell ct-col-ma-vach px-2 py-2 border-r border-gray-300 text-left whitespace-nowrap" title="${ct.ma_vach}">${ct.ma_vach}</td>
                 <td class="px-2 py-2 border-r border-gray-300 text-left cursor-pointer text-blue-600 hover:underline ma-vt-cell whitespace-nowrap" title="${ct.ma_vt}">${ct.ma_vt}</td>
                 <td class="hidden md:table-cell ct-col-ten-vt px-2 py-2 border-r border-gray-300 text-left min-w-[400px]" title="${ct.ten_vt}">
@@ -677,6 +684,7 @@ export function initChiTietView() {
         tableBody.addEventListener('click', async (e) => {
             const maVtCell = e.target.closest('.ma-vt-cell');
             const purposeBtn = e.target.closest('.ct-view-purpose-btn');
+            const copyNxBtn = e.target.closest('.copy-ma-nx-btn');
 
             if (maVtCell) {
                 const ma_vt = maVtCell.textContent.trim();
@@ -694,6 +702,17 @@ export function initChiTietView() {
                 const purpose = purposeBtn.dataset.purpose;
                 const maNx = purposeBtn.dataset.maNx;
                 showToast(`Mã NX: ${maNx}\nMục đích: ${purpose}`, 'info');
+                return;
+            }
+
+            if (copyNxBtn) {
+                const maNx = copyNxBtn.dataset.maNx;
+                try {
+                    await navigator.clipboard.writeText(maNx);
+                    showToast('Đã copy Mã NX: ' + maNx, 'success');
+                } catch (err) {
+                    showToast('Lỗi copy Mã NX', 'error');
+                }
                 return;
             }
         });
