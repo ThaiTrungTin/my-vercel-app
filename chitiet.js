@@ -424,9 +424,16 @@ function openActionMenu(e, button) {
     e.stopPropagation(); 
     closeActionPopover();
     
-    const ctId = button.dataset.ctId;
-    const ct = cache.chiTietList.find(i => i.id == ctId);
-    if (!ct) return;
+    // NÂNG CẤP: Ép kiểu string và trim khoảng trắng tuyệt đối
+    const ctId = String(button.dataset.ctId || '').trim();
+    if (!ctId) return;
+
+    const ct = cache.chiTietList.find(i => String(i.id).trim() === ctId);
+    
+    if (!ct) {
+        showToast("Không tìm thấy dữ liệu dòng này.", "error");
+        return;
+    }
 
     const template = document.getElementById('chi-tiet-action-menu-template');
     const popover = template.content.cloneNode(true).querySelector('.action-popover');
@@ -487,7 +494,10 @@ async function fetchNameSuggestions() {
 export async function refreshCurrentDetailVtModal() {
     if (!currentDistributingItem) return;
     
-    const { data, error } = await sb.from('chi_tiet_vt').select('*').eq('id_ct', currentDistributingItem.id).order('created_at', { ascending: true });
+    // NÂNG CẤP: Sử dụng String ID an toàn
+    const cleanId = String(currentDistributingItem.id).trim();
+    const { data, error } = await sb.from('chi_tiet_vt').select('*').eq('id_ct', cleanId).order('created_at', { ascending: true });
+    
     if (!error && data) {
         const isFocusing = document.querySelector('#chi-tiet-vt-table-body input:focus, #chi-tiet-vt-table-body textarea:focus');
         if (!isFocusing) {
@@ -507,21 +517,24 @@ export async function refreshCurrentDetailVtModal() {
 function ensureModalListenersAttached() {
     if (isModalListenersInitialized) return;
 
-    document.getElementById('close-ct-vt-modal').onclick = () => {
+    const closeBtn = document.getElementById('close-ct-vt-modal');
+    if (closeBtn) closeBtn.onclick = () => {
         currentDistributingItem = null;
         document.getElementById('chi-tiet-vt-modal').classList.add('hidden');
     };
     
-    document.getElementById('cancel-ct-vt-btn').onclick = () => {
+    const cancelBtn = document.getElementById('cancel-ct-vt-btn');
+    if (cancelBtn) cancelBtn.onclick = () => {
         currentDistributingItem = null;
         document.getElementById('chi-tiet-vt-modal').classList.add('hidden');
     };
     
-    document.getElementById('add-ct-vt-row-btn').onclick = () => {
+    const addBtn = document.getElementById('add-ct-vt-row-btn');
+    if (addBtn) addBtn.onclick = () => {
         if (!currentDistributingItem) return;
         const newItem = {
             id: crypto.randomUUID(),
-            id_ct: currentDistributingItem.id,
+            id_ct: String(currentDistributingItem.id).trim(), // Ép kiểu string ID
             nguoi_nhan: '',
             sl: 0,
             dia_diem: '',
@@ -535,7 +548,8 @@ function ensureModalListenersAttached() {
         renderDetailVtRows(false);
     };
 
-    document.getElementById('save-ct-vt-btn').onclick = async () => {
+    const saveBtn = document.getElementById('save-ct-vt-btn');
+    if (saveBtn) saveBtn.onclick = async () => {
         if (!currentDistributingItem) return;
         const currentActiveSum = detailVtItems.reduce((s, i) => i.trang_thai !== 'Xóa' ? s + (parseFloat(i.sl) || 0) : s, 0);
         const original = parseFloat(document.getElementById('ct-vt-original-qty').textContent) || 0;
@@ -549,9 +563,10 @@ function ensureModalListenersAttached() {
         try {
             const nowStr = new Date().toLocaleString('vi-VN');
             const currentUserLabel = currentUser.ho_ten || 'Admin';
+            const cleanIdCt = String(currentDistributingItem.id).trim();
 
             const finalDataToSave = detailVtItems.map(item => {
-                const initialItem = initialDetailVtItems.find(it => it.id === item.id);
+                const initialItem = initialDetailVtItems.find(it => String(it.id).trim() === String(item.id).trim());
                 let logs = item.lich_su || '';
 
                 if (!initialItem) {
@@ -583,8 +598,8 @@ function ensureModalListenersAttached() {
                 }
 
                 return {
-                    id: item.id,
-                    id_ct: item.id_ct,
+                    id: String(item.id).trim(),
+                    id_ct: cleanIdCt,
                     nguoi_nhan: item.nguoi_nhan,
                     sl: item.sl,
                     dia_diem: item.dia_diem,
@@ -595,7 +610,8 @@ function ensureModalListenersAttached() {
                 };
             });
 
-            const { error: deleteError } = await sb.from('chi_tiet_vt').delete().eq('id_ct', currentDistributingItem.id);
+            // Xóa cũ thêm mới dựa trên Text ID an toàn
+            const { error: deleteError } = await sb.from('chi_tiet_vt').delete().eq('id_ct', cleanIdCt);
             if (deleteError) throw deleteError;
 
             if (finalDataToSave.length > 0) {
@@ -616,52 +632,58 @@ function ensureModalListenersAttached() {
 }
 
 export async function openDetailVtModal(ct, isReadOnly = false) {
-    // Đảm bảo các nút điều khiển modal (Lưu, Hủy) luôn được gán sự kiện
+    if (!ct || !ct.id) return; 
+    
     ensureModalListenersAttached();
     
     currentDistributingItem = ct;
+    const cleanId = String(ct.id).trim(); // Text ID an toàn
     const modal = document.getElementById('chi-tiet-vt-modal');
     const headerEl = document.getElementById('ct-vt-info-header');
     const originalQtyEl = document.getElementById('ct-vt-original-qty');
     
-    headerEl.innerHTML = `
-        <div class="flex flex-col gap-1 md:gap-1.5 overflow-hidden">
-            <div class="text-[11px] md:text-lg font-black flex items-center gap-1.5 whitespace-nowrap overflow-x-auto no-scrollbar">
-                <span class="text-gray-800 uppercase tracking-tight flex-shrink-0">Phân bổ:</span>
-                <span class="text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100 flex-shrink-0">${ct.ma_vt} - ${ct.lot || 'No LOT'} - ${ct.date || 'No Date'}</span>
+    if (headerEl) {
+        headerEl.innerHTML = `
+            <div class="flex flex-col gap-1 md:gap-1.5 overflow-hidden">
+                <div class="text-[11px] md:text-lg font-black flex items-center gap-1.5 whitespace-nowrap overflow-x-auto no-scrollbar">
+                    <span class="text-gray-800 uppercase tracking-tight flex-shrink-0">Phân bổ:</span>
+                    <span class="text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100 flex-shrink-0">${ct.ma_vt} - ${ct.lot || 'No LOT'} - ${ct.date || 'No Date'}</span>
+                </div>
+                <div class="text-[9px] md:text-sm font-bold text-gray-500 flex items-center gap-2 whitespace-nowrap overflow-x-auto no-scrollbar">
+                    <span class="text-gray-700 flex-shrink-0">${formatDateToDDMMYYYY(ct.thoi_gian)}</span>
+                    <span class="w-1 h-1 rounded-full bg-gray-300 flex-shrink-0"></span>
+                    <span class="text-indigo-600 flex-shrink-0">${ct.ma_nx}</span>
+                    <span class="w-1 h-1 rounded-full bg-gray-300 flex-shrink-0"></span>
+                    <span class="flex-shrink-0">Y/c: <span class="text-gray-800 underline underline-offset-2">${ct.yeu_cau || 'N/A'}</span></span>
+                </div>
+                <div class="text-[9px] md:text-xs text-gray-400 mt-1 bg-gray-50 p-1.5 rounded border border-gray-100 italic line-clamp-2" title="${ct.muc_dich || ''}">
+                    Mục đích: <span class="text-gray-600 not-italic font-medium">${ct.muc_dich || 'Không có'}</span>
+                </div>
             </div>
-            <div class="text-[9px] md:text-sm font-bold text-gray-500 flex items-center gap-2 whitespace-nowrap overflow-x-auto no-scrollbar">
-                <span class="text-gray-700 flex-shrink-0">${formatDateToDDMMYYYY(ct.thoi_gian)}</span>
-                <span class="w-1 h-1 rounded-full bg-gray-300 flex-shrink-0"></span>
-                <span class="text-indigo-600 flex-shrink-0">${ct.ma_nx}</span>
-                <span class="w-1 h-1 rounded-full bg-gray-300 flex-shrink-0"></span>
-                <span class="flex-shrink-0">Y/c: <span class="text-gray-800 underline underline-offset-2">${ct.yeu_cau || 'N/A'}</span></span>
-            </div>
-            <div class="text-[9px] md:text-xs text-gray-400 mt-1 bg-gray-50 p-1.5 rounded border border-gray-100 italic line-clamp-2" title="${ct.muc_dich || ''}">
-                Mục đích: <span class="text-gray-600 not-italic font-medium">${ct.muc_dich || 'Không có'}</span>
-            </div>
-        </div>
-    `;
+        `;
+    }
+    
     const qty = ct.nhap || ct.xuat || 0;
-    originalQtyEl.textContent = qty;
+    if (originalQtyEl) originalQtyEl.textContent = qty;
 
     const saveBtn = document.getElementById('save-ct-vt-btn');
     const addBtn = document.getElementById('add-ct-vt-row-btn');
     
     if (isReadOnly) {
-        saveBtn.classList.add('hidden');
-        addBtn.classList.add('hidden');
+        if (saveBtn) saveBtn.classList.add('hidden');
+        if (addBtn) addBtn.classList.add('hidden');
         document.querySelectorAll('.ct-vt-col-delete').forEach(el => el.classList.add('hidden'));
     } else {
-        saveBtn.classList.remove('hidden');
-        addBtn.classList.remove('hidden');
+        if (saveBtn) saveBtn.classList.remove('hidden');
+        if (addBtn) addBtn.classList.remove('hidden');
         document.querySelectorAll('.ct-vt-col-delete').forEach(el => el.classList.remove('hidden'));
     }
 
     showLoading(true);
     try {
         await fetchNameSuggestions();
-        const { data, error } = await sb.from('chi_tiet_vt').select('*').eq('id_ct', ct.id).order('created_at', { ascending: true });
+        // NÂNG CẤP: Ép kiểu Text ID trong query
+        const { data, error } = await sb.from('chi_tiet_vt').select('*').eq('id_ct', cleanId).order('created_at', { ascending: true });
         if (error) throw error;
         
         detailVtItems = data || [];
@@ -669,9 +691,9 @@ export async function openDetailVtModal(ct, isReadOnly = false) {
         
         renderDetailVtRows(isReadOnly);
         renderHistory(); 
-        modal.classList.remove('hidden');
+        if (modal) modal.classList.remove('hidden');
     } catch (err) {
-        showToast(`Lỗi: ${err.message}`, 'error');
+        showToast(`Lỗi xác thực dữ liệu: ${err.message}`, 'error');
     } finally {
         showLoading(false);
     }
@@ -689,7 +711,7 @@ function renderHistory() {
             const logs = item.lich_su.split('\n').filter(Boolean);
             logs.forEach((log, index) => {
                 allHistory.push({
-                    id: item.id,
+                    id: String(item.id).trim(),
                     text: log,
                     time: new Date(new Date(item.created_at || Date.now()).getTime() + (index * 1000)).toISOString(),
                     trangThaiHienTai: item.trang_thai
@@ -739,7 +761,7 @@ function renderHistory() {
 }
 
 function handleRestoreItem(id) {
-    const item = detailVtItems.find(it => it.id === id);
+    const item = detailVtItems.find(it => String(it.id).trim() === String(id).trim());
     if (!item) return;
 
     const originalQty = parseFloat(document.getElementById('ct-vt-original-qty').textContent) || 0;
@@ -769,19 +791,21 @@ function renderDetailVtRows(isReadOnly = false) {
     const tbody = document.getElementById('chi-tiet-vt-table-body');
     const emptyState = document.getElementById('ct-vt-empty-state');
     const distributedEl = document.getElementById('ct-vt-distributed-qty');
-    const originalQty = parseFloat(document.getElementById('ct-vt-original-qty').textContent) || 0;
+    const originalQtyEl = document.getElementById('ct-vt-original-qty');
+    const originalQty = originalQtyEl ? (parseFloat(originalQtyEl.textContent) || 0) : 0;
     
+    if (!tbody) return;
     tbody.innerHTML = '';
     let totalDist = 0;
 
     const visibleItems = detailVtItems.filter(it => it.trang_thai !== 'Xóa');
 
     if (visibleItems.length === 0) {
-        emptyState.classList.remove('hidden');
+        if (emptyState) emptyState.classList.remove('hidden');
     } else {
-        emptyState.classList.add('hidden');
+        if (emptyState) emptyState.classList.add('hidden');
         visibleItems.forEach((item) => {
-            const actualIndex = detailVtItems.findIndex(it => it.id === item.id);
+            const actualIndex = detailVtItems.findIndex(it => String(it.id).trim() === String(item.id).trim());
             
             totalDist += (parseFloat(item.sl) || 0);
             const row = document.createElement('tr');
@@ -830,7 +854,7 @@ function renderDetailVtRows(isReadOnly = false) {
                 slInput.oninput = (e) => {
                     let newValue = parseFloat(e.target.value) || 0;
                     if (newValue < 0) newValue = 0;
-                    const otherRowsSum = detailVtItems.reduce((sum, it) => (it.id !== item.id && it.trang_thai !== 'Xóa') ? sum + (parseFloat(it.sl) || 0) : sum, 0);
+                    const otherRowsSum = detailVtItems.reduce((sum, it) => (String(it.id).trim() !== String(item.id).trim() && it.trang_thai !== 'Xóa') ? sum + (parseFloat(it.sl) || 0) : sum, 0);
                     const maxAllowed = originalQty - otherRowsSum;
                     if (newValue > maxAllowed) {
                         newValue = maxAllowed;
@@ -859,8 +883,8 @@ function renderDetailVtRows(isReadOnly = false) {
             } else {
                 const diaDiemInput = row.querySelector('.vt-input-dia-diem');
                 const ghiChuInput = row.querySelector('.vt-input-ghi-chu');
-                diaDiemInput.onclick = (e) => { if (e.target.scrollHeight > e.target.clientHeight) showToast(`Địa điểm: ${e.target.value}`, 'info'); };
-                ghiChuInput.onclick = (e) => { if (e.target.scrollHeight > e.target.clientHeight) showToast(`Ghi chú: ${e.target.value}`, 'info'); };
+                if (diaDiemInput) diaDiemInput.onclick = (e) => { if (e.target.scrollHeight > e.target.clientHeight) showToast(`Địa điểm: ${e.target.value}`, 'info'); };
+                if (ghiChuInput) ghiChuInput.onclick = (e) => { if (e.target.scrollHeight > e.target.clientHeight) showToast(`Ghi chú: ${e.target.value}`, 'info'); };
             }
 
             tbody.appendChild(row);
@@ -868,6 +892,7 @@ function renderDetailVtRows(isReadOnly = false) {
     }
     
     function updateLiveTotal() {
+        if (!distributedEl) return;
         const currentSum = detailVtItems.reduce((s, i) => i.trang_thai !== 'Xóa' ? s + (parseFloat(i.sl) || 0) : s, 0);
         distributedEl.textContent = currentSum;
         distributedEl.className = currentSum > originalQty ? 'font-black text-red-600' : 'font-black text-green-700';
@@ -876,7 +901,7 @@ function renderDetailVtRows(isReadOnly = false) {
 }
 
 function handleDeleteItem(id) {
-    const actualIndex = detailVtItems.findIndex(it => it.id === id);
+    const actualIndex = detailVtItems.findIndex(it => String(it.id).trim() === String(id).trim());
     if (actualIndex === -1) return;
 
     const item = detailVtItems[actualIndex];
@@ -888,17 +913,18 @@ function handleDeleteItem(id) {
     item.lich_su = item.lich_su ? `${item.lich_su}\n${log}` : log;
     item.created_at = new Date().toISOString(); 
     
-    const isReadOnly = document.getElementById('save-ct-vt-btn').classList.contains('hidden');
+    const saveBtn = document.getElementById('save-ct-vt-btn');
+    const isReadOnly = saveBtn ? saveBtn.classList.contains('hidden') : true;
     renderDetailVtRows(isReadOnly);
     renderHistory();
 }
 
 async function handleExcelExport() {
     const modal = document.getElementById('excel-export-modal');
-    modal.classList.remove('hidden');
+    if (modal) modal.classList.remove('hidden');
 
     const exportAndClose = async (exportAll) => {
-        modal.classList.add('hidden');
+        if (modal) modal.classList.add('hidden');
         showLoading(true);
         try {
             const query = exportAll ? sb.from('chi_tiet').select('*') : buildChiTietQuery().select('*');
@@ -921,9 +947,14 @@ async function handleExcelExport() {
             showLoading(false);
         }
     };
-    document.getElementById('excel-export-filtered-btn').onclick = () => exportAndClose(false);
-    document.getElementById('excel-export-all-btn').onclick = () => exportAndClose(true);
-    document.getElementById('excel-export-cancel-btn').onclick = () => modal.classList.add('hidden');
+    
+    const filterBtn = document.getElementById('excel-export-filtered-btn');
+    const allBtn = document.getElementById('excel-export-all-btn');
+    const cancelBtn = document.getElementById('excel-export-cancel-btn');
+    
+    if (filterBtn) filterBtn.onclick = () => exportAndClose(false);
+    if (allBtn) allBtn.onclick = () => exportAndClose(true);
+    if (cancelBtn) cancelBtn.onclick = () => modal.classList.add('hidden');
 }
 
 
@@ -959,7 +990,7 @@ async function openChiTietFilterPopover(button, view) {
 
     const updateSelectionCount = () => {
         const count = tempSelectedOptions.size;
-        selectionCountEl.textContent = count > 0 ? `Đã chọn: ${count}` : '';
+        if (selectionCountEl) selectionCountEl.textContent = count > 0 ? `Đã chọn: ${count}` : '';
     };
 
     const updateToggleAllButtonState = () => {
@@ -996,7 +1027,7 @@ async function openChiTietFilterPopover(button, view) {
                 if (cb.checked) tempSelectedOptions.add(cb.value);
                 else tempSelectedOptions.delete(cb.value);
                 updateSelectionCount();
-                updateToggleAllButtonState(optionsList.querySelectorAll('.filter-option-cb'));
+                updateToggleAllButtonState();
             }
         });
         toggleAllBtn.onclick = () => {
@@ -1068,7 +1099,7 @@ export function initChiTietView() {
     ensureModalListenersAttached();
 
     const handleSearch = debounce(() => {
-        const val = document.getElementById('chi-tiet-search').value || document.getElementById('chi-tiet-search-mobile').value;
+        const val = (document.getElementById('chi-tiet-search')?.value || document.getElementById('chi-tiet-search-mobile')?.value) || "";
         viewStates['view-chi-tiet'].searchTerm = val;
         fetchChiTiet(1);
     }, 500);
@@ -1125,11 +1156,11 @@ export function initChiTietView() {
 
     const toggleDrawer = (show) => {
         if (show) {
-            drawer.classList.remove('translate-x-full');
-            overlay.classList.remove('hidden');
+            drawer?.classList.remove('translate-x-full');
+            overlay?.classList.remove('hidden');
         } else {
-            drawer.classList.add('translate-x-full');
-            overlay.classList.add('hidden');
+            drawer?.classList.add('translate-x-full');
+            overlay?.classList.add('hidden');
         }
     };
 

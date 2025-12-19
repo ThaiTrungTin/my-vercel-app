@@ -99,11 +99,24 @@ async function handleProfileUpdate(e) {
     const confirm_password = document.getElementById('profile-confirm-password').value;
     let anh_dai_dien_url = document.getElementById('profile-current-avatar-url').value;
 
-    if (currentUser.mat_khau !== old_password) return showToast("Mật khẩu cũ sai.", 'error');
-    if (new_password && new_password !== confirm_password) return showToast("Mật khẩu mới không khớp.", 'error');
-
     showLoading(true);
     try {
+        // NÂNG CẤP: Kiểm tra mật khẩu cũ trực tiếp từ DB thay vì dựa vào session
+        const { data: dbUser, error: fetchError } = await sb.from('user').select('mat_khau').eq('gmail', currentUser.gmail).single();
+        if (fetchError || !dbUser) throw new Error("Không thể xác thực người dùng.");
+
+        if (dbUser.mat_khau !== old_password) {
+            showToast("Mật khẩu cũ không chính xác.", 'error');
+            showLoading(false);
+            return;
+        }
+
+        if (new_password && new_password !== confirm_password) {
+            showToast("Mật khẩu mới không khớp.", 'error');
+            showLoading(false);
+            return;
+        }
+
         if (selectedAvatarFile) {
             const fileName = sanitizeFileName(`${currentUser.gmail}-${Date.now()}-${selectedAvatarFile.name}`);
             const { error: uploadError } = await sb.storage.from('anh_dai_dien').upload(`public/${fileName}`, selectedAvatarFile);
@@ -111,18 +124,31 @@ async function handleProfileUpdate(e) {
             const { data: urlData } = sb.storage.from('anh_dai_dien').getPublicUrl(`public/${fileName}`);
             anh_dai_dien_url = urlData.publicUrl;
         } 
+
         const updateData = { ho_ten, anh_dai_dien_url };
         if (new_password) updateData.mat_khau = new_password;
+
         const { data, error } = await sb.from('user').update(updateData).eq('gmail', currentUser.gmail).select().single();
         if (error) throw error;
+
         Object.assign(currentUser, data);
         sessionStorage.setItem('loggedInUser', JSON.stringify(data));
+        
         document.getElementById('user-ho-ten').textContent = data.ho_ten;
         updateSidebarAvatar(data.anh_dai_dien_url);
         initProfileAvatarState();
-        showToast("Đã cập nhật!", "success");
-    } catch (err) { showToast(err.message, 'error'); }
-    finally { showLoading(false); }
+        
+        // Reset trường mật khẩu sau khi lưu thành công
+        document.getElementById('profile-old-password').value = '';
+        document.getElementById('profile-new-password').value = '';
+        document.getElementById('profile-confirm-password').value = '';
+        
+        showToast("Đã cập nhật thông tin cá nhân!", "success");
+    } catch (err) { 
+        showToast(err.message, 'error'); 
+    } finally { 
+        showLoading(false); 
+    }
 }
 
 export async function fetchUsers() {
