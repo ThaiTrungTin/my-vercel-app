@@ -88,6 +88,13 @@
                 white-space: nowrap;
                 min-width: min-content;
             }
+            
+            /* Làm sáng nút bộ lọc khi đang active */
+            .filter-active-mobile {
+                background-color: #dbeafe !important;
+                color: #2563eb !important;
+                border: 1px solid #bfdbfe !important;
+            }
         }
 
         #toast-container {
@@ -500,7 +507,7 @@
                                 </table>
                             </div>
                         </div>
-                        <div class="flex-shrink-0 flex flex-row justify-between items-center mt-2 md:mt-4 p-2 md:p-4 bg-white rounded-lg shadow-md flex-nowrap">
+                        <div class="flex-shrink-0 flex flex-row justify-between items-center mt-2 md:mt-4 p-2 md:p-4 bg-white rounded-lg shadow-md flex-nowrap overflow-hidden">
                             <span id="ton-kho-pagination-info" class="text-[9px] md:text-sm text-gray-600 mr-2 whitespace-nowrap flex-shrink-0"></span>
                             <div id="tk-summary-info" class="flex-grow flex justify-end md:hidden overflow-hidden no-scrollbar"></div>
                             <div class="flex items-center gap-1 flex-nowrap flex-shrink-0">
@@ -620,7 +627,7 @@
                                             </h3>
                                             <p class="text-xs text-gray-500 mb-4 leading-relaxed">Xuất toàn bộ cơ sở dữ liệu hiện tại ra file Excel để lưu trữ an toàn bên ngoài hệ thống.</p>
                                             <div class="flex flex-col gap-2">
-                                                <button id="backup-excel-btn" class="w-full bg-white border border-green-200 text-green-600 hover:bg-green-600 hover:text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition-all shadow-sm">
+                                                <button id="backup-excel-btn" class="w-full bg-white border border-green-200 text-green-600 hover:bg-green-600 hover:white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition-all shadow-sm">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                                                     TẢI BẢN SAO EXCEL
                                                 </button>
