@@ -481,16 +481,36 @@ async function fetchNameSuggestions() {
     }
 }
 
+/**
+ * Làm mới dữ liệu cho modal phân bổ đang mở (Dùng cho Realtime)
+ */
+export async function refreshCurrentDetailVtModal() {
+    if (!currentDistributingItem) return;
+    
+    const { data, error } = await sb.from('chi_tiet_vt').select('*').eq('id_ct', currentDistributingItem.id).order('created_at', { ascending: true });
+    if (!error && data) {
+        const isFocusing = document.querySelector('#chi-tiet-vt-table-body input:focus, #chi-tiet-vt-table-body textarea:focus');
+        if (!isFocusing) {
+            detailVtItems = data;
+            initialDetailVtItems = JSON.parse(JSON.stringify(data));
+            const isReadOnly = document.getElementById('save-ct-vt-btn').classList.contains('hidden');
+            renderDetailVtRows(isReadOnly);
+            renderHistory();
+        }
+    }
+}
+
 async function openDetailVtModal(ct, isReadOnly = false) {
     currentDistributingItem = ct;
     const modal = document.getElementById('chi-tiet-vt-modal');
     const headerEl = document.getElementById('ct-vt-info-header');
     const originalQtyEl = document.getElementById('ct-vt-original-qty');
     
+    // Ép Header modal luôn nằm trên 1 hàng
     headerEl.innerHTML = `
         <div class="flex flex-col gap-1 md:gap-1.5 overflow-hidden">
             <div class="text-[11px] md:text-lg font-black flex items-center gap-1.5 whitespace-nowrap overflow-x-auto no-scrollbar">
-                <span class="text-gray-800 uppercase tracking-tight flex-shrink-0">Phân bổ vật tư :</span>
+                <span class="text-gray-800 uppercase tracking-tight flex-shrink-0">Quản lý phân bổ vật tư :</span>
                 <span class="text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100 flex-shrink-0">${ct.ma_vt} - ${ct.lot || 'No LOT'} - ${ct.date || 'No Date'}</span>
             </div>
             <div class="text-[9px] md:text-sm font-bold text-gray-500 flex items-center gap-2 whitespace-nowrap overflow-x-auto no-scrollbar">
@@ -547,10 +567,17 @@ function renderHistory() {
     detailVtItems.forEach(item => {
         if (item.lich_su) {
             const logs = item.lich_su.split('\n').filter(Boolean);
-            logs.forEach(log => allHistory.push({
-                text: log,
-                time: item.created_at || new Date().toISOString()
-            }));
+            // Chúng ta giả định item.created_at là thời điểm cập nhật cuối
+            // Để các dòng log trong 1 item có thể sort được, ta gán thời gian ảo giảm dần theo vị trí dòng
+            logs.forEach((log, index) => {
+                allHistory.push({
+                    id: item.id,
+                    text: log,
+                    // Mỗi dòng log cách nhau 1 giây ảo để đảm bảo tính thứ tự khi sort
+                    time: new Date(new Date(item.created_at || Date.now()).getTime() + (index * 1000)).toISOString(),
+                    trangThaiHienTai: item.trang_thai
+                });
+            });
         }
     });
 
@@ -559,22 +586,67 @@ function renderHistory() {
         return;
     }
 
+    // --- NÂNG CẤP: Sắp xếp lịch sử giảm dần (mới nhất lên đầu) ---
     allHistory.sort((a, b) => new Date(b.time) - new Date(a.time));
 
     historyList.innerHTML = allHistory.map(log => {
-        const isUpdate = log.text.includes('cập nhật');
+        const isDelete = log.text.includes('đã xóa');
+        const isRestore = log.text.includes('đã khôi phục');
         const isAdd = log.text.includes('thêm mới');
-        const dotColor = isAdd ? 'bg-green-500' : (isUpdate ? 'bg-blue-500' : 'bg-gray-400');
+        
+        let dotColor = 'bg-blue-500';
+        if (isDelete) dotColor = 'bg-red-500';
+        else if (isAdd) dotColor = 'bg-green-500';
+
+        const showRestoreBtn = isDelete && log.trangThaiHienTai === 'Xóa';
+        const restoreBtnHtml = showRestoreBtn ? 
+            `<button class="ml-2 text-blue-600 font-bold hover:underline ct-vt-restore-btn" data-id="${log.id}">Khôi phục ngay</button>` : '';
         
         return `
             <div class="flex gap-2 md:gap-3 relative pl-4 border-l-2 border-gray-100 py-1">
                 <div class="absolute -left-[7px] top-2 w-3 h-3 rounded-full ${dotColor} border-2 border-white shadow-sm"></div>
                 <div class="flex-grow">
-                    <p class="text-[9px] md:text-xs text-gray-600 font-medium leading-tight">${log.text}</p>
+                    <p class="text-[9px] md:text-xs text-gray-600 font-medium leading-tight">
+                        ${log.text} ${restoreBtnHtml}
+                    </p>
                 </div>
             </div>
         `;
     }).join('');
+
+    historyList.querySelectorAll('.ct-vt-restore-btn').forEach(btn => {
+        btn.onclick = (e) => {
+            const id = e.target.dataset.id;
+            handleRestoreItem(id);
+        };
+    });
+}
+
+function handleRestoreItem(id) {
+    const item = detailVtItems.find(it => it.id === id);
+    if (!item) return;
+
+    const originalQty = parseFloat(document.getElementById('ct-vt-original-qty').textContent) || 0;
+    const currentActiveSum = detailVtItems.reduce((s, i) => i.trang_thai !== 'Xóa' ? s + (parseFloat(i.sl) || 0) : s, 0);
+    const itemQty = parseFloat(item.sl) || 0;
+
+    if (currentActiveSum + itemQty > originalQty) {
+        showToast(`Không thể khôi phục! Tổng SL (${currentActiveSum + itemQty}) vượt quá SL gốc (${originalQty}).`, 'error');
+        return;
+    }
+
+    const nowStr = new Date().toLocaleString('vi-VN');
+    const currentUserLabel = currentUser.ho_ten || 'Admin';
+    const log = `${currentUserLabel} đã khôi phục: người nhận [${item.nguoi_nhan || 'Trống'}]: SL ${item.sl} lúc ${nowStr}`;
+    
+    item.trang_thai = ''; 
+    item.lich_su = item.lich_su ? `${item.lich_su}\n${log}` : log;
+    item.created_at = new Date().toISOString(); 
+    
+    const isReadOnly = document.getElementById('save-ct-vt-btn').classList.contains('hidden');
+    renderDetailVtRows(isReadOnly);
+    renderHistory();
+    showToast("Đã khôi phục hàng!", 'success');
 }
 
 function renderDetailVtRows(isReadOnly = false) {
@@ -586,16 +658,19 @@ function renderDetailVtRows(isReadOnly = false) {
     tbody.innerHTML = '';
     let totalDist = 0;
 
-    if (detailVtItems.length === 0) {
+    const visibleItems = detailVtItems.filter(it => it.trang_thai !== 'Xóa');
+
+    if (visibleItems.length === 0) {
         emptyState.classList.remove('hidden');
     } else {
         emptyState.classList.add('hidden');
-        detailVtItems.forEach((item, index) => {
+        visibleItems.forEach((item) => {
+            const actualIndex = detailVtItems.findIndex(it => it.id === item.id);
+            
             totalDist += (parseFloat(item.sl) || 0);
             const row = document.createElement('tr');
             row.className = "hover:bg-gray-50 transition-colors border-b";
             
-            // Ở chế độ Xem (isReadOnly), ta dùng readonly thay cho disabled để click vẫn hoạt động
             row.innerHTML = `
                 <td class="border p-0 relative">
                     <input type="text" class="w-full p-2 border-none bg-transparent text-[11px] md:text-sm font-medium vt-input-nguoi-nhan text-center md:text-left" value="${item.nguoi_nhan || ''}" placeholder="..." ${isReadOnly ? 'readonly' : ''}>
@@ -610,13 +685,12 @@ function renderDetailVtRows(isReadOnly = false) {
                     <textarea class="w-full p-2 border-none bg-transparent text-[10px] md:text-sm vt-input-ghi-chu resize-none line-clamp-2 h-[42px] leading-tight focus:line-clamp-none focus:h-auto cursor-pointer" placeholder="..." ${isReadOnly ? 'readonly' : ''}>${item.ghi_chu || ''}</textarea>
                 </td>
                 <td class="border p-0 text-center ct-vt-col-delete ${isReadOnly ? 'hidden' : ''}">
-                    <button class="text-red-400 hover:text-red-600 vt-delete-row-btn p-1.5 transition-transform active:scale-125">
+                    <button class="text-red-400 hover:text-red-600 vt-delete-row-btn p-1.5 transition-transform active:scale-125" data-id="${item.id}">
                         <svg class="w-4 h-4 md:w-5 md:h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                     </button>
                 </td>
             `;
             
-            // Gắn sự kiện cho Người nhận
             if (!isReadOnly) {
                 const nameInput = row.querySelector('.vt-input-nguoi-nhan');
                 const handleNameSearch = () => {
@@ -629,54 +703,48 @@ function renderDetailVtRows(isReadOnly = false) {
                         primaryTextKey: 'name',
                         onSelect: (val) => {
                             nameInput.value = val;
-                            detailVtItems[index].nguoi_nhan = val;
+                            detailVtItems[actualIndex].nguoi_nhan = val;
                         }
                     });
                 };
                 nameInput.onfocus = handleNameSearch;
                 nameInput.oninput = handleNameSearch;
-            }
 
-            // Gắn sự kiện cho Số lượng
-            const slInput = row.querySelector('.vt-input-sl');
-            if (!isReadOnly) {
+                const slInput = row.querySelector('.vt-input-sl');
                 slInput.oninput = (e) => {
                     let newValue = parseFloat(e.target.value) || 0;
                     if (newValue < 0) newValue = 0;
-                    const otherRowsSum = detailVtItems.reduce((sum, it, i) => i === index ? sum : sum + (parseFloat(it.sl) || 0), 0);
+                    const otherRowsSum = detailVtItems.reduce((sum, it) => (it.id !== item.id && it.trang_thai !== 'Xóa') ? sum + (parseFloat(it.sl) || 0) : sum, 0);
                     const maxAllowed = originalQty - otherRowsSum;
                     if (newValue > maxAllowed) {
                         newValue = maxAllowed;
                         e.target.value = newValue;
                         showToast(`Tổng số lượng không được vượt quá ${originalQty}`, 'info');
                     }
-                    detailVtItems[index].sl = newValue;
+                    detailVtItems[actualIndex].sl = newValue;
                     updateLiveTotal();
                 };
-            }
 
-            // Gắn sự kiện xem nội dung đầy đủ cho Địa điểm và Ghi chú (Hoạt động cả khi Xem/Sửa)
-            const diaDiemInput = row.querySelector('.vt-input-dia-diem');
-            const ghiChuInput = row.querySelector('.vt-input-ghi-chu');
+                const diaDiemInput = row.querySelector('.vt-input-dia-diem');
+                const ghiChuInput = row.querySelector('.vt-input-ghi-chu');
+                diaDiemInput.oninput = (e) => detailVtItems[actualIndex].dia_diem = e.target.value;
+                ghiChuInput.oninput = (e) => detailVtItems[actualIndex].ghi_chu = e.target.value;
 
-            if (!isReadOnly) {
-                diaDiemInput.oninput = (e) => detailVtItems[index].dia_diem = e.target.value;
-                ghiChuInput.oninput = (e) => detailVtItems[index].ghi_chu = e.target.value;
-            }
-
-            // Click vào để xem full nội dung (luôn hiển thị Toast nếu có nội dung)
-            diaDiemInput.onclick = (e) => {
-                if (e.target.value) showToast("Địa điểm: " + e.target.value, 'info');
-            };
-            ghiChuInput.onclick = (e) => {
-                if (e.target.value) showToast("Ghi chú: " + e.target.value, 'info');
-            };
-
-            if (!isReadOnly) {
-                row.querySelector('.vt-delete-row-btn').onclick = () => {
-                    detailVtItems.splice(index, 1);
-                    renderDetailVtRows(false);
+                const showToastIfTruncated = (el, prefix) => {
+                    if (el.scrollHeight > el.clientHeight) showToast(`${prefix}: ${el.value}`, 'info');
                 };
+                diaDiemInput.onclick = (e) => showToastIfTruncated(e.target, 'Địa điểm');
+                ghiChuInput.onclick = (e) => showToastIfTruncated(e.target, 'Ghi chú');
+
+                row.querySelector('.vt-delete-row-btn').onclick = (e) => {
+                    const id = e.currentTarget.dataset.id;
+                    handleDeleteItem(id);
+                };
+            } else {
+                const diaDiemInput = row.querySelector('.vt-input-dia-diem');
+                const ghiChuInput = row.querySelector('.vt-input-ghi-chu');
+                diaDiemInput.onclick = (e) => { if (e.target.scrollHeight > e.target.clientHeight) showToast(`Địa điểm: ${e.target.value}`, 'info'); };
+                ghiChuInput.onclick = (e) => { if (e.target.scrollHeight > e.target.clientHeight) showToast(`Ghi chú: ${e.target.value}`, 'info'); };
             }
 
             tbody.appendChild(row);
@@ -684,11 +752,29 @@ function renderDetailVtRows(isReadOnly = false) {
     }
     
     function updateLiveTotal() {
-        const currentSum = detailVtItems.reduce((s, i) => s + (parseFloat(i.sl) || 0), 0);
+        const currentSum = detailVtItems.reduce((s, i) => i.trang_thai !== 'Xóa' ? s + (parseFloat(i.sl) || 0) : s, 0);
         distributedEl.textContent = currentSum;
         distributedEl.className = currentSum > originalQty ? 'font-black text-red-600' : 'font-black text-green-700';
     }
     updateLiveTotal();
+}
+
+function handleDeleteItem(id) {
+    const actualIndex = detailVtItems.findIndex(it => it.id === id);
+    if (actualIndex === -1) return;
+
+    const item = detailVtItems[actualIndex];
+    const nowStr = new Date().toLocaleString('vi-VN');
+    const currentUserLabel = currentUser.ho_ten || 'Admin';
+    const log = `${currentUserLabel} đã xóa: người nhận [${item.nguoi_nhan || 'Trống'}]: SL ${item.sl} tại ${item.dia_diem || 'Trống'} lúc ${nowStr}`;
+
+    item.trang_thai = 'Xóa';
+    item.lich_su = item.lich_su ? `${item.lich_su}\n${log}` : log;
+    item.created_at = new Date().toISOString(); 
+    
+    const isReadOnly = document.getElementById('save-ct-vt-btn').classList.contains('hidden');
+    renderDetailVtRows(isReadOnly);
+    renderHistory();
 }
 
 async function handleExcelExport() {
@@ -982,7 +1068,6 @@ export function initChiTietView() {
             const totalPages = Math.ceil(state.totalFilteredCount / state.itemsPerPage);
             if (isNaN(targetPage) || targetPage < 1) targetPage = 1;
             else if (targetPage > totalPages && totalPages > 0) targetPage = totalPages;
-            else if (totalPages === 0) targetPage = 1;
             pageInput.value = targetPage;
             if (targetPage !== state.currentPage) fetchChiTiet(targetPage);
         };
@@ -990,8 +1075,14 @@ export function initChiTietView() {
         pageInput.addEventListener('change', handlePageJump);
     }
 
-    document.getElementById('close-ct-vt-modal').onclick = () => document.getElementById('chi-tiet-vt-modal').classList.add('hidden');
-    document.getElementById('cancel-ct-vt-btn').onclick = () => document.getElementById('chi-tiet-vt-modal').classList.add('hidden');
+    document.getElementById('close-ct-vt-modal').onclick = () => {
+        currentDistributingItem = null;
+        document.getElementById('chi-tiet-vt-modal').classList.add('hidden');
+    };
+    document.getElementById('cancel-ct-vt-btn').onclick = () => {
+        currentDistributingItem = null;
+        document.getElementById('chi-tiet-vt-modal').classList.add('hidden');
+    };
     
     document.getElementById('add-ct-vt-row-btn').onclick = () => {
         const newItem = {
@@ -1001,6 +1092,7 @@ export function initChiTietView() {
             sl: 0,
             dia_diem: '',
             ghi_chu: '',
+            trang_thai: '', 
             lich_su: '',
             created_at: new Date().toISOString(),
             is_new: true 
@@ -1010,10 +1102,10 @@ export function initChiTietView() {
     };
 
     document.getElementById('save-ct-vt-btn').onclick = async () => {
-        const distributed = parseFloat(document.getElementById('ct-vt-distributed-qty').textContent) || 0;
+        const currentActiveSum = detailVtItems.reduce((s, i) => i.trang_thai !== 'Xóa' ? s + (parseFloat(i.sl) || 0) : s, 0);
         const original = parseFloat(document.getElementById('ct-vt-original-qty').textContent) || 0;
 
-        if (distributed > original) {
+        if (currentActiveSum > original) {
             showToast("Tổng số lượng không được vượt quá số gốc.", 'error');
             return;
         }
@@ -1028,26 +1120,31 @@ export function initChiTietView() {
                 let logs = item.lich_su || '';
 
                 if (!initialItem) {
-                    const log = `${currentUserLabel} thêm mới người nhận [${item.nguoi_nhan || 'N/A'}]: SL ${item.sl} tại ${item.dia_diem || 'N/A'} lúc ${nowStr}`;
-                    logs = logs ? `${logs}\n${log}` : log;
+                    if (item.trang_thai !== 'Xóa') {
+                        const log = `${currentUserLabel} thêm mới người nhận [${item.nguoi_nhan || 'N/A'}]: SL ${item.sl} tại ${item.dia_diem || 'N/A'} lúc ${nowStr}`;
+                        logs = logs ? `${logs}\n${log}` : log;
+                    }
                     item.created_at = new Date().toISOString(); 
                 } else {
                     const hasNameChanged = initialItem.nguoi_nhan !== item.nguoi_nhan;
                     const hasSlChanged = parseFloat(initialItem.sl) !== parseFloat(item.sl);
                     const hasPlaceChanged = initialItem.dia_diem !== item.dia_diem;
                     const hasNoteChanged = initialItem.ghi_chu !== item.ghi_chu;
+                    const hasStatusChanged = initialItem.trang_thai !== item.trang_thai;
 
-                    if (hasNameChanged || hasSlChanged || hasPlaceChanged || hasNoteChanged) {
+                    if (hasNameChanged || hasSlChanged || hasPlaceChanged || hasNoteChanged || hasStatusChanged) {
                         let changes = [];
                         if (hasNameChanged) changes.push(`Tên: ${initialItem.nguoi_nhan || 'Trống'} -> ${item.nguoi_nhan || 'Trống'}`);
                         if (hasSlChanged) changes.push(`SL: ${initialItem.sl} -> ${item.sl}`);
                         if (hasPlaceChanged) changes.push(`Địa điểm: ${initialItem.dia_diem || 'Trống'} -> ${item.dia_diem || 'Trống'}`);
                         if (hasNoteChanged) changes.push(`Ghi chú: ${initialItem.ghi_chu || 'Trống'} -> ${item.ghi_chu || 'Trống'}`);
                         
-                        const log = `${currentUserLabel} cập nhật dòng [${item.nguoi_nhan || 'N/A'}]: ${changes.join(', ')} lúc ${nowStr}`;
-                        logs = logs ? `${logs}\n${log}` : log;
-                        item.created_at = new Date().toISOString(); 
+                        if (!hasStatusChanged && (hasNameChanged || hasSlChanged || hasPlaceChanged || hasNoteChanged)) {
+                            const log = `${currentUserLabel} cập nhật dòng [${item.nguoi_nhan || 'N/A'}]: ${changes.join(', ')} lúc ${nowStr}`;
+                            logs = logs ? `${logs}\n${log}` : log;
+                        }
                     }
+                    item.created_at = new Date().toISOString();
                 }
 
                 return {
@@ -1057,6 +1154,7 @@ export function initChiTietView() {
                     sl: item.sl,
                     dia_diem: item.dia_diem,
                     ghi_chu: item.ghi_chu,
+                    trang_thai: item.trang_thai || '',
                     lich_su: logs,
                     created_at: item.created_at
                 };

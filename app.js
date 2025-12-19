@@ -156,6 +156,12 @@ export const showLoading = (show) => {
 export function showToast(message, type = 'info') {
     const container = document.getElementById('toast-container');
     if (!container) return;
+
+    // --- NÂNG CẤP: Chống trùng lặp thông báo trong cùng một thời điểm ---
+    const existingToasts = Array.from(container.querySelectorAll('.toast'));
+    const isDuplicate = existingToasts.some(t => t.textContent === message && !t.classList.contains('hide'));
+    if (isDuplicate) return;
+
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
     toast.style.whiteSpace = 'pre-wrap'; 
@@ -834,12 +840,18 @@ function setupDataRealtime() {
     };
 
     const handleRealtimeEvent = async (tableName) => {
-        showToast('Phát hiện thay đổi dữ liệu...', 'info');
+        showToast(`Phát hiện thay đổi dữ liệu tại bảng ${tableName}...`, 'info');
         setTimeout(async () => {
             await refreshCurrentViewData();
-            if (tableName === 'chi_tiet' && currentView === 'view-ton-kho') {
-                const { fetchTonKho } = await import('./tonkho.js');
-                fetchTonKho(viewStates['ton-kho'].currentPage, false);
+            // Nếu bảng là chi_tiet_vt, kiểm tra xem có modal phân bổ nào đang mở không
+            if (tableName === 'chi_tiet_vt') {
+                const modal = document.getElementById('chi-tiet-vt-modal');
+                if (modal && !modal.classList.contains('hidden')) {
+                    const { refreshCurrentDetailVtModal } = await import('./chitiet.js');
+                    if (typeof refreshCurrentDetailVtModal === 'function') {
+                        refreshCurrentDetailVtModal();
+                    }
+                }
             }
         }, 500); 
     };
@@ -848,6 +860,7 @@ function setupDataRealtime() {
         .on('postgres_changes', { event: '*', schema: 'public', table: 'san_pham' }, () => handleRealtimeEvent('san_pham'))
         .on('postgres_changes', { event: '*', schema: 'public', table: 'ton_kho' }, () => handleRealtimeEvent('ton_kho'))
         .on('postgres_changes', { event: '*', schema: 'public', table: 'chi_tiet' }, () => handleRealtimeEvent('chi_tiet'))
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'chi_tiet_vt' }, () => handleRealtimeEvent('chi_tiet_vt'))
         .subscribe();
 }
 
