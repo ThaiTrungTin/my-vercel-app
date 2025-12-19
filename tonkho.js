@@ -1,4 +1,3 @@
-
 import { sb, currentUser, cache, viewStates, showLoading, showToast, showConfirm, debounce, renderPagination, filterButtonDefaultTexts, openAutocomplete, updateTonKhoToggleUI } from './app.js';
 import { fetchSanPham } from './sanpham.js';
 
@@ -513,7 +512,7 @@ export function initTonKhoView() {
         let targetPage = parseInt(pageInput.value, 10);
         const totalPages = Math.ceil(state.totalFilteredCount / state.itemsPerPage);
         if (isNaN(targetPage) || targetPage < 1) targetPage = 1;
-        else if (targetPage > totalPages && targetPage > 0) targetPage = totalPages;
+        else if (targetPage > totalPages && totalPages > 0) targetPage = totalPages;
         pageInput.value = targetPage;
         if (targetPage !== state.currentPage) fetchTonKho(targetPage);
     };
