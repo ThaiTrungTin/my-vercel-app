@@ -524,7 +524,7 @@ function updateNotificationBar() {
     const day = String(now.getDate()).padStart(2, '0');
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const year = now.getFullYear();
-    const dateString = `${dayOfWeek}, Ngày ${day} Tháng ${month} Năm ${year}`;
+    const dateString = `${dayOfWeek}, Ngày ${day}/${month}/${year}`;
 
     const ho_ten = currentUser.ho_ten || 'Guest';
     const phan_quyen = currentUser.phan_quyen || 'View';
@@ -535,20 +535,21 @@ function updateNotificationBar() {
             roleMessage = 'Chúc bạn ngày làm việc hiệu quả.';
             break;
         case 'User':
-            roleMessage = 'Bạn chỉ có thể xem dữ liệu. Cảm ơn.';
+            roleMessage = 'Cảm ơn sự đóng góp của bạn.';
             break;
         case 'View':
-            roleMessage = 'Bạn chỉ có thể xem dữ liệu và Sản phẩm đang phụ trách. Cảm ơn.';
+            roleMessage = 'Bạn đang xem dữ liệu kho hàng.';
             break;
         default:
             roleMessage = 'Chào mừng bạn.';
     }
 
+    // Tối ưu cho mobile: Chạy marquee xuyên qua nhưng căn lề hợp lý
     notificationBar.innerHTML = `
-        <marquee behavior="scroll" direction="left" scrollamount="5">
-            <span>${dateString}</span> : 
-            <span>Xin chào: <b class="font-bold">${ho_ten}</b> - <b class="font-bold">${phan_quyen}</b></span>. 
-            <span class="italic">${roleMessage}</span>
+        <marquee behavior="scroll" direction="left" scrollamount="4" class="w-full">
+            <span class="font-bold text-blue-800">${ho_ten}</span> (${phan_quyen}) - 
+            <span>${dateString}</span> - 
+            <span class="italic text-gray-600">${roleMessage}</span>
         </marquee>
     `;
 }
@@ -605,10 +606,10 @@ export async function showView(viewId) {
 
     const viewTitles = {
         'view-phat-trien': 'Tổng Quan',
-        'view-san-pham': 'Quản Lý Sản Phẩm',
-        'view-ton-kho': 'Quản Lý Tồn Kho',
-        'view-chi-tiet': 'Chi Tiết Giao Dịch',
-        'view-cai-dat': 'Cài Đặt & Quản Lý',
+        'view-san-pham': 'Sản Phẩm',
+        'view-ton-kho': 'Tồn Kho',
+        'view-chi-tiet': 'Chi Tiết',
+        'view-cai-dat': 'Cài Đặt',
     };
 
     document.querySelectorAll('.app-view').forEach(view => view.classList.add('hidden'));

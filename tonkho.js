@@ -106,7 +106,7 @@ async function updateTonKhoHeaderCounts() {
     if (!dauEl || !nhapEl || !xuatEl || !cuoiEl) return;
 
     [dauEl, nhapEl, xuatEl, cuoiEl].forEach(el => el.textContent = '(...)');
-    if (mobileSummaryEl) mobileSummaryEl.innerHTML = '<span class="text-gray-400 font-normal">Đang tính...</span>';
+    if (mobileSummaryEl) mobileSummaryEl.innerHTML = '<span class="text-gray-400 font-normal">...</span>';
 
     try {
         let query = buildTonKhoQuery();
@@ -139,14 +139,19 @@ async function updateTonKhoHeaderCounts() {
         cuoiEl.classList.toggle('text-green-600', totalCuoi <= 0);
 
         if (mobileSummaryEl) {
+            // Sử dụng CSS class đã định nghĩa để ưu tiên hiển thị bên phải
             mobileSummaryEl.innerHTML = `
-                <span class="text-blue-600">Đ:${dVal}</span>
-                <span class="mx-0.5 text-gray-300">|</span>
-                <span class="text-green-600">N:${nVal}</span>
-                <span class="mx-0.5 text-gray-300">|</span>
-                <span class="text-red-600">X:${xVal}</span>
-                <span class="mx-0.5 text-gray-300">|</span>
-                <span class="${totalCuoi > 0 ? 'text-red-600' : 'text-green-600'} font-black">C:${cVal}</span>
+                <div class="mobile-summary-container">
+                    <div class="mobile-summary-content flex items-center gap-1 sm:gap-1.5 text-[7px] sm:text-[9px] font-bold border-x border-gray-100 px-1">
+                        <span class="text-blue-600">Đ:${dVal}</span>
+                        <span class="text-gray-300">|</span>
+                        <span class="text-green-600">N:${nVal}</span>
+                        <span class="text-gray-300">|</span>
+                        <span class="text-red-500">X:${xVal}</span>
+                        <span class="text-gray-300">|</span>
+                        <span class="${totalCuoi > 0 ? 'text-red-600' : 'text-green-600'}">C:${cVal}</span>
+                    </div>
+                </div>
             `;
         }
 
