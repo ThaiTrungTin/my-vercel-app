@@ -488,10 +488,18 @@ async function openDetailVtModal(ct, isReadOnly = false) {
     const originalQtyEl = document.getElementById('ct-vt-original-qty');
     
     headerEl.innerHTML = `
-        <div class="flex flex-col gap-0.5 md:gap-1">
-            <span class="text-blue-700 font-black text-[11px] md:text-lg">${ct.ma_nx} - ${ct.ma_vt}</span>
-            <span class="text-gray-600 font-bold text-[9px] md:text-sm truncate">${ct.ten_vt}</span>
-            <span class="text-[8px] md:text-xs text-gray-400 font-bold uppercase tracking-widest">[Mục đích: ${ct.muc_dich || 'N/A'}]</span>
+        <div class="flex flex-col gap-1 md:gap-1.5 overflow-hidden">
+            <div class="text-[11px] md:text-lg font-black flex items-center gap-1.5 whitespace-nowrap overflow-x-auto no-scrollbar">
+                <span class="text-gray-800 uppercase tracking-tight flex-shrink-0">Phân bổ vật tư :</span>
+                <span class="text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100 flex-shrink-0">${ct.ma_vt} - ${ct.lot || 'No LOT'} - ${ct.date || 'No Date'}</span>
+            </div>
+            <div class="text-[9px] md:text-sm font-bold text-gray-500 flex items-center gap-2 whitespace-nowrap overflow-x-auto no-scrollbar">
+                <span class="text-gray-700 flex-shrink-0">${formatDateToDDMMYYYY(ct.thoi_gian)}</span>
+                <span class="w-1 h-1 rounded-full bg-gray-300 flex-shrink-0"></span>
+                <span class="text-indigo-600 flex-shrink-0">${ct.ma_nx}</span>
+                <span class="w-1 h-1 rounded-full bg-gray-300 flex-shrink-0"></span>
+                <span class="flex-shrink-0">Y/c: <span class="text-gray-800 underline underline-offset-2">${ct.yeu_cau || 'N/A'}</span></span>
+            </div>
         </div>
     `;
     const qty = ct.nhap || ct.xuat || 0;
@@ -586,18 +594,20 @@ function renderDetailVtRows(isReadOnly = false) {
             totalDist += (parseFloat(item.sl) || 0);
             const row = document.createElement('tr');
             row.className = "hover:bg-gray-50 transition-colors border-b";
+            
+            // Ở chế độ Xem (isReadOnly), ta dùng readonly thay cho disabled để click vẫn hoạt động
             row.innerHTML = `
                 <td class="border p-0 relative">
-                    <input type="text" class="w-full p-2 border-none bg-transparent text-[11px] md:text-sm font-medium vt-input-nguoi-nhan text-center md:text-left" value="${item.nguoi_nhan || ''}" placeholder="..." ${isReadOnly ? 'disabled' : ''}>
+                    <input type="text" class="w-full p-2 border-none bg-transparent text-[11px] md:text-sm font-medium vt-input-nguoi-nhan text-center md:text-left" value="${item.nguoi_nhan || ''}" placeholder="..." ${isReadOnly ? 'readonly' : ''}>
                 </td>
                 <td class="border p-0">
-                    <input type="number" class="w-full p-2 border-none bg-transparent text-[11px] md:text-sm font-black text-blue-700 vt-input-sl text-center" value="${item.sl || 0}" step="1" min="0" ${isReadOnly ? 'disabled' : ''}>
+                    <input type="number" class="w-full p-2 border-none bg-transparent text-[11px] md:text-sm font-black text-blue-700 vt-input-sl text-center" value="${item.sl || 0}" step="1" min="0" ${isReadOnly ? 'readonly' : ''}>
                 </td>
                 <td class="border p-0">
-                    <input type="text" class="w-full p-2 border-none bg-transparent text-[11px] md:text-sm vt-input-dia-diem text-center md:text-left" value="${item.dia_diem || ''}" placeholder="..." ${isReadOnly ? 'disabled' : ''}>
+                    <textarea class="w-full p-2 border-none bg-transparent text-[10px] md:text-sm vt-input-dia-diem resize-none line-clamp-2 h-[42px] leading-tight focus:line-clamp-none focus:h-auto cursor-pointer" placeholder="..." ${isReadOnly ? 'readonly' : ''}>${item.dia_diem || ''}</textarea>
                 </td>
                 <td class="border p-0">
-                    <input type="text" class="w-full p-2 border-none bg-transparent text-[11px] md:text-sm vt-input-ghi-chu text-center md:text-left" value="${item.ghi_chu || ''}" placeholder="..." ${isReadOnly ? 'disabled' : ''}>
+                    <textarea class="w-full p-2 border-none bg-transparent text-[10px] md:text-sm vt-input-ghi-chu resize-none line-clamp-2 h-[42px] leading-tight focus:line-clamp-none focus:h-auto cursor-pointer" placeholder="..." ${isReadOnly ? 'readonly' : ''}>${item.ghi_chu || ''}</textarea>
                 </td>
                 <td class="border p-0 text-center ct-vt-col-delete ${isReadOnly ? 'hidden' : ''}">
                     <button class="text-red-400 hover:text-red-600 vt-delete-row-btn p-1.5 transition-transform active:scale-125">
@@ -606,10 +616,15 @@ function renderDetailVtRows(isReadOnly = false) {
                 </td>
             `;
             
+            // Gắn sự kiện cho Người nhận
             if (!isReadOnly) {
                 const nameInput = row.querySelector('.vt-input-nguoi-nhan');
-                nameInput.onfocus = () => {
-                    openAutocomplete(nameInput, nameSuggestionsCache, {
+                const handleNameSearch = () => {
+                    const val = nameInput.value.toLowerCase();
+                    const suggestions = nameSuggestionsCache.filter(item => 
+                        item.name.toLowerCase().includes(val)
+                    );
+                    openAutocomplete(nameInput, suggestions, {
                         valueKey: 'name',
                         primaryTextKey: 'name',
                         onSelect: (val) => {
@@ -618,9 +633,13 @@ function renderDetailVtRows(isReadOnly = false) {
                         }
                     });
                 };
-                nameInput.oninput = (e) => detailVtItems[index].nguoi_nhan = e.target.value;
+                nameInput.onfocus = handleNameSearch;
+                nameInput.oninput = handleNameSearch;
+            }
 
-                const slInput = row.querySelector('.vt-input-sl');
+            // Gắn sự kiện cho Số lượng
+            const slInput = row.querySelector('.vt-input-sl');
+            if (!isReadOnly) {
                 slInput.oninput = (e) => {
                     let newValue = parseFloat(e.target.value) || 0;
                     if (newValue < 0) newValue = 0;
@@ -634,9 +653,26 @@ function renderDetailVtRows(isReadOnly = false) {
                     detailVtItems[index].sl = newValue;
                     updateLiveTotal();
                 };
+            }
 
-                row.querySelector('.vt-input-dia-diem').oninput = (e) => detailVtItems[index].dia_diem = e.target.value;
-                row.querySelector('.vt-input-ghi-chu').oninput = (e) => detailVtItems[index].ghi_chu = e.target.value;
+            // Gắn sự kiện xem nội dung đầy đủ cho Địa điểm và Ghi chú (Hoạt động cả khi Xem/Sửa)
+            const diaDiemInput = row.querySelector('.vt-input-dia-diem');
+            const ghiChuInput = row.querySelector('.vt-input-ghi-chu');
+
+            if (!isReadOnly) {
+                diaDiemInput.oninput = (e) => detailVtItems[index].dia_diem = e.target.value;
+                ghiChuInput.oninput = (e) => detailVtItems[index].ghi_chu = e.target.value;
+            }
+
+            // Click vào để xem full nội dung (luôn hiển thị Toast nếu có nội dung)
+            diaDiemInput.onclick = (e) => {
+                if (e.target.value) showToast("Địa điểm: " + e.target.value, 'info');
+            };
+            ghiChuInput.onclick = (e) => {
+                if (e.target.value) showToast("Ghi chú: " + e.target.value, 'info');
+            };
+
+            if (!isReadOnly) {
                 row.querySelector('.vt-delete-row-btn').onclick = () => {
                     detailVtItems.splice(index, 1);
                     renderDetailVtRows(false);
