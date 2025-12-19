@@ -319,7 +319,7 @@ function closeActiveAutocompletePopover() {
 }
 
 /**
- * Cải tiến openAutocomplete để không bị ẩn bởi container overflow
+ * Cải tiến openAutocomplete để không bị ẩn bởi container overflow và tối ưu Mobile
  */
 export function openAutocomplete(inputElement, suggestions, config) {
     closeActiveAutocompletePopover(); 
@@ -332,25 +332,27 @@ export function openAutocomplete(inputElement, suggestions, config) {
     const popover = popoverContent.querySelector('div'); 
     const optionsList = popover.querySelector('.autocomplete-options-list');
 
+    // Tối ưu layout Droplist cho di động: Gọn gàng, nhỏ chữ, Primary & Secondary cùng hàng
     optionsList.innerHTML = suggestions.map(item => `
-        <div class="px-3 py-2 cursor-pointer hover:bg-gray-100 autocomplete-option" data-value="${item[config.valueKey]}">
-            <div class="flex justify-between items-center pointer-events-none gap-4">
-                <p class="text-sm font-medium text-gray-900 truncate">${item[config.primaryTextKey]}</p>
-                ${config.secondaryTextKey ? `<p class="text-xs text-gray-500 truncate text-right">${item[config.secondaryTextKey] || ''}</p>` : ''}
+        <div class="px-2.5 py-1.5 cursor-pointer hover:bg-gray-100 autocomplete-option border-b border-gray-50 last:border-0" data-value="${item[config.valueKey]}">
+            <div class="flex justify-between items-center pointer-events-none gap-2">
+                <p class="text-[11px] md:text-sm font-bold text-gray-800 truncate">${item[config.primaryTextKey]}</p>
+                ${config.secondaryTextKey ? `<p class="text-[9px] md:text-xs text-gray-400 italic truncate text-right flex-shrink-0">${item[config.secondaryTextKey] || ''}</p>` : ''}
             </div>
         </div>
     `).join('');
 
-    // --- FIX: Gắn trực tiếp vào body để tránh bị container overflow: hidden che khuất ---
     document.body.appendChild(popover);
     
-    // Tính toán vị trí tuyệt đối dựa trên input
     const rect = inputElement.getBoundingClientRect();
+    const isMobile = window.innerWidth <= 768;
+    
     popover.style.position = 'fixed';
     popover.style.left = `${rect.left}px`;
     popover.style.top = `${rect.bottom + 4}px`;
-    popover.style.width = config.width || `${rect.width}px`;
+    popover.style.width = isMobile ? `${Math.max(rect.width, 160)}px` : (config.width || `${rect.width}px`);
     popover.style.zIndex = '9999';
+    popover.classList.add('shadow-xl', 'rounded-lg', 'border', 'border-gray-200');
 
     optionsList.addEventListener('mousedown', (e) => { 
         const option = e.target.closest('.autocomplete-option');

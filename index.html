@@ -268,11 +268,11 @@
                         <svg class="w-6 h-6 mr-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
                         <span class="nav-text transition-opacity duration-300">Sản Phẩm</span>
                     </button>
-                     <button data-view="view-ton-kho" class="nav-button w-full flex items-center px-6 py-3 text-gray-400 hover:bg-gray-700">
+                    <button data-view="view-ton-kho" class="nav-button w-full flex items-center px-6 py-3 text-gray-400 hover:bg-gray-700">
                         <svg class="w-6 h-6 mr-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
                         <span class="nav-text transition-opacity duration-300">Tồn Kho</span>
                     </button>
-                     <button data-view="view-chi-tiet" class="nav-button w-full flex items-center px-6 py-3 text-gray-400 hover:bg-gray-700">
+                    <button data-view="view-chi-tiet" class="nav-button w-full flex items-center px-6 py-3 text-gray-400 hover:bg-gray-700">
                         <svg class="w-6 h-6 mr-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                         <span class="nav-text transition-opacity duration-300">Chi Tiết</span>
                     </button>
@@ -746,20 +746,20 @@
             </div>
             <div class="p-3 md:p-8 overflow-y-auto flex-1 no-scrollbar space-y-3 md:space-y-6">
                 <div id="ct-vt-action-bar" class="flex flex-row justify-between items-center gap-2 bg-blue-50 p-2 md:p-4 rounded-xl border border-blue-100 flex-shrink-0">
-                    <div class="text-[10px] md:text-lg flex items-center gap-1.5 md:gap-3">
-                        <div class="flex flex-col md:flex-row md:items-center">
-                            <span class="text-gray-500 text-[8px] md:text-sm uppercase font-bold">Gốc</span>
-                            <span id="ct-vt-original-qty" class="font-black text-blue-700 md:ml-1">0</span>
+                    <div class="text-[10px] md:text-lg flex items-center gap-2 md:gap-4 font-black">
+                        <div class="flex items-center gap-1">
+                            <span class="text-gray-500 text-[8px] md:text-xs uppercase font-bold">Gốc</span>
+                            <span id="ct-vt-original-qty" class="text-blue-700">0</span>
                         </div>
-                        <span class="text-gray-300">|</span>
-                        <div class="flex flex-col md:flex-row md:items-center">
-                            <span class="text-gray-500 text-[8px] md:text-sm uppercase font-bold">Đã chia</span>
-                            <span id="ct-vt-distributed-qty" class="font-black text-green-700 md:ml-1">0</span>
+                        <div class="h-4 w-px bg-gray-300"></div>
+                        <div class="flex items-center gap-1">
+                            <span class="text-gray-500 text-[8px] md:text-xs uppercase font-bold">Đã chia</span>
+                            <span id="ct-vt-distributed-qty" class="text-green-700">0</span>
                         </div>
                     </div>
-                    <button type="button" id="add-ct-vt-row-btn" class="bg-indigo-600 text-white w-8 h-8 md:w-auto md:h-auto md:px-6 md:py-3 rounded-full md:rounded-xl text-lg md:text-sm font-black shadow-lg hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 active:scale-95">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path></svg>
-                        <span class="hidden md:inline uppercase tracking-widest">Thêm người nhận</span>
+                    <button type="button" id="add-ct-vt-row-btn" class="bg-indigo-600 text-white w-7 h-7 md:w-auto md:h-auto md:px-6 md:py-2.5 rounded-full md:rounded-xl shadow-md hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 active:scale-90">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path></svg>
+                        <span class="hidden md:inline uppercase tracking-widest text-[11px] font-black">Thêm</span>
                     </button>
                 </div>
                 
