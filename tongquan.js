@@ -1,4 +1,3 @@
-
 import { sb, viewStates, showView, currentUser, cache, showToast } from './app.js';
 
 let activityChart = null;
@@ -9,6 +8,21 @@ let last30DaysChiTiet = [];
 let allAlertsData = null;
 let allNganhOptions = []; 
 let unreturnedItemsCache = []; 
+
+const STATUS_CONFIG = {
+    'Hết hạn sử dụng': { color: '#ef4444', order: 0 },
+    'Từ 1-30 ngày': { color: '#f87171', order: 1 },
+    'Từ 31-60 ngày': { color: '#f97316', order: 2 },
+    'Từ 61-90 ngày': { color: '#fb923c', order: 3 },
+    'Từ 91-120 ngày': { color: '#fbbf24', order: 4 },
+    'Từ 121-150 ngày': { color: '#facc15', order: 5 },
+    'Từ 151-180 ngày': { color: '#fef08a', order: 6 },
+    'Trên 180 ngày': { color: '#16a34a', order: 7 },
+    'Còn sử dụng': { color: '#31D134', order: 8 },
+    'Cận date': { color: '#36A2EB', order: 9 },
+    'Hàng hư': { color: '#F2F208', order: 10 },
+    'Không có date': { color: '#9ca3af', order: 11 }
+};
 
 const tongQuanState = {
     alerts: {
@@ -53,7 +67,14 @@ async function openTongQuanFilterPopover(button) {
     document.body.appendChild(popover);
 
     const rect = button.getBoundingClientRect();
-    popover.style.left = `${rect.left}px`;
+    const popoverWidth = 250; 
+    let left = rect.left;
+    
+    if (left + popoverWidth > window.innerWidth) {
+        left = window.innerWidth - popoverWidth - 20;
+    }
+    
+    popover.style.left = `${left}px`;
     popover.style.top = `${rect.bottom + window.scrollY + 5}px`;
 
     const optionsList = popover.querySelector('.filter-options-list');
@@ -86,7 +107,7 @@ async function openTongQuanFilterPopover(button) {
             option && String(option).toLowerCase().includes(searchTerm)
         );
         optionsList.innerHTML = filteredOptions.length > 0 ? filteredOptions.map(option => `
-            <label class="flex items-center space-x-2 px-2 py-1 hover:bg-gray-100 rounded">
+            <label class="flex items-center space-x-2 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer">
                 <input type="checkbox" value="${option}" class="filter-option-cb" ${tempSelectedOptions.has(String(option)) ? 'checked' : ''}>
                 <span class="text-sm">${option}</span>
             </label>
@@ -124,7 +145,9 @@ async function openTongQuanFilterPopover(button) {
             options = ['Sắp hết hàng', 'Tồn kho lâu', 'Cận date'];
         } else {
              const allItems = [];
-             Object.values(allAlertsData).forEach(arr => allItems.push(...arr));
+             if (allAlertsData) {
+                Object.values(allAlertsData).forEach(arr => allItems.push(...arr));
+             }
              const keyToExtract = filterKey === 'phu_trach' ? 'phu_trach' : 'nganh';
              options = [...new Set(allItems.map(item => item[keyToExtract]).filter(Boolean))].sort();
         }
@@ -249,15 +272,16 @@ function renderAlerts(alerts) {
 
     const createAlertItem = (icon, text, info, action, data) => {
         const li = document.createElement('li');
-        li.className = 'flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer alert-item';
+        // --- NÂNG CẤP: Giảm tối đa padding và spacing trên mobile để tiết kiệm không gian ---
+        li.className = 'flex items-center space-x-1.5 md:space-x-3 p-1 md:p-3 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer alert-item';
         li.dataset.action = action;
         li.dataset.value = data;
         li.innerHTML = `
             ${icon}
-            <div class="flex-grow">
-                <span class="text-[9px] md:text-sm text-gray-700">${text}</span>
+            <div class="flex-grow min-w-0">
+                <span class="text-[9px] md:text-sm text-gray-700 leading-tight">${text}</span>
             </div>
-            <div class="flex-shrink-0 text-right text-[9px] md:text-xs text-gray-500 ml-4 w-28">
+            <div class="flex-shrink-0 text-right text-[8px] md:text-xs text-gray-500 ml-2 w-24 md:w-28">
                 <p class="truncate">${info.nganh || 'N/A'}</p>
                 <p class="font-medium truncate">${info.phu_trach || 'N/A'}</p>
             </div>
@@ -267,19 +291,19 @@ function renderAlerts(alerts) {
     };
     
     const icons = {
-        lowStock: `<div class="flex-shrink-0 w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center"><svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2a1 1 0 011 1v8a1 1 0 01-1 1h-2a1 1 0 01-1-1z"></path></svg></div>`,
-        slowMoving: `<div class="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center"><svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>`,
-        urgentExpiry: `<div class="flex-shrink-0 w-8 h-8 rounded-full bg-red-100 flex items-center justify-center"><svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg></div>`
+        lowStock: `<div class="flex-shrink-0 w-6 h-6 md:w-8 md:h-8 rounded-full bg-yellow-100 flex items-center justify-center"><svg class="w-4 h-4 md:w-5 md:h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1-1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2a1 1 0 011 1v8a1 1 0 01-1 1h-2a1 1 0 01-1-1z"></path></svg></div>`,
+        slowMoving: `<div class="flex-shrink-0 w-6 h-6 md:w-8 md:h-8 rounded-full bg-blue-100 flex items-center justify-center"><svg class="w-4 h-4 md:w-5 md:h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>`,
+        urgentExpiry: `<div class="flex-shrink-0 w-6 h-6 md:w-8 md:h-8 rounded-full bg-red-100 flex items-center justify-center"><svg class="w-4 h-4 md:w-5 md:h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg></div>`
     };
 
     (alerts.lowStock || []).forEach(item => {
-        createAlertItem(icons.lowStock, `Sắp hết hàng: <strong>${item.ma_vt}</strong> còn <strong>${item.total_ton_cuoi}</strong>.`, item, 'ton-kho:ma_vt', item.ma_vt);
+        createAlertItem(icons.lowStock, `Hết: <strong>${item.ma_vt}</strong> còn <strong>${item.total_ton_cuoi}</strong>.`, item, 'ton-kho:ma_vt', item.ma_vt);
     });
     (alerts.slowMoving || []).forEach(item => {
-        createAlertItem(icons.slowMoving, `Tồn kho lâu: <strong>${item.ma_vt}</strong> (không xuất >60 ngày).`, item, 'ton-kho:ma_vt', item.ma_vt);
+        createAlertItem(icons.slowMoving, `Lâu: <strong>${item.ma_vt}</strong> (>60 ngày).`, item, 'ton-kho:ma_vt', item.ma_vt);
     });
     (alerts.urgentExpiry || []).forEach(item => {
-        createAlertItem(icons.urgentExpiry, `Cận date: Lô <strong>${item.lot}</strong> (${item.ma_vt}) hết hạn <strong>${item.date}</strong>.`, item, 'ton-kho:lot', item.lot);
+        createAlertItem(icons.urgentExpiry, `Date: <strong>${item.lot}</strong> (${item.ma_vt}) - <strong>${item.date}</strong>.`, item, 'ton-kho:lot', item.lot);
     });
 
     if (alertCount === 0) {
@@ -330,6 +354,7 @@ async function renderInventoryStatusChart() {
     if (!ctxEl) return;
     const ctx = ctxEl.getContext('2d');
     const selectedNganhArr = tongQuanState.inventory.nganh;
+    const isMobile = window.innerWidth <= 768;
 
     let query = sb.from('ton_kho_update').select('tinh_trang, ton_cuoi');
     if (currentUser.phan_quyen !== 'Admin') {
@@ -345,17 +370,108 @@ async function renderInventoryStatusChart() {
     if (selectedNganhArr.length > 0) query = query.in('nganh', selectedNganhArr);
 
     const { data } = await query;
-    const statusCounts = { 'Còn sử dụng': 0, 'Cận date': 0, 'Hết hạn sử dụng': 0, 'Hàng hư': 0 };
-    (data || []).forEach(item => statusCounts[item.tinh_trang] += (item.ton_cuoi || 0));
+    
+    const countsMap = {};
+    let totalCount = 0;
+    (data || []).forEach(item => {
+        const status = item.tinh_trang || 'Không có date';
+        const count = item.ton_cuoi || 0;
+        countsMap[status] = (countsMap[status] || 0) + count;
+    });
+
+    const activeStatuses = Object.keys(countsMap).filter(status => countsMap[status] > 0);
+    activeStatuses.forEach(s => totalCount += countsMap[s]);
+
+    const sortedStatuses = activeStatuses.sort((a, b) => {
+        const orderA = STATUS_CONFIG[a]?.order ?? 999;
+        const orderB = STATUS_CONFIG[b]?.order ?? 999;
+        return orderA - orderB;
+    });
+
+    const chartLabels = sortedStatuses;
+    const chartDataValues = sortedStatuses.map(s => countsMap[s]);
+    const chartColors = sortedStatuses.map(s => STATUS_CONFIG[s]?.color || '#9ca3af');
 
     if (inventoryStatusChart) inventoryStatusChart.destroy();
     inventoryStatusChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
-            labels: Object.keys(statusCounts),
-            datasets: [{ data: Object.values(statusCounts), backgroundColor: ['#31D134', '#36A2EB', '#FB0303', '#F2F208'] }]
+            labels: chartLabels,
+            datasets: [{ 
+                data: chartDataValues, 
+                backgroundColor: chartColors,
+                borderWidth: 1,
+                hoverOffset: 10
+            }]
         },
-        options: { responsive: true, maintainAspectRatio: false }
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false,
+            layout: {
+                padding: isMobile ? 0 : 10
+            },
+            plugins: {
+                legend: {
+                    position: 'right',
+                    align: 'center',
+                    onClick: (e, legendItem, legend) => {
+                        const index = legendItem.index;
+                        const chart = legend.chart;
+                        const meta = chart.getDatasetMeta(0);
+                        
+                        // Toggle hidden state of the point
+                        meta.data[index].hidden = !meta.data[index].hidden;
+                        chart.update();
+                    },
+                    labels: {
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        padding: isMobile ? 6 : 12,
+                        boxWidth: 8,
+                        font: {
+                            size: 10,
+                            weight: '600'
+                        },
+                        generateLabels: (chart) => {
+                            const data = chart.data;
+                            if (data.labels.length && data.datasets.length) {
+                                return data.labels.map((label, i) => {
+                                    const value = data.datasets[0].data[i];
+                                    const percentage = totalCount > 0 ? ((value / totalCount) * 100).toFixed(1) : 0;
+                                    const meta = chart.getDatasetMeta(0);
+                                    const isHidden = meta.data[i] ? meta.data[i].hidden : false;
+                                    
+                                    return {
+                                        text: `${label}: ${value.toLocaleString()} (${percentage}%)`,
+                                        fillStyle: data.datasets[0].backgroundColor[i],
+                                        strokeStyle: data.datasets[0].backgroundColor[i],
+                                        lineWidth: 0,
+                                        hidden: isHidden,
+                                        index: i,
+                                        // Áp dụng font gạch ngang (strikethrough) khi bị ẩn
+                                        font: {
+                                            size: 10,
+                                            weight: '600',
+                                            decoration: isHidden ? 'line-through' : 'none'
+                                        }
+                                    };
+                                });
+                            }
+                            return [];
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.raw;
+                            const percentage = totalCount > 0 ? ((value / totalCount) * 100).toFixed(1) : 0;
+                            return `${context.label}: ${value.toLocaleString()} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
     });
 }
 
@@ -387,14 +503,18 @@ export async function fetchTongQuanData() {
         let sanPhamCountQuery = sb.from('san_pham').select('ma_vt', { count: 'exact', head: true });
         let tonKhoQuery = sb.from('ton_kho_update').select('ma_vt, date, ton_cuoi, tinh_trang, nganh, phu_trach');
         
+        let nganhResQuery = sb.from('ton_kho_update').select('nganh');
+
         if (isNotAdmin) {
             if (allowedNganh.length > 0) {
                 const nganhListStr = allowedNganh.map(n => `"${n}"`).join(',');
                 sanPhamCountQuery = sanPhamCountQuery.or(`phu_trach.eq."${userName}",nganh.in.(${nganhListStr})`);
                 tonKhoQuery = tonKhoQuery.or(`phu_trach.eq."${userName}",nganh.in.(${nganhListStr})`);
+                nganhResQuery = nganhResQuery.or(`phu_trach.eq."${userName}",nganh.in.(${nganhListStr})`);
             } else {
                 sanPhamCountQuery = sanPhamCountQuery.eq('phu_trach', userName);
                 tonKhoQuery = tonKhoQuery.eq('phu_trach', userName);
+                nganhResQuery = nganhResQuery.eq('phu_trach', userName);
             }
         }
 
@@ -430,7 +550,7 @@ export async function fetchTongQuanData() {
             }
         }
 
-        const [ctRes, alerts, nganhRes] = await Promise.all([chiTietQuery, fetchAlerts(), sb.from('ton_kho_update').select('nganh')]);
+        const [ctRes, alerts, nganhRes] = await Promise.all([chiTietQuery, fetchAlerts(), nganhResQuery]);
         last30DaysChiTiet = ctRes.data || [];
         allAlertsData = alerts;
         allNganhOptions = [...new Set((nganhRes.data || []).map(i => i.nganh).filter(Boolean))].sort();
