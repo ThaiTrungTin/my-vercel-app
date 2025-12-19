@@ -77,6 +77,81 @@ export const filterButtonDefaultTexts = {
 };
 let activeAutocompletePopover = null;
 
+/**
+ * Theo dõi và cập nhật trạng thái kết nối mạng (Minimalist - ms Only)
+ */
+function setupNetworkStatusWatcher() {
+    const indicator = document.getElementById('network-indicator');
+    const speedText = document.getElementById('network-speed-text');
+    const arcs = [
+        document.getElementById('wifi-arc-1'), // dot
+        document.getElementById('wifi-arc-2'),
+        document.getElementById('wifi-arc-3'),
+        document.getElementById('wifi-arc-4')
+    ];
+
+    const updateUI = () => {
+        const isOnline = navigator.onLine;
+        const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        
+        if (!isOnline) {
+            indicator.className = 'flex items-center gap-1.5 px-1 transition-all flex-shrink-0';
+            speedText.textContent = 'Offline';
+            speedText.className = 'text-[9px] md:text-[11px] font-medium text-red-600 uppercase tracking-tighter';
+            arcs.forEach(arc => {
+                if (arc) {
+                    const color = '#EF4444'; // Red (Offline)
+                    if (arc.hasAttribute('fill')) arc.setAttribute('fill', color);
+                    if (arc.hasAttribute('stroke')) arc.setAttribute('stroke', color);
+                    arc.style.opacity = '1';
+                }
+            });
+            return;
+        }
+
+        let rtt = connection ? connection.rtt : 50;
+
+        // Xanh lá (Mạnh: < 150ms) -> Cam (TB: 150-300ms) -> Vàng (Yếu: > 300ms)
+        let activeLevel = 1;
+        let activeColor = 'rgba(8, 201, 69, 1)'; // Vàng
+
+        if (rtt > 0 && rtt < 150) {
+            activeLevel = 4;
+            activeColor = '#rgba(8, 201, 69, 1)'; // Xanh lá
+        } else if (rtt >= 150 && rtt < 400) {
+            activeLevel = 3;
+            activeColor = 'rgba(8, 201, 69, 1)'; // Cam
+        } else if (rtt >= 400) {
+            activeLevel = 2;
+            activeColor = '#FACC15'; // Vàng
+        }
+
+        // Cập nhật giao diện Online (Mảnh mai, không nền)
+        indicator.className = 'flex items-center gap-1.5 px-1 transition-all flex-shrink-0';
+        speedText.className = 'text-[9px] md:text-[11px] font-medium uppercase tracking-tighter';
+        speedText.style.color = activeColor;
+        speedText.textContent = `${rtt} ms`;
+
+        arcs.forEach((arc, index) => {
+            if (!arc) return;
+            const isActive = index < activeLevel;
+            const targetColor = isActive ? activeColor : '#E2E8F0';
+            
+            if (arc.hasAttribute('fill')) arc.setAttribute('fill', targetColor);
+            if (arc.hasAttribute('stroke')) arc.setAttribute('stroke', targetColor);
+            arc.style.opacity = isActive ? '1' : '0.3';
+        });
+    };
+
+    window.addEventListener('online', updateUI);
+    window.addEventListener('offline', updateUI);
+    if (navigator.connection) {
+        navigator.connection.addEventListener('change', updateUI);
+    }
+
+    updateUI();
+}
+
 // --- OFFLINE QUEUE MANAGEMENT ---
 const OFFLINE_QUEUE_KEY = 'offlineQueue';
 const getOfflineQueue = () => JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY)) || [];
@@ -278,10 +353,11 @@ function updateFilterButtonTexts(viewPrefix) {
             const selectedOptions = state.filters[filterKey] || [];
             const defaultText = filterButtonDefaultTexts[btn.id.replace('-mobile', '')] || 'Filter';
             
-            if (filterKey.includes('date') && selectedOptions) {
-                 btn.textContent = defaultText; 
-            } else if (Array.isArray(selectedOptions)) {
-                btn.textContent = selectedOptions.length > 0 ? `${defaultText} (${selectedOptions.length})` : defaultText;
+            if (Array.isArray(selectedOptions)) {
+                const newText = selectedOptions.length > 0 ? `${defaultText} (${selectedOptions.length})` : defaultText;
+                btn.textContent = newText;
+                const mobileBtn = document.getElementById(`${btn.id.replace('-mobile', '')}-mobile`);
+                if(mobileBtn) mobileBtn.textContent = newText;
             }
         }
     });
@@ -864,6 +940,9 @@ function setupDataRealtime() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // --- KHỞI TẠO NETWORK STATUS ---
+    setupNetworkStatusWatcher();
+
     const sidebar = document.getElementById('sidebar');
     const mainContent = document.getElementById('main-content-area');
     const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
@@ -927,7 +1006,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const modalEl = document.getElementById(modalInfo.id);
                 if (modalEl && !modalEl.classList.contains('hidden')) {
                     const closeBtn = document.getElementById(modalInfo.closeBtnId);
-                    if (closeBtn) closeBtn.click(); else modalEl.classList.add('hidden');
+                    if (closeBtn) {
+                        closeBtn.click();
+                    } else {
+                        modalEl.classList.add('hidden');
+                    }
                     e.preventDefault(); return;
                 }
             }

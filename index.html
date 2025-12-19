@@ -1,5 +1,4 @@
-﻿
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -273,11 +272,11 @@
 
                 <nav class="mt-4 flex-grow">
                     <button data-view="view-phat-trien" class="nav-button w-full flex items-center px-6 py-3 text-gray-400 hover:bg-gray-700 active">
-                        <svg class="w-6 h-6 mr-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 01-2-2v-2z"></path></svg>
+                        <svg class="w-6 h-6 mr-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6z"></path></svg>
                         <span class="nav-text transition-opacity duration-300">Tổng Quan</span>
                     </button>
                     <button data-view="view-san-pham" class="nav-button w-full flex items-center px-6 py-3 text-gray-400 hover:bg-gray-700">
-                        <svg class="w-6 h-6 mr-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                        <svg class="w-6 h-6 mr-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 v2M7 7h10"></path></svg>
                         <span class="nav-text transition-opacity duration-300">Sản Phẩm</span>
                     </button>
                     <button data-view="view-ton-kho" class="nav-button w-full flex items-center px-6 py-3 text-gray-400 hover:bg-gray-700">
@@ -299,6 +298,18 @@
                 <div id="main-header" class="flex-shrink-0 bg-green-100 shadow-sm px-2 md:px-4 py-1.5 flex justify-between items-center gap-2 md:gap-4 h-14 transition-all">
                     <div class="flex items-center gap-2 overflow-hidden flex-shrink-0">
                         <h1 id="view-title" class="text-xs md:text-xl font-bold text-red-700 truncate"></h1>
+                        <!-- Wifi Indicator Bar (Minimal Wave Style - ms unit) -->
+                        <div id="network-indicator" class="flex items-center gap-1.5 px-1 transition-all flex-shrink-0">
+                            <div id="network-wifi-svg" class="w-4 h-4 md:w-5 md:h-5">
+                                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path id="wifi-arc-1" d="M12 20C12.5523 20 13 19.5523 13 19C13 18.4477 12.5523 18 12 18C11.4477 18 11 18.4477 11 19C11 19.5523 11.4477 20 12 20Z" fill="#CBD5E1"/>
+                                    <path id="wifi-arc-2" d="M8.46447 15.4645C9.40215 14.5268 10.6739 14 12 14C13.3261 14 14.5979 14.5268 15.5355 15.4645" stroke="#CBD5E1" stroke-width="2" stroke-linecap="round"/>
+                                    <path id="wifi-arc-3" d="M5.63604 12.636C7.32387 10.9482 9.53913 10 12 10C14.4609 10 16.6761 10.9482 18.364 12.636" stroke="#CBD5E1" stroke-width="2" stroke-linecap="round"/>
+                                    <path id="wifi-arc-4" d="M2.80762 9.80762C5.23933 7.37591 8.44347 6 12 6C15.5565 6 18.7607 7.37591 21.1924 9.80762" stroke="#CBD5E1" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                            </div>
+                            <span id="network-speed-text" class="text-[9px] md:text-[11px] font-medium whitespace-nowrap uppercase tracking-tighter">-- ms</span>
+                        </div>
                     </div>
                     <div id="notification-bar" class="text-[9px] md:text-sm text-gray-800 text-right whitespace-nowrap overflow-hidden flex-grow flex items-center justify-end">
                     </div>
@@ -309,7 +320,7 @@
                             <div class="grid grid-cols-3 gap-2 md:gap-6">
                                 <div id="tq-card-san-pham" class="bg-white p-1 md:p-6 rounded-lg shadow-md flex flex-col md:flex-row justify-between items-center md:items-start hover:bg-blue-50 cursor-pointer transition-colors text-center md:text-left h-full">
                                     <div class="bg-blue-100 p-1 md:p-3 rounded-full mb-1 md:mb-0 md:order-2">
-                                        <svg class="w-4 h-4 md:w-8 md:h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                                        <svg class="w-4 h-4 md:w-8 md:h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 v2M7 7h10"></path></svg>
                                     </div>
                                     <div class="md:order-1">
                                         <p class="text-[9px] md:text-sm font-medium text-gray-500 leading-tight">Tổng Sản Phẩm</p>
@@ -343,7 +354,7 @@
                             <div class="bg-white p-4 md:p-6 rounded-lg shadow-md">
                                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-3">
                                     <h3 class="text-sm md:text-lg font-bold text-gray-800 flex items-center">
-                                        <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                                        <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 v2M7 7h10"></path></svg>
                                         Phân tích dòng hàng
                                     </h3>
                                     <!-- Cập nhật Toolbar Mobile nằm trên một hàng, vuốt ngang -->
@@ -774,11 +785,11 @@
         
         <nav id="bottom-nav" class="fixed bottom-0 left-0 right-0 bg-gray-900 text-gray-400 flex justify-around items-center h-16 md:hidden z-40 border-t border-gray-700 shadow-[0_-2px_10px_rgba(0,0,0,0.3)]">
             <button data-view="view-phat-trien" class="nav-button mobile-nav-btn flex flex-col items-center justify-center w-full h-full active">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 01-2-2v-2z"></path></svg>
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6z"></path></svg>
                 <span class="text-[10px] mt-1">Tổng Quan</span>
             </button>
             <button data-view="view-san-pham" class="nav-button mobile-nav-btn flex flex-col items-center justify-center w-full h-full">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 v2M7 7h10"></path></svg>
                 <span class="text-[10px] mt-1">Sản Phẩm</span>
             </button>
             <button data-view="view-ton-kho" class="nav-button mobile-nav-btn flex flex-col items-center justify-center w-full h-full">
@@ -1003,7 +1014,7 @@
     </div>
 
     <div id="ton-kho-settings-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 flex flex-col modal-content-custom">
+        <div class="bg-white rounded-lg shadow-xl w-full max-md mx-4 flex flex-col modal-content-custom">
             <div class="p-4 border-b">
                 <h3 class="text-lg font-bold text-gray-800">Cài đặt hiển thị cột</h3>
                 <p class="text-xs text-gray-500 mt-1">Chọn các cột bạn muốn hiển thị trên màn hình máy tính.</p>
