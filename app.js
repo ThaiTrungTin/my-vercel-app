@@ -840,7 +840,6 @@ function setupDataRealtime() {
     };
 
     const handleRealtimeEvent = async (tableName) => {
-        showToast(`Phát hiện thay đổi dữ liệu tại bảng ${tableName}...`, 'info');
         setTimeout(async () => {
             await refreshCurrentViewData();
             // Nếu bảng là chi_tiet_vt, kiểm tra xem có modal phân bổ nào đang mở không
