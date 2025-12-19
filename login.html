@@ -1,217 +1,234 @@
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đăng nhập - WH-B4 CRM</title>
-    <!-- Logo từ ảnh mẫu - bạn có thể thay đổi nếu muốn --><link rel="icon" type="image/png" href="https://images.seeklogo.com/logo-png/50/1/johnson-johnson-logo-png_seeklogo-500414.png">
-    <!-- Tải Tailwind CSS --><script src="https://cdn.tailwindcss.com"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Đăng nhập - Báo Cáo Tồn Kho Hàng Mẫu</title>
+    <link rel="icon" type="image/png" href="https://images.seeklogo.com/logo-png/50/1/johnson-johnson-logo-png_seeklogo-500414.png">
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         .loader {
             border: 4px solid #f3f3f3;
             border-top: 4px solid #3498db;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 32px;
+            height: 32px;
             animation: spin 1s linear infinite;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .required-star { color: #ef4444; margin-left: 2px; }
+        
+        .nganh-item:hover { background-color: #f8fafc; }
+        .nganh-item input:checked + div { border-color: #3b82f6; background-color: #eff6ff; }
+        
+        #nganh-dropdown {
+            transform-origin: top;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        /* Sử dụng font Inter cho toàn bộ trang */
-        body {
-            font-family: 'Inter', sans-serif;
+
+        /* Contact Modal Animation */
+        .contact-modal-overlay {
+            background-color: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(4px);
+            transition: opacity 0.3s ease;
         }
-        /* Thêm font Inter từ Google Fonts */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap');
+        .contact-menu {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @media (max-width: 640px) {
+            .auth-card { border-radius: 24px !important; }
+            input, select, button { font-size: 16px !important; }
+            .text-title { font-size: 1.125rem !important; }
+            .contact-menu {
+                border-radius: 24px 24px 0 0 !important;
+                transform: translateY(100%);
+            }
+            .contact-menu.active { transform: translateY(0); }
+        }
     </style>
 </head>
-<body class="bg-gray-100 font-sans antialiased">
+<body class="font-sans antialiased flex items-center justify-center min-h-screen p-3 sm:p-4">
 
-    <!-- Loader (Hiển thị ban đầu) --><div id="loading-container" class="flex flex-col items-center justify-center min-h-screen p-4">
+    <!-- Loader -->
+    <div id="loading-container" class="flex flex-col items-center justify-center p-4">
         <div class="loader"></div>
-        <p class="mt-2 text-gray-600">Đang tải ứng dụng...</p>
+        <p class="mt-3 text-slate-500 font-medium text-[11px] uppercase tracking-widest">Đang khởi động...</p>
     </div>
 
-    <!-- Layout chính (Ẩn ban đầu) --><div id="main-layout" class="hidden min-h-screen md:flex">
-
-        <!-- Bảng điều khiển bên trái (Thông tin) --><div class="md:w-1/2 bg-[#0d1b54] text-white p-10 lg:p-12 flex flex-col justify-between">
-            <!-- Nội dung trên --><div>
-                <div class="flex items-center mb-4">
-                    <!-- LOGO ĐÃ CÓ VIỀN TRÒN --><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTqynYNg47oA46x0qg7yA28QtHrT2kPgD3WTA&s" alt="Logo WH-B4 CRM" class="w-10 h-10 rounded-full mr-3">
-                    
-                    <div>
-                        <span class="text-2xl font-bold">WH-B4 CRM</span>
-                        <p class="text-sm text-gray-300">Phần mềm quản lí vật tư và đề xuất</p>
-                    </div>
-                </div>
-                
-                <h1 class="text-4xl font-bold mt-12 mb-4">Quản lí vật tư và quản lý đơn hàng</h1>
-                <p class="text-lg text-gray-300 mb-10">Hệ thống hỗ trợ quản lí vật tư và quản lý đơn hàng chuyên nghiệp trong một nền tảng.</p>
-
-                <!-- Danh sách tính năng --><ul class="space-y-5">
-                    <!-- ĐÃ XÓA MỤC "CHĂM SÓC KHÁCH HÀNG" --><li class="flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 mr-3 bg-white/10 p-1.5 rounded-lg text-blue-300">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A1.5 1.5 0 0 1 18 21.75H6.75a1.5 1.5 0 0 1-1.499-1.632Z" />
-                        </svg>
-                        <span>Quản lý người dùng</span>
-                    </li>
-                    <li class="flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 mr-3 bg-white/10 p-1.5 rounded-lg text-blue-300">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
-                        </svg>
-                        <span>Quản lý đơn hàng</span>
-                    </li>
-                    <li class="flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 mr-3 bg-white/10 p-1.5 rounded-lg text-blue-300">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 12V2.25H2.25v9.75h19.5ZM12 13.5v6.75m0-6.75a3 3 0 1 1 0 6.75 3 3 0 0 1 0-6.75Zm-4.5 6.75a3 3 0 1 1 0-6.75 3 3 0 0 1 0 6.75Zm9 0a3 3 0 1 1 0-6.75 3 3 0 0 1 0 6.75Z" />
-                        </svg>
-                        <span>Quản lý vật tư</span>
-                    </li>
-                    <li class="flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 mr-3 bg-white/10 p-1.5 rounded-lg text-blue-300">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
-                        </svg>
-                        <span>Báo cáo thống kê</span>
-                    </li>
-                </ul>
-
-                <!-- Thống kê (ĐÃ DI CHUYỂN LÊN TRÊN) -->
-                <div class="flex justify-between text-center pt-10"> <!-- Thêm khoảng cách phía trên -->
-                    <div>
-                        <span class="text-3xl font-bold block">Đa dạng</span>
-                        <span class="text-gray-300">Ngành hàng</span>
-                    </div>
-                    <div>
-                        <span class="text-3xl font-bold block">1000+</span>
-                        <span class="text-gray-300">Giao dịch</span>
-                    </div>
-                    <div>
-                        <span class="text-3xl font-bold block">5000+</span>
-                        <span class="text-gray-300">Sản phẩm</span>
-                    </div>
+    <!-- Main Auth Card -->
+    <div id="main-layout" class="hidden w-full max-w-md mx-auto">
+        <div class="bg-white auth-card rounded-[32px] shadow-2xl overflow-hidden border border-slate-200">
+            <div class="p-6 sm:p-8">
+                <!-- App Identity -->
+                <div class="text-center mb-6 sm:mb-8">
+                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTqynYNg47oA46x0qg7yA28QtHrT2kPgD3WTA&s" alt="Logo" class="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3 rounded-full shadow-md border-2 border-white">
+                    <h1 class="text-title text-lg sm:text-xl font-black text-slate-800 uppercase tracking-tight leading-tight">Báo Cáo Tồn Kho Hàng Mẫu</h1>
+                    <p class="text-[9px] sm:text-[10px] text-slate-400 font-bold mt-1 tracking-widest uppercase">Internal Logistics System</p>
                 </div>
 
+                <div id="auth-container">
+                    <!-- Login Form -->
+                    <form id="login-form">
+                        <div class="space-y-4">
+                            <div>
+                                <label for="login-gmail" class="block text-slate-700 text-[10px] font-bold uppercase mb-1.5 ml-1">Tên đăng nhập / Gmail <span class="required-star">*</span></label>
+                                <input type="text" id="login-gmail" required placeholder="Nhập Gmail của bạn..." class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm">
+                            </div>
+                            <div>
+                                <label for="login-password" class="block text-slate-700 text-[10px] font-bold uppercase mb-1.5 ml-1">Mật khẩu <span class="required-star">*</span></label>
+                                <div class="relative">
+                                    <input type="password" id="login-password" required placeholder="••••••••" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm pr-11">
+                                    <button type="button" data-toggle-password="login-password" class="password-toggle-btn absolute inset-y-0 right-0 flex items-center px-3.5 text-slate-400 hover:text-blue-500">
+                                        <svg class="w-5 h-5 toggle-icon-show" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                        <svg class="w-5 h-5 toggle-icon-hide hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="flex items-center ml-1">
+                                <input type="checkbox" id="login-remember-me" class="w-4 h-4 text-blue-600 rounded border-slate-300">
+                                <label for="login-remember-me" class="ml-2 text-[11px] text-slate-500 font-medium">Ghi nhớ đăng nhập</label>
+                            </div>
+                            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-100 transition-all active:scale-95 text-sm uppercase tracking-wider mt-2">Đăng nhập ngay</button>
+                        </div>
+                        <p class="text-center text-slate-500 text-[11px] mt-6 font-medium">Bạn chưa có tài khoản? <button type="button" id="show-register-btn" class="text-blue-600 font-bold hover:underline">Đăng ký mới</button></p>
+                    </form>
+
+                    <!-- Register Form -->
+                    <form id="register-form" class="hidden">
+                        <div class="space-y-3.5">
+                            <div>
+                                <label for="register-role" class="block text-slate-700 text-[10px] font-bold uppercase mb-1.5 ml-1">Vai trò thành viên <span class="required-star">*</span></label>
+                                <select id="register-role" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-bold text-slate-700 transition-all">
+                                    <option value="View">VIEW (Chỉ xem tồn kho)</option>
+                                    <option value="User">USER (Xem tồn kho & Chi tiết)</option>
+                                </select>
+                            </div>
+
+                            <!-- Nganh selection Droplist -->
+                            <div id="nganh-selection-wrapper" class="hidden animate-in fade-in slide-in-from-top-2 duration-300">
+                                <label class="block text-slate-700 text-[10px] font-bold uppercase mb-1.5 ml-1">Chọn ngành phụ trách (Không bắt buộc)</label>
+                                <div class="relative">
+                                    <button type="button" id="nganh-dropdown-btn" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl flex justify-between items-center text-sm font-medium text-slate-600 hover:bg-slate-100 transition-all">
+                                        <span id="nganh-btn-text" class="truncate">Bấm để chọn ngành...</span>
+                                        <svg class="w-4 h-4 text-slate-400 ml-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                                    </button>
+                                    
+                                    <div id="nganh-dropdown" class="hidden absolute left-0 right-0 top-full mt-2 z-50 bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                                        <div class="p-2 border-b border-slate-100 bg-white">
+                                            <input type="text" id="nganh-search" placeholder="Tìm tên ngành hoặc người phụ trách..." class="w-full px-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                        </div>
+                                        <div id="nganh-list-container" class="max-h-48 overflow-y-auto no-scrollbar p-1 space-y-0.5 bg-white">
+                                            <p class="text-[10px] text-slate-400 italic p-6 text-center">Đang tải danh sách ngành...</p>
+                                        </div>
+                                        <div class="p-2.5 bg-slate-50 flex justify-between items-center border-t border-slate-100 gap-2">
+                                            <span id="nganh-count-badge" class="text-[9px] font-bold text-slate-400 uppercase tracking-widest ml-1 truncate">Chưa chọn</span>
+                                            <div class="flex items-center gap-2">
+                                                <button type="button" id="nganh-deselect-all-btn" class="text-red-500 hover:text-red-600 text-[9px] font-black uppercase whitespace-nowrap px-1">Xóa hết</button>
+                                                <button type="button" id="nganh-confirm-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-[10px] font-black shadow-sm hover:bg-blue-700 transition-all uppercase">Xong</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label for="register-gmail" class="block text-slate-700 text-[10px] font-bold uppercase mb-1.5 ml-1">Tên đăng nhập <span class="required-star">*</span></label>
+                                <input type="text" id="register-gmail" required placeholder="Ví dụ: gaconpro123" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                            <div>
+                                <label for="register-ho-ten" class="block text-slate-700 text-[10px] font-bold uppercase mb-1.5 ml-1">Họ và Tên <span class="required-star">*</span></label>
+                                <input type="text" id="register-ho-ten" required placeholder="Nhập đầy đủ họ tên..." class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                            <div>
+                                <label for="register-password" class="block text-slate-700 text-[10px] font-bold uppercase mb-1.5 ml-1">Mật khẩu <span class="required-star">*</span></label>
+                                <input type="password" id="register-password" required placeholder="Ít nhất 6 ký tự..." class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                            <div>
+                                <label for="register-confirm-password" class="block text-slate-700 text-[10px] font-bold uppercase mb-1.5 ml-1">Xác nhận mật khẩu <span class="required-star">*</span></label>
+                                <input type="password" id="register-confirm-password" required placeholder="Nhập lại mật khẩu..." class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            </div>
+                            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg transition-all active:scale-95 text-sm mt-2 uppercase tracking-wider">Xác nhận đăng ký</button>
+                        </div>
+                        <p class="text-center text-slate-500 text-[11px] mt-6 font-medium">Đã có tài khoản? <button type="button" id="show-login-btn" class="text-blue-600 font-bold hover:underline">Quay lại đăng nhập</button></p>
+                    </form>
+                </div>
             </div>
             
-            <!-- Dấu gạch ngang (đã tách riêng xuống dưới) -->
-            <div class="pt-8 border-t border-white/20">
-                <!-- Phần này chỉ dùng để hiển thị đường kẻ ở dưới cùng -->
-            </div>
-        </div>
-
-        <!-- Bảng điều khiển bên phải (Biểu mẫu) --><div class="w-full md:w-1/2 flex flex-col items-center justify-center p-6 sm:p-12 relative">
-            
-            <!-- Container cho các biểu mẫu (giữ nguyên ID từ file gốc) --><div id="auth-container" class="w-full max-w-md">
-                
-                <!-- Biểu mẫu đăng nhập (giữ nguyên ID và logic) --><form id="login-form" class="bg-white p-8 rounded-lg shadow-2xl">
-                    <!-- LOGO ĐÃ ĐƯỢỢC THÊM VÀO --><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTqynYNg47oA46x0qg7yA28QtHrT2kPgD3WTA&s" alt="Logo" class="w-24 h-24 mx-auto mb-4 rounded-full">
-                    
-                    <h2 class="text-3xl font-bold mb-2 text-center text-gray-900">Đăng nhập hệ thống</h2>
-                    <p class="text-gray-600 text-center mb-6"></p>
-                    
-                    <div class="mb-4">
-                        <label for="login-gmail" class="block text-gray-700 text-sm font-bold mb-2">Tên đăng nhập</label>
-                        <input type="text" id="login-gmail" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    
-                    <div class="mb-4">
-                         <!-- ĐÃ XÓA "LẤY LẠI MẬT KHẨU" --><div class="flex justify-between items-center mb-2">
-                            <label for="login-password" class="block text-gray-700 text-sm font-bold">Mật khẩu</label>
-                        </div>
-                        <div class="relative">
-                            <input type="password" id="login-password" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10">
-                            <!-- Nút ẩn/hiện mật khẩu (giữ nguyên) --><button type="button" data-toggle-password="login-password" class="password-toggle-btn absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 hover:text-gray-700">
-                                <svg class="w-5 h-5 toggle-icon-show" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 10.224 7.29 6 12 6s8.577 4.224 9.964 5.683c.214.21.317.49.317.772 0 .282-.103.562-.317.772C20.577 13.776 16.71 18 12 18s-8.577-4.224-9.964-5.683a1.012 1.012 0 0 1 0-.639Z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                                </svg>
-                                <svg class="w-5 h-5 toggle-icon-hide hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.243 4.243L12 12" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="flex items-center justify-between mb-6">
-                        <label for="login-remember-me" class="flex items-center text-sm">
-                            <input type="checkbox" id="login-remember-me" class="form-checkbox h-4 w-4 text-blue-600 rounded">
-                            <span class="ml-2 text-gray-700">Ghi nhớ đăng nhập</span>
-                        </label>
-                    </div>
-                    
-                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-200">
-                        Đăng nhập
-                    </button>
-                    
-                    <p class="text-center text-gray-600 text-sm mt-6">
-                        Chưa có tài khoản? 
-                        <button type="button" id="show-register-btn" class="font-bold text-blue-600 hover:text-blue-700">Đăng ký ngay</button>
+            <!-- Developer Info Footer -->
+            <div class="bg-slate-50 p-5 border-t border-slate-100 text-center">
+                <p class="text-[9px] font-bold text-slate-400 tracking-[0.2em] uppercase mb-2">Internal Support System</p>
+                <div class="flex flex-col items-center gap-1">
+                    <p class="text-[10px] text-slate-500 font-medium">
+                        Phát triển bởi <span class="font-bold text-slate-800">ThaiTrungTin</span>
                     </p>
-                </form>
-
-                <!-- Biểu mẫu đăng ký (giữ nguyên ID và logic, ẩn ban đầu) --><form id="register-form" class="hidden bg-white p-8 rounded-lg shadow-2xl">
-                    <!-- Thêm logo vào form đăng ký cho nhất quán --><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTqynYNg47oA46x0qg7yA28QtHrT2kPgD3WTA&s" alt="Logo" class="w-24 h-24 mx-auto mb-4 rounded-full">
-                    
-                    <h2 class="text-3xl font-bold mb-6 text-center text-gray-900">Đăng ký</h2>
-                    <div class="mb-4">
-                        <label for="register-role" class="block text-gray-700 text-sm font-bold mb-2">Vai trò</label>
-                        <select id="register-role" class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="View" selected>View</option>
-                            <option value="User">User</option>
-                        </select>
-                    </div>
-                    <div class="mb-4">
-                        <label for="register-gmail" class="block text-gray-700 text-sm font-bold mb-2">Gmail / Tên đăng nhập</label>
-                        <input type="text" id="register-gmail" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    <div class="mb-4">
-                        <label for="register-ho-ten" class="block text-gray-700 text-sm font-bold mb-2">Họ và Tên</label>
-                        <input type="text" id="register-ho-ten" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <p class="text-xs text-gray-500 mt-1">Vui lòng nhập đúng Họ Tên để tiện tra cứu dữ liệu.</p>
-                    </div>
-                    <div class="mb-4">
-                        <label for="register-password" class="block text-gray-700 text-sm font-bold mb-2">Mật khẩu</label>
-                        <div class="relative">
-                            <input type="password" id="register-password" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10">
-                            <!-- Nút ẩn/hiện mật khẩu (giữ nguyên) --><button type="button" data-toggle-password="register-password" class="password-toggle-btn absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 hover:text-gray-700">
-                                <svg class="w-5 h-5 toggle-icon-show" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 10.224 7.29 6 12 6s8.577 4.224 9.964 5.683c.214.21.317.49.317.772 0 .282-.103.562-.317.772C20.577 13.776 16.71 18 12 18s-8.577-4.224-9.964-5.683a1.012 1.012 0 0 1 0-.639Z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                                </svg>
-                                <svg class="w-5 h-5 toggle-icon-hide hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.243 4.243L12 12" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="mb-4">
-                        <label for="register-confirm-password" class="block text-gray-700 text-sm font-bold mb-2">Xác nhận mật khẩu</label>
-                        <div class="relative">
-                            <input type="password" id="register-confirm-password" required class="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10">
-                        </div>
-                    </div>
-                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-200">
-                        Đăng ký
+                    <button type="button" id="open-contact-btn" class="mt-2 flex items-center gap-2 px-6 py-2 bg-white border border-slate-200 rounded-full text-[11px] font-bold text-blue-600 hover:bg-blue-50 transition-all shadow-sm active:scale-95">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                        LIÊN HỆ HỖ TRỢ
                     </button>
-                    <p class="text-center text-gray-600 text-sm mt-6">
-                        Đã có tài khoản? 
-                        <button type="button" id="show-login-btn" class="font-bold text-blue-600 hover:text-blue-700">Đăng nhập ngay</button>
-                    </p>
-                </form>
-            </div>
-
-            <!-- Footer --><div class="absolute bottom-8 text-center text-gray-500 text-sm">
-                <p class="font-bold">WH-B4 CRM</p>
-                <p>Hệ thống quản lí vật tư và quản lý đơn hàng</p>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Thông báo (giữ nguyên) --><div id="message-container" class="hidden fixed top-5 right-5 bg-red-500 text-white py-2 px-4 rounded-lg shadow-lg animate-pulse">
+    <!-- Contact Support Menu Modal -->
+    <div id="contact-modal" class="hidden fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="contact-modal-overlay absolute inset-0"></div>
+        <div class="contact-menu relative w-full sm:max-w-xs bg-white rounded-t-[32px] sm:rounded-[32px] shadow-2xl overflow-hidden animate-in">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-sm font-black text-slate-800 uppercase tracking-wider">Hỗ trợ kỹ thuật</h3>
+                    <button id="close-contact-btn" class="p-2 text-slate-400 hover:text-slate-600 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                
+                <div class="space-y-3">
+                    <a href="tel:0364605514" class="flex items-center gap-4 p-4 bg-slate-50 hover:bg-blue-50 rounded-2xl transition-all group">
+                        <div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                        </div>
+                        <div>
+                            <p class="text-xs font-black text-slate-800">GỌI ĐIỆN TRỰC TIẾP</p>
+                            <p class="text-[11px] text-slate-500 font-medium">0364 605 514</p>
+                        </div>
+                    </a>
+
+                    <a href="https://zalo.me/0364605514" target="_blank" class="flex items-center gap-4 p-4 bg-slate-50 hover:bg-sky-50 rounded-2xl transition-all group">
+                        <div class="w-10 h-10 bg-sky-100 text-sky-600 rounded-xl flex items-center justify-center group-hover:bg-sky-600 group-hover:text-white transition-all font-bold text-xs italic">Zalo</div>
+                        <div>
+                            <p class="text-xs font-black text-slate-800">NHẮN TIN ZALO</p>
+                            <p class="text-[11px] text-slate-500 font-medium">ThaiTrungTin</p>
+                        </div>
+                    </a>
+
+                    <a href="mailto:whb4@its.jnj.com" class="flex items-center gap-4 p-4 bg-slate-50 hover:bg-rose-50 rounded-2xl transition-all group">
+                        <div class="w-10 h-10 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center group-hover:bg-rose-600 group-hover:text-white transition-all">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                        </div>
+                        <div>
+                            <p class="text-xs font-black text-slate-800">GỬI EMAIL HỖ TRỢ</p>
+                            <p class="text-[11px] text-slate-500 font-medium break-all">whb4@its.jnj.com</p>
+                        </div>
+                    </a>
+                </div>
+
+                <div class="mt-6 text-center">
+                    <p class="text-[9px] font-bold text-slate-300 uppercase tracking-widest leading-relaxed">Phản hồi trong 2-4 giờ làm việc</p>
+                </div>
+            </div>
+        </div>
     </div>
+
+    <!-- Message notification -->
+    <div id="message-container" class="hidden fixed top-5 right-5 left-5 md:left-auto bg-blue-600 text-white py-3 px-6 rounded-2xl shadow-2xl z-[110] text-sm font-bold text-center md:text-left animate-in slide-in-from-top-4"></div>
 
     <script>
         const { createClient } = supabase;
@@ -219,43 +236,102 @@
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVlZnlkbmVmcHJjYW5ubHZpaW1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwNTcwMDUsImV4cCI6MjA3NjYzMzAwNX0.X274J_1_crUknJEOT1WWUD1h0HM9WdYScDW2eWWsiLk";
         const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        function showMessage(message) {
-            const messageContainer = document.getElementById('message-container');
-            messageContainer.textContent = message;
-            messageContainer.classList.remove('hidden');
-            setTimeout(() => {
-                messageContainer.classList.add('hidden');
-            }, 3000);
+        let industriesData = [];
+
+        function showMessage(message, isError = true) {
+            const container = document.getElementById('message-container');
+            container.textContent = message;
+            container.className = isError 
+                ? "fixed top-5 right-5 left-5 md:left-auto bg-red-500 text-white py-3 px-6 rounded-2xl shadow-2xl z-[110] text-sm font-bold text-center md:text-left"
+                : "fixed top-5 right-5 left-5 md:left-auto bg-green-600 text-white py-3 px-6 rounded-2xl shadow-2xl z-[110] text-sm font-bold text-center md:text-left";
+            container.classList.remove('hidden');
+            setTimeout(() => container.classList.add('hidden'), 4000);
+        }
+
+        async function fetchIndustries() {
+            try {
+                const { data, error } = await sb.from('san_pham').select('nganh, phu_trach');
+                if (error) throw error;
+                const industryMap = new Map();
+                data.forEach(item => {
+                    if (item.nganh && !industryMap.has(item.nganh)) {
+                        industryMap.set(item.nganh, item.phu_trach || 'Chưa rõ');
+                    }
+                });
+                industriesData = Array.from(industryMap.entries()).map(([nganh, phu_trach]) => ({ nganh, phu_trach }));
+                industriesData.sort((a, b) => a.nganh.localeCompare(b.nganh));
+                renderIndustries('');
+            } catch (err) { console.error("Lỗi tải ngành:", err); }
+        }
+
+        function renderIndustries(filter) {
+            const container = document.getElementById('nganh-list-container');
+            const searchTerm = filter.toLowerCase();
+            const filtered = industriesData.filter(item => 
+                item.nganh.toLowerCase().includes(searchTerm) || 
+                item.phu_trach.toLowerCase().includes(searchTerm)
+            );
+            if (filtered.length === 0) {
+                container.innerHTML = '<p class="text-[10px] text-slate-400 italic p-6 text-center">Không tìm thấy kết quả.</p>';
+                return;
+            }
+            container.innerHTML = filtered.map(item => `
+                <label class="nganh-item block cursor-pointer group px-1">
+                    <input type="checkbox" name="register-nganh" value="${item.nganh}" class="hidden">
+                    <div class="flex items-center justify-between p-3 rounded-xl border border-transparent transition-all group-active:scale-[0.97]">
+                        <div class="flex-grow min-w-0 pr-2 text-left">
+                            <p class="text-[12px] font-bold text-slate-700 truncate leading-tight">${item.nganh}</p>
+                            <p class="text-[10px] text-slate-400 italic truncate font-medium mt-0.5">Phụ trách: ${item.phu_trach}</p>
+                        </div>
+                        <div class="flex-shrink-0 w-4.5 h-4.5 rounded border-2 border-slate-200 flex items-center justify-center group-hover:border-blue-300 transition-colors bg-white">
+                            <svg class="w-3 h-3 text-blue-600 hidden" fill="currentColor" viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg>
+                        </div>
+                    </div>
+                </label>
+            `).join('');
+            container.querySelectorAll('label').forEach(label => {
+                label.onclick = (e) => {
+                    e.preventDefault();
+                    const checkbox = label.querySelector('input');
+                    checkbox.checked = !checkbox.checked;
+                    label.querySelector('svg').classList.toggle('hidden', !checkbox.checked);
+                    label.querySelector('div').classList.toggle('border-blue-200', checkbox.checked);
+                    label.querySelector('div').classList.toggle('bg-blue-50', checkbox.checked);
+                    updateNganhBadge();
+                };
+            });
+        }
+
+        function updateNganhBadge() {
+            const selected = Array.from(document.querySelectorAll('input[name="register-nganh"]:checked'));
+            const badge = document.getElementById('nganh-count-badge');
+            const btnText = document.getElementById('nganh-btn-text');
+            if (selected.length > 0) {
+                badge.textContent = `Đã chọn ${selected.length}`;
+                badge.classList.replace('text-slate-400', 'text-blue-600');
+                btnText.textContent = `Đã chọn: ${selected[0].value}${selected.length > 1 ? '... (+' + (selected.length - 1) + ')' : ''}`;
+                btnText.classList.replace('text-slate-600', 'text-blue-700');
+                btnText.classList.add('font-bold');
+            } else {
+                badge.textContent = `Chưa chọn`;
+                badge.classList.replace('text-blue-600', 'text-slate-400');
+                btnText.textContent = `Bấm để chọn ngành...`;
+                btnText.classList.replace('text-blue-700', 'text-slate-600');
+                btnText.classList.remove('font-bold');
+            }
         }
 
         async function handleLogin(e) {
             e.preventDefault();
-            const identifier = document.getElementById('login-gmail').value;
+            const identifier = document.getElementById('login-gmail').value.trim();
             const password = document.getElementById('login-password').value;
             const rememberMe = document.getElementById('login-remember-me').checked;
-            
-            const { data: user, error } = await sb.rpc('login_user', {
-                identifier: identifier,
-                password: password
-            });
-
-            if (error) {
-                showMessage('Đã xảy ra lỗi: ' + error.message);
-                return;
-            }
-
-            if (user.error) {
-                showMessage(user.error);
-                return;
-            }
-
-            if (rememberMe) {
-                const credentials = { identifier: identifier, password: password };
-                localStorage.setItem('rememberedCredentials', JSON.stringify(credentials));
-            } else {
-                localStorage.removeItem('rememberedCredentials');
-            }
-            
+            const { data: user, error } = await sb.rpc('login_user', { identifier, password });
+            if (error) return showMessage('Lỗi hệ thống: ' + error.message);
+            if (user.error) return showMessage(user.error);
+            if (user.stt === 'Khóa') return showMessage('Tài khoản của bạn đã bị khóa.');
+            if (rememberMe) localStorage.setItem('rememberedCredentials', JSON.stringify({ identifier, password }));
+            else localStorage.removeItem('rememberedCredentials');
             sessionStorage.setItem('loggedInUser', JSON.stringify(user));
             window.location.href = 'index.html';
         }
@@ -267,91 +343,113 @@
             const confirmPassword = document.getElementById('register-confirm-password').value;
             const ho_ten = document.getElementById('register-ho-ten').value.trim();
             const phan_quyen = document.getElementById('register-role').value;
-
-            if (!gmail) {
-                showMessage('Gmail / Tên đăng nhập không được để trống.');
-                return;
-            }
-            if (password !== confirmPassword) {
-                showMessage('Mật khẩu không khớp.');
-                return;
-            }
-             if (ho_ten.length < 3) {
-                showMessage('Họ và Tên phải có ít nhất 3 ký tự.');
-                return;
-            }
-
-            const { data: result, error } = await sb.rpc('register_user', {
-                gmail_param: gmail,
-                password_param: password,
-                ho_ten_param: ho_ten,
-                phan_quyen_param: phan_quyen
-            });
-            
+            if (!gmail || !password || !ho_ten) return showMessage('Vui lòng điền đầy đủ các trường có dấu *.');
+            if (password !== confirmPassword) return showMessage('Mật khẩu không khớp.');
+            if (ho_ten.length < 3) return showMessage('Họ tên phải từ 3 ký tự trở lên.');
+            const selectedNganh = Array.from(document.querySelectorAll('input[name="register-nganh"]:checked')).map(cb => cb.value);
+            let xem_view = '', xem_data = ''; 
+            if (phan_quyen === 'View') { xem_view = 'view-ton-kho'; } 
+            else if (phan_quyen === 'User') { xem_view = 'view-ton-kho,view-chi-tiet'; xem_data = selectedNganh.join(','); }
+            const { error } = await sb.from('user').insert({ gmail, mat_khau: password, ho_ten, phan_quyen, xem_view, xem_data, stt: 'Đã Duyệt' });
             if (error) {
-                showMessage('Lỗi đăng ký: ' + error.message);
-                return;
+                if (error.code === '23505') return showMessage('Tên đăng nhập hoặc Gmail đã tồn tại.');
+                return showMessage('Lỗi đăng ký: ' + error.message);
             }
-
-            if (result.error) {
-                showMessage(result.error);
-                return;
-            }
-            
-            document.getElementById('register-form').reset();
-            document.getElementById('register-form').classList.add('hidden');
-            document.getElementById('login-form').classList.remove('hidden');
-            showMessage('Đăng ký thành công! Vui lòng chờ quản trị viên duyệt tài khoản.');
+            showMessage('Đăng ký thành công! Đăng nhập ngay.', false);
+            setTimeout(() => {
+                document.getElementById('register-form').reset();
+                document.getElementById('nganh-dropdown').classList.add('hidden');
+                document.querySelectorAll('input[name="register-nganh"]').forEach(cb => cb.checked = false);
+                updateNganhBadge();
+                document.getElementById('show-login-btn').click();
+            }, 1500);
         }
 
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('loading-container').classList.add('hidden');
             document.getElementById('main-layout').classList.remove('hidden');
-            
-            if (sessionStorage.getItem('loggedInUser')) {
-                window.location.href = 'index.html'; 
-                return;
-            }
-
-            const rememberedCredentialsJSON = localStorage.getItem('rememberedCredentials');
-            if (rememberedCredentialsJSON) {
+            fetchIndustries();
+            if (sessionStorage.getItem('loggedInUser')) { window.location.href = 'index.html'; return; }
+            const remembered = localStorage.getItem('rememberedCredentials');
+            if (remembered) {
                 try {
-                    const credentials = JSON.parse(rememberedCredentialsJSON);
-                    document.getElementById('login-gmail').value = credentials.identifier || '';
-                    document.getElementById('login-password').value = credentials.password || '';
+                    const credentials = JSON.parse(remembered);
+                    document.getElementById('login-gmail').value = credentials.identifier;
+                    document.getElementById('login-password').value = credentials.password;
                     document.getElementById('login-remember-me').checked = true;
-                } catch (e) {
-                    localStorage.removeItem('rememberedCredentials');
-                }
+                } catch (e) { localStorage.removeItem('rememberedCredentials'); }
             }
 
-            const loginForm = document.getElementById('login-form');
-            const registerForm = document.getElementById('register-form');
-            const showRegisterBtn = document.getElementById('show-register-btn');
-            const showLoginBtn = document.getElementById('show-login-btn');
+            document.getElementById('login-form').addEventListener('submit', handleLogin);
+            document.getElementById('register-form').addEventListener('submit', handleRegister);
 
-            loginForm.addEventListener('submit', handleLogin);
-            registerForm.addEventListener('submit', handleRegister);
+            // Nganh Dropdown
+            const dropdownBtn = document.getElementById('nganh-dropdown-btn');
+            const dropdownMenu = document.getElementById('nganh-dropdown');
+            dropdownBtn.onclick = (e) => { e.stopPropagation(); dropdownMenu.classList.toggle('hidden'); };
+            document.getElementById('nganh-deselect-all-btn').onclick = (e) => {
+                e.stopPropagation();
+                document.querySelectorAll('input[name="register-nganh"]').forEach(checkbox => {
+                    checkbox.checked = false;
+                    const label = checkbox.closest('label');
+                    if (label) {
+                        label.querySelector('svg').classList.add('hidden');
+                        label.querySelector('div').classList.remove('border-blue-200', 'bg-blue-50');
+                    }
+                });
+                updateNganhBadge();
+            };
+            document.getElementById('nganh-confirm-btn').onclick = () => dropdownMenu.classList.add('hidden');
+            document.getElementById('nganh-search').addEventListener('input', (e) => renderIndustries(e.target.value));
 
-            showRegisterBtn.addEventListener('click', () => {
-                loginForm.classList.add('hidden');
-                registerForm.classList.remove('hidden');
+            document.getElementById('register-role').addEventListener('change', (e) => {
+                const wrapper = document.getElementById('nganh-selection-wrapper');
+                wrapper.classList.toggle('hidden', e.target.value !== 'User');
             });
 
-            showLoginBtn.addEventListener('click', () => {
-                registerForm.classList.add('hidden');
-                loginForm.classList.remove('hidden');
-            });
+            document.getElementById('show-register-btn').onclick = () => {
+                document.getElementById('login-form').classList.add('hidden');
+                document.getElementById('register-form').classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+            document.getElementById('show-login-btn').onclick = () => {
+                document.getElementById('register-form').classList.add('hidden');
+                document.getElementById('login-form').classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
             
             document.querySelectorAll('.password-toggle-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const inputId = btn.dataset.togglePassword;
-                    const passwordInput = document.getElementById(inputId);
-                    const isPassword = passwordInput.type === 'password';
-                    passwordInput.type = isPassword ? 'text' : 'password';
-                    btn.querySelector('.toggle-icon-show').classList.toggle('hidden', isPassword);
-                    btn.querySelector('.toggle-icon-hide').classList.toggle('hidden', !isPassword);
-                });
+                btn.onclick = () => {
+                    const input = document.getElementById(btn.dataset.togglePassword);
+                    const isTypePassword = input.type === 'password';
+                    input.type = isTypePassword ? 'text' : 'password';
+                    btn.querySelector('.toggle-icon-show').classList.toggle('hidden', isTypePassword);
+                    btn.querySelector('.toggle-icon-hide').classList.toggle('hidden', !isTypePassword);
+                };
+            });
+
+            // Contact Modal Logic
+            const contactModal = document.getElementById('contact-modal');
+            const contactMenu = contactModal.querySelector('.contact-menu');
+            const openContactBtn = document.getElementById('open-contact-btn');
+            const closeContactBtn = document.getElementById('close-contact-btn');
+            const overlay = contactModal.querySelector('.contact-modal-overlay');
+
+            const openContact = () => {
+                contactModal.classList.remove('hidden');
+                setTimeout(() => contactMenu.classList.add('active'), 10);
+            };
+            const closeContact = () => {
+                contactMenu.classList.remove('active');
+                setTimeout(() => contactModal.classList.add('hidden'), 300);
+            };
+
+            openContactBtn.onclick = openContact;
+            closeContactBtn.onclick = closeContact;
+            overlay.onclick = closeContact;
+
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('#nganh-selection-wrapper')) dropdownMenu.classList.add('hidden');
             });
         });
     </script>

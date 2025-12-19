@@ -1,242 +1,267 @@
 
-
-import { sb, cache, currentUser, showLoading, showToast, showConfirm, DEFAULT_AVATAR_URL, updateSidebarAvatar, sanitizeFileName, onlineUsers } from './app.js';
+import { sb, cache, currentUser, showLoading, showToast, showConfirm, DEFAULT_AVATAR_URL, updateSidebarAvatar, sanitizeFileName, onlineUsers, openAutocomplete } from './app.js';
 
 let selectedAvatarFile = null;
 
+const AVAILABLE_VIEWS = [
+    { id: 'view-phat-trien', label: 'Tổng Quan' },
+    { id: 'view-san-pham', label: 'Sản Phẩm' },
+    { id: 'view-ton-kho', label: 'Tồn Kho' },
+    { id: 'view-chi-tiet', label: 'Chi Tiết' }
+];
+
+/**
+ * Hàm mở Droplist Checklist (Popover) - Tối ưu Mobile nhỏ gọn
+ */
+function openMultiSelectDroplist(button, options, currentSelected, onApply) {
+    if (!button) return;
+    const oldPopover = document.getElementById('settings-droplist-popover');
+    if (oldPopover) oldPopover.remove();
+
+    const popover = document.createElement('div');
+    popover.id = 'settings-droplist-popover';
+    const isMobile = window.innerWidth <= 768;
+    
+    popover.className = isMobile 
+        ? 'fixed inset-x-6 top-24 bottom-24 z-[100] bg-white border border-gray-200 rounded-2xl shadow-2xl p-3 flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-300'
+        : 'fixed z-[100] bg-white border border-gray-200 rounded-xl shadow-2xl p-4 flex flex-col w-[380px] animate-in fade-in zoom-in duration-200';
+    
+    if (!isMobile) {
+        const rect = button.getBoundingClientRect();
+        let top = rect.bottom + window.scrollY + 8;
+        let left = rect.left;
+        if (left + 380 > window.innerWidth) left = window.innerWidth - 400;
+        if (top + 350 > window.innerHeight + window.scrollY) top = rect.top + window.scrollY - 360;
+        popover.style.top = `${Math.max(10, top)}px`;
+        popover.style.left = `${Math.max(10, left)}px`;
+    }
+
+    const selectedSet = new Set(currentSelected.map(s => s.trim()).filter(Boolean));
+
+    popover.innerHTML = `
+        <div class="flex items-center justify-between mb-2 border-b pb-2">
+            <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Danh mục & Phụ trách</h4>
+            <button id="droplist-close" class="text-gray-400 hover:text-gray-600 text-xl px-2">&times;</button>
+        </div>
+        <div class="mb-2">
+            <input type="text" id="droplist-search" placeholder="Tìm nhanh..." class="w-full px-3 py-1.5 text-xs border border-gray-200 rounded-lg outline-none focus:ring-1 focus:ring-blue-500">
+        </div>
+        <div id="droplist-items" class="max-h-[240px] overflow-y-auto space-y-0.5 no-scrollbar pr-1 border-b pb-2">
+            ${options.map(opt => `
+                <label class="flex items-center p-2 hover:bg-blue-50 rounded-lg cursor-pointer transition-all active:bg-blue-100 group border-b border-gray-50 last:border-0">
+                    <input type="checkbox" value="${opt.id}" class="droplist-cb w-4 h-4 rounded text-blue-600 border-gray-300 mr-2.5" ${selectedSet.has(opt.id) ? 'checked' : ''}>
+                    <div class="flex-grow flex justify-between items-center min-w-0">
+                        <span class="text-xs font-bold text-gray-700 truncate group-hover:text-blue-700">${opt.label}</span>
+                        <span class="text-[9px] font-medium text-gray-400 italic ml-2 flex-shrink-0">${opt.subInfo || ''}</span>
+                    </div>
+                </label>
+            `).join('')}
+        </div>
+        <div class="mt-2 flex justify-between items-center gap-2">
+            <button id="droplist-clear" class="text-[9px] font-bold text-red-400 px-1 uppercase">Xóa hết</button>
+            <button id="droplist-apply" class="flex-1 bg-blue-600 text-white py-2 rounded-lg font-bold hover:bg-blue-700 shadow-md active:scale-95 transition-all uppercase text-[10px]">Xác nhận</button>
+        </div>
+    `;
+
+    document.body.appendChild(popover);
+
+    const searchInput = popover.querySelector('#droplist-search');
+    searchInput.focus();
+    searchInput.oninput = (e) => {
+        const term = e.target.value.toLowerCase();
+        popover.querySelectorAll('#droplist-items label').forEach(label => {
+            label.classList.toggle('hidden', !label.textContent.toLowerCase().includes(term));
+        });
+    };
+
+    popover.querySelector('#droplist-close').onclick = () => popover.remove();
+    popover.querySelector('#droplist-clear').onclick = () => popover.querySelectorAll('.droplist-cb').forEach(cb => cb.checked = false);
+    popover.querySelector('#droplist-apply').onclick = () => {
+        const checkedValues = Array.from(popover.querySelectorAll('.droplist-cb:checked')).map(cb => cb.value);
+        onApply(checkedValues);
+        popover.remove();
+    };
+
+    const closeHandler = (e) => {
+        if (!isMobile && !popover.contains(e.target) && !button.contains(e.target)) {
+            popover.remove();
+            document.removeEventListener('mousedown', closeHandler);
+        }
+    };
+    if (!isMobile) document.addEventListener('mousedown', closeHandler);
+}
+
 async function handleProfileUpdate(e) {
     e.preventDefault();
-    const ho_ten = document.getElementById('profile-ho-ten').value;
+    const ho_ten = document.getElementById('profile-ho-ten').value.trim();
     const old_password = document.getElementById('profile-old-password').value;
     const new_password = document.getElementById('profile-new-password').value;
     const confirm_password = document.getElementById('profile-confirm-password').value;
     let anh_dai_dien_url = document.getElementById('profile-current-avatar-url').value;
-    const old_anh_dai_dien_url = currentUser.anh_dai_dien_url;
 
-    if (currentUser.mat_khau !== old_password) {
-        showToast("Mật khẩu cũ không chính xác.", 'error');
-        return;
-    }
-    if (new_password && new_password !== confirm_password) {
-        showToast("Mật khẩu mới không khớp.", 'error');
-        return;
-    }
-    
-    if (ho_ten !== currentUser.ho_ten) {
-        const { count, error } = await sb
-            .from('user')
-            .select('ho_ten', { count: 'exact', head: true })
-            .eq('ho_ten', ho_ten)
-            .neq('gmail', currentUser.gmail);
-
-        if (error) {
-            showToast(`Lỗi kiểm tra tên: ${error.message}`, 'error');
-            return;
-        }
-
-        if (count > 0) {
-            showToast('Tên này đã được người dùng khác sử dụng.', 'error');
-            return;
-        }
-    }
-
+    if (currentUser.mat_khau !== old_password) return showToast("Mật khẩu cũ sai.", 'error');
+    if (new_password && new_password !== confirm_password) return showToast("Mật khẩu mới không khớp.", 'error');
 
     showLoading(true);
-
     try {
         if (selectedAvatarFile) {
-            const safeFileName = sanitizeFileName(`${currentUser.gmail}-${Date.now()}-${selectedAvatarFile.name}`);
-            const filePath = `public/${safeFileName}`;
-
-            const { error: uploadError } = await sb.storage.from('anh_dai_dien').upload(filePath, selectedAvatarFile);
-            if (uploadError) throw new Error(`Lỗi tải ảnh lên: ${uploadError.message}`);
-
-            const { data: urlData } = sb.storage.from('anh_dai_dien').getPublicUrl(filePath);
+            const fileName = sanitizeFileName(`${currentUser.gmail}-${Date.now()}-${selectedAvatarFile.name}`);
+            const { error: uploadError } = await sb.storage.from('anh_dai_dien').upload(`public/${fileName}`, selectedAvatarFile);
+            if (uploadError) throw uploadError;
+            const { data: urlData } = sb.storage.from('anh_dai_dien').getPublicUrl(`public/${fileName}`);
             anh_dai_dien_url = urlData.publicUrl;
         } 
-        
-        if ((selectedAvatarFile || !anh_dai_dien_url) && old_anh_dai_dien_url) {
-             const oldFileName = old_anh_dai_dien_url.split('/').pop();
-             await sb.storage.from('anh_dai_dien').remove([`public/${oldFileName}`]);
-        }
-
         const updateData = { ho_ten, anh_dai_dien_url };
-        if (new_password) {
-            updateData.mat_khau = new_password;
-        }
-
+        if (new_password) updateData.mat_khau = new_password;
         const { data, error } = await sb.from('user').update(updateData).eq('gmail', currentUser.gmail).select().single();
         if (error) throw error;
-        
-        showToast("Cập nhật thông tin thành công!", "success");
+        Object.assign(currentUser, data);
         sessionStorage.setItem('loggedInUser', JSON.stringify(data));
-        
-        document.getElementById('user-ho-ten').textContent = data.ho_ten || 'User';
-        document.getElementById('profile-form').reset();
-        document.getElementById('profile-ho-ten').value = data.ho_ten;
+        document.getElementById('user-ho-ten').textContent = data.ho_ten;
         updateSidebarAvatar(data.anh_dai_dien_url);
         initProfileAvatarState();
-
-    } catch (error) {
-        showToast(`Cập nhật thất bại: ${error.message}`, 'error');
-    } finally {
-        showLoading(false);
-    }
+        showToast("Đã cập nhật!", "success");
+    } catch (err) { showToast(err.message, 'error'); }
+    finally { showLoading(false); }
 }
 
 export async function fetchUsers() {
-    const { data, error } = await sb.from('user').select('*').order('ho_ten');
-    if (error) {
-        showToast("Không thể tải danh sách nhân viên.", 'error');
-    } else {
-        cache.userList = data;
-        renderUserList(data);
-    }
+    const [{ data: users }, { data: nganhData }] = await Promise.all([
+        sb.from('user').select('*').order('ho_ten'),
+        sb.from('san_pham').select('nganh, phu_trach')
+    ]);
+    const industryMap = new Map();
+    (nganhData || []).forEach(item => { if (item.nganh && !industryMap.has(item.nganh)) industryMap.set(item.nganh, item.phu_trach || ''); });
+    const enrichedNganh = Array.from(industryMap, ([nganh, pt]) => ({ id: nganh, label: nganh, subInfo: pt })).sort((a,b) => a.label.localeCompare(b.label));
+    cache.userList = users;
+    renderUserList(users, enrichedNganh);
 }
 
-function renderUserList(users) {
-    const userListContainer = document.getElementById('user-list-body');
-    if (!userListContainer) return;
-    userListContainer.innerHTML = '';
-    if (!users || users.length === 0) {
-        userListContainer.innerHTML = `<p class="text-center text-gray-500">Không có người dùng nào.</p>`;
-        return;
-    }
+function renderUserList(users, allNganhEnriched) {
+    const container = document.getElementById('user-list-body');
+    if (!container) return;
+    container.innerHTML = '';
+
     users.forEach(user => {
-        const isCurrentUser = user.gmail === currentUser.gmail;
-        const presenceInfo = onlineUsers.get(user.gmail);
-        const status = presenceInfo ? (presenceInfo.status || 'online') : 'offline';
-
-        let onlineIndicatorHtml = '';
-        if (status !== 'offline') {
-            const statusColor = status === 'away' ? 'bg-yellow-400' : 'bg-green-500';
-            onlineIndicatorHtml = `<span class="absolute bottom-0 right-0 block h-3 w-3 rounded-full ${statusColor} border-2 border-white ring-1 ring-gray-300"></span>`;
-        }
+        const isMe = user.gmail === currentUser.gmail;
+        const viewCnt = (user.xem_view || '').split(',').filter(Boolean).length;
+        const dataCnt = (user.xem_data || '').split(',').filter(Boolean).length;
+        const isLocked = user.stt === 'Khóa';
         
-        let gmailClass = '';
-        let statusText = user.stt || 'Chờ Duyệt';
-        switch (statusText) {
-            case 'Đã Duyệt': 
-                gmailClass = 'bg-green-100 text-green-800'; 
-                break;
-            case 'Khóa': 
-                gmailClass = 'bg-red-100 text-red-800'; 
-                break;
-            default: 
-                gmailClass = 'bg-yellow-100 text-yellow-800'; 
-                statusText = 'Chờ Duyệt';
-        }
+        // Kiểm tra trạng thái hiện diện (online/away)
+        const presence = onlineUsers.get(user.gmail);
+        const status = presence ? (presence.status || 'online') : 'offline';
+        let statusDotClass = 'bg-gray-300'; // Mặc định offline
+        if (status === 'online') statusDotClass = 'bg-green-500';
+        else if (status === 'away') statusDotClass = 'bg-yellow-400';
 
-        let statusOptionsHtml = '';
-        if (user.stt === 'Khóa') {
-             statusOptionsHtml += `<button class="user-status-option block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" data-gmail="${user.gmail}" data-status="Đã Duyệt">Mở Khóa</button>`;
-        } else {
-             statusOptionsHtml += `<button class="user-status-option block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" data-gmail="${user.gmail}" data-status="Đã Duyệt">Duyệt</button>`;
-             statusOptionsHtml += `<button class="user-status-option block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" data-gmail="${user.gmail}" data-status="Khóa">Khóa</button>`;
-        }
+        const card = document.createElement('div');
+        card.className = `bg-white border ${isLocked ? 'border-red-100 bg-red-50/20' : 'border-gray-100'} rounded-xl p-3 shadow-sm transition-all hover:border-indigo-100`;
         
-        userListContainer.innerHTML += `
-            <div class="border rounded-lg p-4 bg-gray-50/50 shadow-sm">
-                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-                    <div class="flex-grow flex items-center gap-4">
-                         <div class="relative flex-shrink-0">
-                            <img src="${user.anh_dai_dien_url || DEFAULT_AVATAR_URL}" alt="Avatar" class="w-12 h-12 rounded-full object-cover">
-                            ${onlineIndicatorHtml}
-                         </div>
-                        <div>
-                            <p class="font-semibold text-gray-900">${user.ho_ten}</p>
-                            <p class="text-sm break-all px-2 py-0.5 rounded-full inline-block ${gmailClass} mt-1" title="Trạng thái: ${statusText}">${user.gmail}</p>
-                        </div>
+        card.innerHTML = `
+            <div class="flex flex-col gap-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="relative flex-shrink-0">
+                        <img src="${user.anh_dai_dien_url || DEFAULT_AVATAR_URL}" class="w-10 h-10 rounded-full object-cover border border-white shadow-sm">
+                        <span class="absolute -bottom-0.5 -right-0.5 block h-2.5 w-2.5 rounded-full ${statusDotClass} ring-2 ring-white"></span>
                     </div>
-                    <div class="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto flex-shrink-0">
-                        <select data-gmail="${user.gmail}" class="user-role-select border rounded p-2 text-sm w-full sm:w-28" ${isCurrentUser ? 'disabled' : ''}>
-                            <option value="Admin" ${user.phan_quyen === 'Admin' ? 'selected' : ''}>Admin</option>
-                            <option value="User" ${user.phan_quyen === 'User' ? 'selected' : ''}>User</option>
-                            <option value="View" ${user.phan_quyen === 'View' ? 'selected' : ''}>View</option>
-                        </select>
-                        <button data-gmail="${user.gmail}" class="reset-password-btn text-sm text-indigo-600 hover:text-indigo-900 font-medium px-3 py-2 rounded-md hover:bg-indigo-50 w-full sm:w-auto text-center" ${isCurrentUser ? 'disabled' : ''}>
-                            Đặt lại MK
+                    <div class="flex-grow min-w-0">
+                        <h4 class="font-bold text-gray-900 text-xs truncate flex items-center gap-1">
+                            ${user.ho_ten}
+                            ${isLocked ? '<span class="text-[7px] bg-red-500 text-white px-1 py-0.5 rounded font-black">KHÓA</span>' : ''}
+                        </h4>
+                        <p class="text-[9px] text-gray-400 truncate">${user.gmail}</p>
+                    </div>
+                    <div class="relative">
+                        <button data-gmail="${user.gmail}" class="user-options-btn p-1.5 text-gray-300 hover:bg-gray-50 rounded-lg">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path></svg>
                         </button>
-                        <div class="relative">
-                            <button data-gmail="${user.gmail}" class="user-options-btn p-2 rounded-full hover:bg-gray-200" ${isCurrentUser ? 'disabled' : ''}>
-                                <svg class="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 20 20"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path></svg>
+                        <div id="popover-${user.gmail.replace(/[@.]/g, '')}" class="hidden absolute right-0 top-8 w-40 bg-white rounded-xl shadow-2xl border border-gray-100 py-1.5 z-50 overflow-hidden">
+                            <button class="reset-password-btn flex items-center gap-2 w-full px-3 py-2 text-[10px] text-gray-600 hover:bg-blue-50" data-gmail="${user.gmail}">
+                                <svg class="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                                Reset mật khẩu
                             </button>
-                            <div id="options-popover-${user.gmail.replace(/[@.]/g, '')}" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20 border">
-                                ${statusOptionsHtml}
-                                <div class="border-t my-1"></div>
-                                <button class="user-delete-option block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50" data-gmail="${user.gmail}">Xóa Tài Khoản</button>
-                            </div>
+                            <button class="user-status-option flex items-center gap-2 w-full px-3 py-2 text-[10px] ${isLocked ? 'text-green-600' : 'text-orange-600'} hover:bg-gray-50" data-gmail="${user.gmail}" data-status="${isLocked ? 'Đã Duyệt' : 'Khóa'}">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                                ${isLocked ? 'Mở khóa' : 'Khóa tài khoản'}
+                            </button>
+                            <div class="h-px bg-gray-50 mx-2 my-1"></div>
+                            <button class="user-delete-option flex items-center gap-2 w-full px-3 py-2 text-[10px] text-red-500 font-bold hover:bg-red-50" data-gmail="${user.gmail}">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                Xóa vĩnh viễn
+                            </button>
                         </div>
                     </div>
                 </div>
+
+                <div class="flex items-center justify-between px-1 bg-gray-50/50 rounded-lg p-1.5">
+                    <div class="flex flex-col">
+                        <span class="text-[7px] font-black text-gray-400 uppercase tracking-widest">Quyền hạn</span>
+                        <span class="text-[9px] italic text-gray-400">${status === 'offline' ? 'Ngoại tuyến' : (status === 'away' ? 'Vắng mặt' : 'Đang hoạt động')}</span>
+                    </div>
+                    <select data-gmail="${user.gmail}" class="user-role-select bg-white border border-gray-100 rounded-lg px-2 py-1 text-[11px] font-black text-blue-600 outline-none focus:ring-1 focus:ring-blue-500 shadow-sm" ${isMe ? 'disabled' : ''}>
+                        <option value="Admin" ${user.phan_quyen === 'Admin' ? 'selected' : ''}>Admin</option>
+                        <option value="User" ${user.phan_quyen === 'User' ? 'selected' : ''}>User</option>
+                        <option value="View" ${user.phan_quyen === 'View' ? 'selected' : ''}>View</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <button class="trigger-view-list flex flex-col items-center gap-0.5 p-2 bg-gray-50 hover:bg-blue-50 border border-gray-100 rounded-xl transition-all active:scale-95" data-gmail="${user.gmail}">
+                        <span class="text-[7px] font-black text-gray-400 uppercase">Menu View</span>
+                        <div class="flex items-center justify-center gap-1 w-full">
+                            <span class="text-[11px] font-black text-gray-700">${viewCnt}</span>
+                            <svg class="w-2.5 h-2.5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-width="2" stroke-linecap="round"></path></svg>
+                        </div>
+                    </button>
+                    <button class="trigger-data-list flex flex-col items-center gap-0.5 p-2 bg-gray-50 hover:bg-blue-50 border border-gray-100 rounded-xl transition-all active:scale-95" data-gmail="${user.gmail}">
+                        <span class="text-[7px] font-black text-gray-400 uppercase">Dữ liệu ngành</span>
+                        <div class="flex items-center justify-center gap-1 w-full">
+                            <span class="text-[11px] font-black text-gray-700">${dataCnt}</span>
+                            <svg class="w-2.5 h-2.5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-width="2" stroke-linecap="round"></path></svg>
+                        </div>
+                    </button>
+                </div>
             </div>
         `;
+
+        card.querySelector('.trigger-view-list').onclick = (e) => {
+            openMultiSelectDroplist(e.currentTarget, AVAILABLE_VIEWS, (user.xem_view || '').split(','), async (vals) => {
+                showLoading(true);
+                await sb.from('user').update({ xem_view: vals.join(',') }).eq('gmail', user.gmail);
+                fetchUsers();
+                showLoading(false);
+            });
+        };
+
+        card.querySelector('.trigger-data-list').onclick = (e) => {
+            openMultiSelectDroplist(e.currentTarget, allNganhEnriched, (user.xem_data || '').split(','), async (vals) => {
+                showLoading(true);
+                await sb.from('user').update({ xem_data: vals.join(',') }).eq('gmail', user.gmail);
+                fetchUsers();
+                showLoading(false);
+            });
+        };
+
+        container.appendChild(card);
     });
 }
 
-async function handleRoleChange(e) {
-    const gmail = e.target.dataset.gmail;
-    const newRole = e.target.value;
-    const originalRole = cache.userList.find(u => u.gmail === gmail)?.phan_quyen;
-    
-    if (!originalRole) return;
-
-    const confirmed = await showConfirm(`Bạn có muốn đổi quyền của ${gmail} thành ${newRole}?`);
-    if (!confirmed) {
-        e.target.value = originalRole; 
-        return;
-    }
-
+async function handleUpdateUserStatus(gmail, status) {
     showLoading(true);
-    const { error } = await sb.from('user').update({ phan_quyen: newRole }).eq('gmail', gmail);
+    const { error } = await sb.from('user').update({ stt: status }).eq('gmail', gmail);
     showLoading(false);
-    if (error) {
-        showToast("Đổi quyền thất bại.", 'error');
-        e.target.value = originalRole;
-    } else {
-        showToast("Đổi quyền thành công.", 'success');
-        fetchUsers();
-    }
-}
-
-async function handleUpdateUserStatus(gmail, newStatus) {
-    showLoading(true);
-    const { error } = await sb.from('user').update({ stt: newStatus }).eq('gmail', gmail);
-    showLoading(false);
-    if (error) {
-        showToast(`Thay đổi trạng thái thất bại: ${error.message}`, 'error');
-    } else {
-        showToast("Cập nhật trạng thái thành công.", 'success');
-        fetchUsers(); // Refresh list to show new status
-    }
+    if (!error) { showToast(status === 'Khóa' ? "Đã khóa." : "Đã mở.", 'success'); fetchUsers(); }
 }
 
 async function handleDeleteUser(gmail) {
-    const userToDelete = cache.userList.find(u => u.gmail === gmail);
-    if (!userToDelete) return;
-    
-    const confirmed = await showConfirm(`Bạn có chắc muốn xóa vĩnh viễn tài khoản của ${userToDelete.ho_ten}? Hành động này không thể hoàn tác.`);
+    const confirmed = await showConfirm(`Xóa tài khoản ${gmail}?`);
     if (!confirmed) return;
-
     showLoading(true);
-    try {
-        if (userToDelete.anh_dai_dien_url) {
-            const oldFileName = userToDelete.anh_dai_dien_url.split('/').pop();
-            await sb.storage.from('anh_dai_dien').remove([`public/${oldFileName}`]);
-        }
-        
-        const { error } = await sb.from('user').delete().eq('gmail', gmail);
-        if (error) throw error;
-        
-        showToast("Đã xóa tài khoản thành công.", 'success');
-        fetchUsers();
-    } catch (error) {
-        showToast(`Lỗi khi xóa tài khoản: ${error.message}`, 'error');
-    } finally {
-        showLoading(false);
-    }
+    const { error } = await sb.from('user').delete().eq('gmail', gmail);
+    showLoading(false);
+    if (!error) { showToast("Đã xóa.", 'success'); fetchUsers(); }
 }
-
 
 function openPasswordResetModal(gmail) {
     document.getElementById('reset-user-gmail').value = gmail;
@@ -247,454 +272,158 @@ function openPasswordResetModal(gmail) {
 async function handlePasswordReset(e) {
     e.preventDefault();
     const gmail = document.getElementById('reset-user-gmail').value;
-    const new_password = document.getElementById('reset-new-password').value;
-    
+    const pwd = document.getElementById('reset-new-password').value;
     showLoading(true);
-    const { error } = await sb.from('user').update({ mat_khau: new_password }).eq('gmail', gmail);
+    const { error } = await sb.from('user').update({ mat_khau: pwd }).eq('gmail', gmail);
     showLoading(false);
-    
-    if (error) {
-        showToast("Đặt lại mật khẩu thất bại.", 'error');
-    } else {
-        showToast("Đặt lại mật khẩu thành công.", 'success');
+    if (!error) {
+        showToast("Đã đổi MK.", 'success');
         document.getElementById('password-reset-modal').classList.add('hidden');
         document.getElementById('password-reset-form').reset();
     }
 }
 
-async function handleBackupExcel() {
-    const confirmed = await showConfirm("Bạn có muốn sao lưu toàn bộ dữ liệu ra tệp Excel không? Quá trình này có thể mất một lúc.", "Xác nhận sao lưu");
-    if (!confirmed) return;
-
-    showLoading(true);
-    showToast("Đang chuẩn bị dữ liệu sao lưu...", "info");
-
-    const tablesToBackup = ['user', 'san_pham', 'ton_kho', 'don_hang', 'chi_tiet'];
-    try {
-        const results = await Promise.all(
-            tablesToBackup.map(table => sb.from(table).select('*').limit(50000)) 
-        );
-
-        const workbook = XLSX.utils.book_new();
-
-        for (let i = 0; i < tablesToBackup.length; i++) {
-            const tableName = tablesToBackup[i];
-            const { data, error } = results[i];
-
-            if (error) {
-                throw new Error(`Lỗi khi lấy dữ liệu từ bảng ${tableName}: ${error.message}`);
-            }
-
-            if(data){
-                const worksheet = XLSX.utils.json_to_sheet(data);
-                XLSX.utils.book_append_sheet(workbook, worksheet, tableName);
-            }
-        }
-
-        const today = new Date().toISOString().slice(0, 10);
-        XLSX.writeFile(workbook, `JNJ_Backup_${today}.xlsx`);
-        showToast("Sao lưu Excel thành công!", "success");
-
-    } catch (error) {
-        console.error("Backup failed:", error);
-        showToast(`Sao lưu thất bại: ${error.message}`, "error");
-    } finally {
-        showLoading(false);
-    }
-}
-
-function jsonToCsv(jsonData) {
-    if (!jsonData || jsonData.length === 0) {
-        return '';
-    }
-    const keys = Object.keys(jsonData[0]);
-    const csvRows = [];
-    csvRows.push(keys.join(','));
-
-    for (const row of jsonData) {
-        const values = keys.map(key => {
-            let cell = row[key];
-            if (typeof cell === 'object' && cell !== null) {
-                cell = JSON.stringify(cell);
-            }
-            cell = cell === null || cell === undefined ? '' : String(cell);
-            
-            if (/[",\n]/.test(cell)) {
-                cell = `"${cell.replace(/"/g, '""')}"`;
-            }
-            return cell;
-        });
-        csvRows.push(values.join(','));
-    }
-    return csvRows.join('\n');
-}
-
-async function handleBackupCsv() {
-    const confirmed = await showConfirm("Bạn có muốn sao lưu toàn bộ dữ liệu ra tệp CSV (nén ZIP) không? Quá trình này có thể mất một lúc.", "Xác nhận sao lưu CSV");
-    if (!confirmed) return;
-
-    showLoading(true);
-    showToast("Đang chuẩn bị dữ liệu CSV...", "info");
-
-    const tablesToBackup = ['user', 'san_pham', 'ton_kho', 'don_hang', 'chi_tiet'];
-    try {
-        const results = await Promise.all(
-            tablesToBackup.map(table => sb.from(table).select('*').limit(50000))
-        );
-
-        const zip = new JSZip();
-
-        for (let i = 0; i < tablesToBackup.length; i++) {
-            const tableName = tablesToBackup[i];
-            const { data, error } = results[i];
-
-            if (error) {
-                throw new Error(`Lỗi khi lấy dữ liệu từ bảng ${tableName}: ${error.message}`);
-            }
-
-            if(data){
-                const csvData = jsonToCsv(data);
-                zip.file(`${tableName}.csv`, csvData);
-            }
-        }
-        
-        const zipContent = await zip.generateAsync({ type: "blob" });
-        const today = new Date().toISOString().slice(0, 10);
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(zipContent);
-        link.download = `JNJ_Backup_CSV_${today}.zip`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        showToast("Sao lưu CSV (ZIP) thành công!", "success");
-
-    } catch (error) {
-        console.error("CSV Backup failed:", error);
-        showToast(`Sao lưu CSV thất bại: ${error.message}`, "error");
-    } finally {
-        showLoading(false);
-    }
-}
-
-async function handleRestoreFromExcel(file) {
-    if (!file) return;
-
-    const fileNameEl = document.getElementById('restore-file-name');
-    fileNameEl.textContent = `Tệp đã chọn: ${file.name}`;
-
-    const confirmed = await showConfirm(
-        "CẢNH BÁO: Hành động này sẽ XÓA TẤT CẢ dữ liệu hiện tại và thay thế bằng dữ liệu từ tệp. Hành động này không thể hoàn tác. Bạn có chắc chắn muốn tiếp tục không?",
-        "XÁC NHẬN KHÔI PHỤC DỮ LIỆU"
-    );
-    if(confirmed) {
-        const finalConfirm = await showConfirm("XÁC NHẬN LẦN CUỐI: Toàn bộ dữ liệu sẽ bị ghi đè. Vẫn tiếp tục?", "HÀNH ĐỘNG NGUY HIỂM");
-        if(!finalConfirm) {
-            fileNameEl.textContent = '';
-            document.getElementById('restore-file-input').value = '';
-            return;
-        }
-    } else {
-        fileNameEl.textContent = '';
-        document.getElementById('restore-file-input').value = '';
-        return;
-    }
-
-
-    showLoading(true);
-    showToast("Bắt đầu quá trình khôi phục...", "info");
-
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-        try {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: 'array', cellDates: true });
-            
-            const requiredSheets = ['user', 'san_pham', 'ton_kho', 'don_hang', 'chi_tiet'];
-            const presentSheets = workbook.SheetNames;
-            
-            for (const sheet of requiredSheets) {
-                if (!presentSheets.includes(sheet)) {
-                    throw new Error(`Tệp Excel bị thiếu sheet bắt buộc: "${sheet}"`);
-                }
-            }
-
-            const deleteOrder = ['chi_tiet', 'don_hang', 'ton_kho', 'san_pham', 'user'];
-            const insertOrder = ['user', 'san_pham', 'ton_kho', 'don_hang', 'chi_tiet'];
-            const pkMap = { user: 'gmail', san_pham: 'ma_vt', ton_kho: 'ma_vach', don_hang: 'ma_kho', chi_tiet: 'id' };
-
-            showToast("Đang xóa dữ liệu cũ...", "info");
-            for (const tableName of deleteOrder) {
-                const pk = pkMap[tableName];
-                if (tableName === 'user') {
-                    const { error } = await sb.from('user').delete().neq('gmail', currentUser.gmail);
-                    if (error) throw new Error(`Lỗi khi xóa bảng ${tableName}: ${error.message}`);
-                } else {
-                    const { error } = await sb.from(tableName).delete().neq(pk, 'a-value-that-does-not-exist-12345');
-                    if (error) throw new Error(`Lỗi khi xóa bảng ${tableName}: ${error.message}`);
-                }
-            }
-
-            for (const tableName of insertOrder) {
-                showToast(`Đang khôi phục bảng: ${tableName}...`, "info");
-                const worksheet = workbook.Sheets[tableName];
-                let jsonData = XLSX.utils.sheet_to_json(worksheet, { raw: false });
-
-                if (tableName === 'user') {
-                    jsonData = jsonData.filter(user => user.gmail !== currentUser.gmail);
-                }
-
-                const cleanedData = jsonData.map(row => {
-                    const newRow = {};
-                    for (const key in row) {
-                        newRow[key] = (row[key] === "" || row[key] === undefined) ? null : row[key];
-                    }
-                    return newRow;
-                });
-
-                if (cleanedData.length > 0) {
-                    const CHUNK_SIZE = 500;
-                    for (let i = 0; i < cleanedData.length; i += CHUNK_SIZE) {
-                        const chunk = cleanedData.slice(i, i + CHUNK_SIZE);
-                        const { error } = await sb.from(tableName).insert(chunk);
-                        if (error) {
-                             throw new Error(`Lỗi khi chèn dữ liệu vào ${tableName} (dòng ${i}): ${error.message}`);
-                        }
-                    }
-                }
-            }
-
-            showToast("Khôi phục dữ liệu thành công! Vui lòng đăng nhập lại.", "success");
-            setTimeout(() => {
-                sessionStorage.clear();
-                window.location.href = 'login.html';
-            }, 3000);
-
-        } catch (error) {
-            console.error("Restore failed:", error);
-            showToast(`Khôi phục thất bại: ${error.message}`, "error");
-            showToast("Đang cố gắng tải lại dữ liệu hiện tại...", "info");
-            setTimeout(() => location.reload(), 3000); 
-        } finally {
-            showLoading(false);
-            fileNameEl.textContent = '';
-            document.getElementById('restore-file-input').value = '';
-        }
-    };
-    reader.readAsArrayBuffer(file);
-}
-
-export function initProfileAvatarState() {
+export async function initProfileAvatarState() {
     selectedAvatarFile = null;
-    const currentAvatarUrl = currentUser?.anh_dai_dien_url;
     const preview = document.getElementById('profile-image-preview');
     const removeBtn = document.getElementById('profile-remove-image-btn');
     const urlInput = document.getElementById('profile-current-avatar-url');
-    
-    preview.src = currentAvatarUrl || DEFAULT_AVATAR_URL;
-    urlInput.value = currentAvatarUrl || '';
-    removeBtn.classList.toggle('hidden', !currentAvatarUrl);
+    preview.src = currentUser.anh_dai_dien_url || DEFAULT_AVATAR_URL;
+    urlInput.value = currentUser.anh_dai_dien_url || '';
+    removeBtn.classList.toggle('hidden', !currentUser.anh_dai_dien_url);
+
+    const container = document.getElementById('profile-user-data-access-container');
+    if (currentUser.phan_quyen === 'User') {
+        container.classList.remove('hidden');
+        renderProfileDataTrigger();
+    } else {
+        container.classList.add('hidden');
+    }
 }
 
-async function fetchAndDisplayTemplates() {
-    const buckets = [
-        { name: 'pnk', statusElId: 'pnk-status' },
-        { name: 'pxk', statusElId: 'pxk-status' }
-    ];
+async function renderProfileDataTrigger() {
+    const optionsContainer = document.getElementById('profile-xem-data-options');
+    if (!optionsContainer) return;
+    optionsContainer.className = "mt-2";
+    const dataCount = (currentUser.xem_data || '').split(',').filter(Boolean).length;
+    
+    optionsContainer.innerHTML = `
+        <button type="button" id="profile-data-droplist-btn" class="w-full flex justify-between items-center bg-white border border-blue-100 p-2.5 rounded-xl active:bg-blue-50 transition-all shadow-sm">
+            <div class="flex items-center space-x-2.5">
+                <div class="bg-blue-600 p-1.5 rounded-lg shadow-sm">
+                    <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                </div>
+                <div class="text-left">
+                    <p class="text-[11px] font-bold text-gray-800 leading-tight">Ngành theo dõi</p>
+                    <p class="text-[9px] text-gray-400 font-medium">Đã chọn: <span class="text-blue-600">${dataCount}</span></p>
+                </div>
+            </div>
+            <svg class="w-3.5 h-3.5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></svg>
+        </button>
+    `;
 
-    for (const bucket of buckets) {
-        const statusEl = document.getElementById(bucket.statusElId);
-        if (!statusEl) continue;
-
-        statusEl.textContent = 'Đang kiểm tra...';
-        
+    document.getElementById('profile-data-droplist-btn').onclick = async (e) => {
+        const targetBtn = e.currentTarget;
+        showLoading(true);
         try {
-            const { data: fileList, error: listError } = await sb.storage.from(bucket.name).list('', {
-                limit: 10,
-                search: 'template.xlsx'
-            });
-
-            if (listError) throw listError;
-            
-            const templateFile = fileList.find(f => f.name === 'template.xlsx');
-
-            if (templateFile) {
-                const { data: urlData } = sb.storage.from(bucket.name).getPublicUrl('template.xlsx');
-                if (urlData.publicUrl) {
-                    statusEl.innerHTML = `<a href="${urlData.publicUrl}" target="_blank" download class="text-blue-600 hover:underline font-medium">template.xlsx</a>`;
-                } else {
-                    statusEl.textContent = 'Lỗi lấy URL file template.';
+            const { data: nganhData } = await sb.from('san_pham').select('nganh, phu_trach');
+            const industryMap = new Map();
+            (nganhData || []).forEach(item => { if (item.nganh && !industryMap.has(item.nganh)) industryMap.set(item.nganh, item.phu_trach || ''); });
+            const enrichedNganh = Array.from(industryMap, ([nganh, pt]) => ({ id: nganh, label: nganh, subInfo: pt })).sort((a,b) => a.label.localeCompare(b.label));
+            showLoading(false);
+            openMultiSelectDroplist(targetBtn, enrichedNganh, (currentUser.xem_data || '').split(','), async (vals) => {
+                showLoading(true);
+                const { data, error } = await sb.from('user').update({ xem_data: vals.join(',') }).eq('gmail', currentUser.gmail).select().single();
+                if (!error) {
+                    Object.assign(currentUser, data);
+                    sessionStorage.setItem('loggedInUser', JSON.stringify(data));
+                    renderProfileDataTrigger();
+                    showToast("Đã lưu.", "success");
                 }
-            } else {
-                statusEl.textContent = 'Chưa có file template.';
-            }
-        } catch (error) {
-            console.error(`Error fetching template from ${bucket.name}:`, error);
-            statusEl.textContent = 'Lỗi khi tải template.';
-            statusEl.classList.add('text-red-500');
-        }
-    }
-}
-
-async function handleTemplateUpload(event, bucketName) {
-    const file = event.target.files[0];
-    const input = event.target;
-    
-    if (!file) {
-        input.value = '';
-        return;
-    }
-    
-    const allowedTypes = [
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
-        'application/vnd.ms-excel' // .xls
-    ];
-    if (!/\.(xlsx|xls)$/i.test(file.name) && !allowedTypes.includes(file.type)) {
-        showToast('Chỉ chấp nhận file Excel (.xlsx, .xls).', 'error');
-        input.value = '';
-        return;
-    }
-
-    const templateName = bucketName === 'pnk' ? 'Phiếu Nhập Kho' : 'Phiếu Xuất Kho';
-    const confirmed = await showConfirm(`Bạn có chắc muốn thay thế template "${templateName}" hiện tại bằng file "${file.name}"? File cũ sẽ bị ghi đè.`);
-
-    if (!confirmed) {
-        input.value = '';
-        return;
-    }
-    
-    showLoading(true);
-    showToast(`Đang tải lên template cho ${templateName}...`, 'info');
-
-    try {
-        const { error } = await sb.storage
-            .from(bucketName)
-            .upload('template.xlsx', file, {
-                cacheControl: '3600',
-                upsert: true,
+                showLoading(false);
             });
-
-        if (error) throw error;
-        
-        showToast('Tải lên template thành công!', 'success');
-        await fetchAndDisplayTemplates();
-
-    } catch (error) {
-        showToast(`Tải lên thất bại: ${error.message}`, 'error');
-        console.error('Template upload error:', error);
-    } finally {
-        showLoading(false);
-        input.value = '';
-    }
+        } catch (err) { showLoading(false); showToast("Lỗi tải.", "error"); }
+    };
 }
 
-function initTemplateManagement() {
-    const pnkUpload = document.getElementById('pnk-upload');
-    const pxkUpload = document.getElementById('pxk-upload');
-    const pnkUploadBtn = document.getElementById('pnk-upload-btn');
-    const pxkUploadBtn = document.getElementById('pxk-upload-btn');
-
-    if (pnkUploadBtn && pnkUpload) {
-        pnkUploadBtn.addEventListener('click', () => pnkUpload.click());
-        pnkUpload.addEventListener('change', (e) => handleTemplateUpload(e, 'pnk'));
-    }
-    if (pxkUploadBtn && pxkUpload) {
-        pxkUploadBtn.addEventListener('click', () => pxkUpload.click());
-        pxkUpload.addEventListener('change', (e) => handleTemplateUpload(e, 'pxk'));
-    }
-    
-    fetchAndDisplayTemplates();
+async function handleBackupExcel() {
+    const confirmed = await showConfirm("Tải Excel backup?");
+    if (!confirmed) return;
+    showLoading(true);
+    try {
+        const tables = ['user', 'san_pham', 'ton_kho', 'chi_tiet'];
+        const wb = XLSX.utils.book_new();
+        for (const table of tables) {
+            const { data } = await sb.from(table).select('*').limit(50000);
+            if (data) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data), table);
+        }
+        XLSX.writeFile(wb, `Backup_${new Date().toISOString().slice(0, 10)}.xlsx`);
+        showToast("Xong.", "success");
+    } catch (e) { showToast(e.message, "error"); }
+    finally { showLoading(false); }
 }
 
 export function initCaiDatView() {
     document.getElementById('profile-form').addEventListener('submit', handleProfileUpdate);
     document.getElementById('user-list-body').addEventListener('change', e => {
-        if(e.target.classList.contains('user-role-select')) handleRoleChange(e);
+        if (e.target.classList.contains('user-role-select')) {
+            const gmail = e.target.dataset.gmail;
+            const newRole = e.target.value;
+            sb.from('user').update({ phan_quyen: newRole }).eq('gmail', gmail).then(() => {
+                showToast("Đã đổi quyền.", "success");
+                fetchUsers();
+            });
+        }
     });
-    
+
     document.getElementById('user-list-body').addEventListener('click', e => {
+        const optBtn = e.target.closest('.user-options-btn');
+        if (optBtn) {
+            const gmail = optBtn.dataset.gmail;
+            const popId = `popover-${gmail.replace(/[@.]/g, '')}`;
+            document.querySelectorAll('[id^="popover-"]').forEach(p => { if (p.id !== popId) p.classList.add('hidden'); });
+            document.getElementById(popId).classList.toggle('hidden');
+            return;
+        }
         const resetBtn = e.target.closest('.reset-password-btn');
-        if (resetBtn) {
-            openPasswordResetModal(resetBtn.dataset.gmail);
-            return;
-        }
-
-        const optionsBtn = e.target.closest('.user-options-btn');
-        if (optionsBtn) {
-            const gmail = optionsBtn.dataset.gmail;
-            const popoverId = `options-popover-${gmail.replace(/[@.]/g, '')}`;
-            const popover = document.getElementById(popoverId);
-            if (popover) {
-                // Close other popovers
-                document.querySelectorAll('[id^="options-popover-"]').forEach(p => {
-                    if (p.id !== popoverId) p.classList.add('hidden');
-                });
-                popover.classList.toggle('hidden');
-            }
-            return;
-        }
-        
+        if (resetBtn) { openPasswordResetModal(resetBtn.dataset.gmail); return; }
         const statusBtn = e.target.closest('.user-status-option');
-        if(statusBtn) {
-            handleUpdateUserStatus(statusBtn.dataset.gmail, statusBtn.dataset.status);
-            statusBtn.closest('[id^="options-popover-"]').classList.add('hidden');
-            return;
-        }
-
-        const deleteBtn = e.target.closest('.user-delete-option');
-        if(deleteBtn) {
-            handleDeleteUser(deleteBtn.dataset.gmail);
-            deleteBtn.closest('[id^="options-popover-"]').classList.add('hidden');
-            return;
-        }
+        if (statusBtn) handleUpdateUserStatus(statusBtn.dataset.gmail, statusBtn.dataset.status);
+        const delBtn = e.target.closest('.user-delete-option');
+        if (delBtn) handleDeleteUser(delBtn.dataset.gmail);
     });
 
     document.getElementById('password-reset-form').addEventListener('submit', handlePasswordReset);
-    document.getElementById('cancel-reset-btn').addEventListener('click', () => document.getElementById('password-reset-modal').classList.add('hidden'));
+    document.getElementById('cancel-reset-btn').onclick = () => document.getElementById('password-reset-modal').classList.add('hidden');
+    document.getElementById('backup-excel-btn').onclick = handleBackupExcel;
 
-    const backupBtn = document.getElementById('backup-excel-btn');
-    if (backupBtn) backupBtn.addEventListener('click', handleBackupExcel);
-    
-    const backupCsvBtn = document.getElementById('backup-csv-btn');
-    if (backupCsvBtn) backupCsvBtn.addEventListener('click', handleBackupCsv);
-
-    const restoreInput = document.getElementById('restore-file-input');
-    if(restoreInput) restoreInput.addEventListener('change', (e) => {
-        if (e.target.files && e.target.files.length > 0) {
-            handleRestoreFromExcel(e.target.files[0]);
-        }
-    });
-
-    const processAvatarFile = (file) => {
+    const processAvatar = (file) => {
         if (file && file.type.startsWith('image/')) {
             selectedAvatarFile = file;
             const reader = new FileReader();
             reader.onload = (e) => {
                 document.getElementById('profile-image-preview').src = e.target.result;
                 document.getElementById('profile-remove-image-btn').classList.remove('hidden');
-                document.getElementById('profile-current-avatar-url').value = 'temp-new-image';
+                document.getElementById('profile-current-avatar-url').value = 'new';
             };
             reader.readAsDataURL(file);
         }
     };
-    document.getElementById('profile-image-upload').addEventListener('change', (e) => processAvatarFile(e.target.files[0]));
-    document.getElementById('profile-image-paste-area').addEventListener('paste', (e) => {
-        e.preventDefault();
+    document.getElementById('profile-image-upload').onchange = (e) => processAvatar(e.target.files[0]);
+    document.getElementById('profile-image-paste-area').onpaste = (e) => {
         const items = e.clipboardData.items;
-        for (let i = 0; i < items.length; i++) {
-            if (items[i].type.indexOf('image') !== -1) {
-                processAvatarFile(items[i].getAsFile());
-                return;
-            }
-        }
-    });
-    document.getElementById('profile-remove-image-btn').addEventListener('click', () => {
+        for (let i = 0; i < items.length; i++) { if (items[i].type.indexOf('image') !== -1) processAvatar(items[i].getAsFile()); }
+    };
+    document.getElementById('profile-remove-image-btn').onclick = () => {
         selectedAvatarFile = null;
-        document.getElementById('profile-image-upload').value = '';
         document.getElementById('profile-image-preview').src = DEFAULT_AVATAR_URL;
         document.getElementById('profile-remove-image-btn').classList.add('hidden');
         document.getElementById('profile-current-avatar-url').value = '';
+    };
+
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.user-options-btn') && !e.target.closest('[id^="popover-"]')) {
+            document.querySelectorAll('[id^="popover-"]').forEach(p => p.classList.add('hidden'));
+        }
     });
-    
-    initTemplateManagement();
 }
