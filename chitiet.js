@@ -116,16 +116,16 @@ const VIEW_HTML = `
                     <th class="hidden md:table-cell ct-col-xuat px-2 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300 w-20">
                         <div>Xuất<span id="chi-tiet-header-xuat-count" class="block font-bold text-red-600 text-[9px] md:text-xs"></span></div>
                     </th>
-                    <th class="md:table-cell px-1 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300 w-6 md:w-16">
-                        <span class="md:hidden">SL</span><span class="hidden md:inline">Số Lượng</span>
+                    <th class="md:hidden px-1 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300 w-6">
+                        SL
                     </th>
                     <th class="hidden md:table-cell ct-col-loai px-2 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300 w-28">Loại</th>
                     <th class="px-2 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300 w-32">Người YC</th>
                     <th class="hidden md:table-cell ct-col-muc-dich px-2 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300 min-w-[300px] w-auto">Mục Đích</th>
-                    <th class="px-1 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300 w-6 md:w-12 sticky-action-col-mobile">
-                    </th>
                     <th class="hidden md:table-cell ct-col-nganh px-2 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300 w-32">Ngành</th>
                     <th class="hidden md:table-cell ct-col-phu-trach px-2 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300 w-32">Phụ Trách</th>
+                    <th class="px-1 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300 w-6 md:w-12 md:sticky md:right-0 md:bg-gray-200 z-30 sticky-action-col-mobile">
+                    </th>
                 </tr></thead>
                 <tbody id="chi-tiet-table-body" class="bg-white"></tbody>
             </table>
@@ -390,20 +390,20 @@ function renderChiTietTable(data) {
                 <td class="hidden md:table-cell ct-col-nhap px-2 py-2 border-r border-gray-300 text-center text-green-600 font-bold whitespace-nowrap">${ct.nhap || 0}</td>
                 <td class="hidden md:table-cell ct-col-xuat px-2 py-2 border-r border-gray-300 text-center text-red-600 font-bold whitespace-nowrap">${ct.xuat || 0}</td>
                 
-                <td class="px-1 py-2 border-r border-gray-300 text-center font-bold whitespace-nowrap ${slColorClass}">${slPrefix}${displaySLValue}</td>
+                <td class="md:hidden px-1 py-2 border-r border-gray-300 text-center font-bold whitespace-nowrap ${slColorClass}">${slPrefix}${displaySLValue}</td>
                 
                 <td class="hidden md:table-cell ct-col-loai px-2 py-2 border-r border-gray-300 text-center whitespace-nowrap">${ct.loai || ''}</td>
                 <td class="px-2 py-2 border-r border-gray-300 text-center whitespace-nowrap" title="${ct.yeu_cau || ''}">${ct.yeu_cau || ''}</td>
                 <td class="hidden md:table-cell ct-col-muc-dich px-2 py-2 border-r border-gray-300 text-left min-w-[300px]" title="${ct.muc_dich || ''}">
                     <div class="line-clamp-2 break-words">${ct.muc_dich || ''}</div>
                 </td>
-                <td class="px-1 py-2 border-r border-gray-300 text-center whitespace-nowrap sticky-action-col-mobile">
-                    <button class="text-gray-400 hover:text-indigo-600 p-1.5 rounded-full hover:bg-gray-100 ct-open-action-menu" data-ct-id="${ct.id}">
-                        <svg class="w-4 h-4 md:w-5 md:h-5 mx-auto" fill="currentColor" viewBox="0 0 20 20"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path></svg>
+                <td class="hidden md:table-cell ct-col-nganh px-2 py-2 border-r border-gray-300 text-center whitespace-nowrap" title="${ct.nganh || ''}">${ct.nganh || ''}</td>
+                <td class="hidden md:table-cell ct-col-phu-trach px-2 py-2 border-r border-gray-300 text-center whitespace-nowrap" title="${ct.phu_trach || ''}">${ct.phu_trach || ''}</td>
+                <td class="px-1 py-2 border-r border-gray-300 text-center whitespace-nowrap md:sticky md:right-0 md:bg-white z-10 sticky-action-col-mobile">
+                    <button class="text-gray-400 hover:text-indigo-600 p-1 rounded-full hover:bg-gray-100 ct-open-action-menu" data-ct-id="${ct.id}">
+                        <svg class="w-2.5 h-2.5 md:w-5 md:h-5 mx-auto" fill="currentColor" viewBox="0 0 20 20"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path></svg>
                     </button>
                 </td>
-                <td class="hidden md:table-cell ct-col-nganh px-2 py-2 border-r border-gray-300 text-center whitespace-nowrap" title="${ct.nganh || ''}">${ct.nganh || ''}</td>
-                <td class="hidden md:table-cell ct-col-phu-trach px-2 py-2 text-center whitespace-nowrap" title="${ct.phu_trach || ''}">${ct.phu_trach || ''}</td>
             </tr>
         `}).join('');
     } else {
@@ -489,9 +489,9 @@ async function openDetailVtModal(ct, isReadOnly = false) {
     
     headerEl.innerHTML = `
         <div class="flex flex-col gap-0.5 md:gap-1">
-            <span class="text-blue-700 font-black text-xs md:text-lg">${ct.ma_nx} - ${ct.ma_vt}</span>
-            <span class="text-gray-600 font-bold text-[10px] md:text-sm truncate">${ct.ten_vt}</span>
-            <span class="text-[9px] md:text-xs text-gray-400 font-bold uppercase tracking-widest">[Mục đích: ${ct.muc_dich || 'N/A'}]</span>
+            <span class="text-blue-700 font-black text-[11px] md:text-lg">${ct.ma_nx} - ${ct.ma_vt}</span>
+            <span class="text-gray-600 font-bold text-[9px] md:text-sm truncate">${ct.ten_vt}</span>
+            <span class="text-[8px] md:text-xs text-gray-400 font-bold uppercase tracking-widest">[Mục đích: ${ct.muc_dich || 'N/A'}]</span>
         </div>
     `;
     const qty = ct.nhap || ct.xuat || 0;
@@ -585,21 +585,21 @@ function renderDetailVtRows(isReadOnly = false) {
         detailVtItems.forEach((item, index) => {
             totalDist += (parseFloat(item.sl) || 0);
             const row = document.createElement('tr');
-            row.className = "hover:bg-gray-50 transition-colors";
+            row.className = "hover:bg-gray-50 transition-colors border-b";
             row.innerHTML = `
-                <td class="border p-1 relative">
-                    <input type="text" class="w-full p-1.5 md:p-2 border-none bg-transparent text-[11px] md:text-sm font-medium vt-input-nguoi-nhan" value="${item.nguoi_nhan || ''}" placeholder="Tên..." ${isReadOnly ? 'disabled' : ''}>
+                <td class="border p-0 relative">
+                    <input type="text" class="w-full p-2 border-none bg-transparent text-[11px] md:text-sm font-medium vt-input-nguoi-nhan text-center md:text-left" value="${item.nguoi_nhan || ''}" placeholder="..." ${isReadOnly ? 'disabled' : ''}>
                 </td>
-                <td class="border p-1">
-                    <input type="number" class="w-full p-1.5 md:p-2 border-none bg-transparent text-[11px] md:text-sm font-black text-blue-700 vt-input-sl" value="${item.sl || 0}" step="1" min="0" ${isReadOnly ? 'disabled' : ''}>
+                <td class="border p-0">
+                    <input type="number" class="w-full p-2 border-none bg-transparent text-[11px] md:text-sm font-black text-blue-700 vt-input-sl text-center" value="${item.sl || 0}" step="1" min="0" ${isReadOnly ? 'disabled' : ''}>
                 </td>
-                <td class="border p-1">
-                    <input type="text" class="w-full p-1.5 md:p-2 border-none bg-transparent text-[11px] md:text-sm vt-input-dia-diem" value="${item.dia_diem || ''}" placeholder="Nơi..." ${isReadOnly ? 'disabled' : ''}>
+                <td class="border p-0">
+                    <input type="text" class="w-full p-2 border-none bg-transparent text-[11px] md:text-sm vt-input-dia-diem text-center md:text-left" value="${item.dia_diem || ''}" placeholder="..." ${isReadOnly ? 'disabled' : ''}>
                 </td>
-                <td class="border p-1">
-                    <input type="text" class="w-full p-1.5 md:p-2 border-none bg-transparent text-[11px] md:text-sm vt-input-ghi-chu" value="${item.ghi_chu || ''}" placeholder="..." ${isReadOnly ? 'disabled' : ''}>
+                <td class="border p-0">
+                    <input type="text" class="w-full p-2 border-none bg-transparent text-[11px] md:text-sm vt-input-ghi-chu text-center md:text-left" value="${item.ghi_chu || ''}" placeholder="..." ${isReadOnly ? 'disabled' : ''}>
                 </td>
-                <td class="border p-1 text-center ct-vt-col-delete ${isReadOnly ? 'hidden' : ''}">
+                <td class="border p-0 text-center ct-vt-col-delete ${isReadOnly ? 'hidden' : ''}">
                     <button class="text-red-400 hover:text-red-600 vt-delete-row-btn p-1.5 transition-transform active:scale-125">
                         <svg class="w-4 h-4 md:w-5 md:h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                     </button>
