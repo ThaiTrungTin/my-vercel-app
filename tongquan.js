@@ -59,6 +59,7 @@ async function openTongQuanFilterPopover(button) {
     const filterKey = button.dataset.filterKey;
     const context = button.dataset.context || 'alerts';
     const state = tongQuanState[context];
+    const isMobile = window.innerWidth <= 768;
 
     const template = document.getElementById('filter-popover-template');
     if (!template) return;
@@ -67,14 +68,15 @@ async function openTongQuanFilterPopover(button) {
     document.body.appendChild(popover);
 
     const rect = button.getBoundingClientRect();
-    const popoverWidth = 250; 
+    const popoverWidth = isMobile ? 180 : 250; 
     let left = rect.left;
     
     if (left + popoverWidth > window.innerWidth) {
-        left = window.innerWidth - popoverWidth - 20;
+        left = window.innerWidth - popoverWidth - 10;
     }
     
-    popover.style.left = `${left}px`;
+    popover.style.width = `${popoverWidth}px`;
+    popover.style.left = `${Math.max(10, left)}px`;
     popover.style.top = `${rect.bottom + window.scrollY + 5}px`;
 
     const optionsList = popover.querySelector('.filter-options-list');
@@ -291,7 +293,7 @@ function renderAlerts(alerts) {
     };
     
     const icons = {
-        lowStock: `<div class="flex-shrink-0 w-6 h-6 md:w-8 md:h-8 rounded-full bg-yellow-100 flex items-center justify-center"><svg class="w-4 h-4 md:w-5 md:h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1-1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2a1 1 0 011 1v8a1 1 0 01-1 1h-2a1 1 0 01-1-1z"></path></svg></div>`,
+        lowStock: `<div class="flex-shrink-0 w-6 h-6 md:w-8 md:h-8 rounded-full bg-yellow-100 flex items-center justify-center"><svg class="w-4 h-4 md:w-5 md:h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1-1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2a1 1 0 011 1v8a1 1 0 01-1 h-2a1 1 0 01-1-1z"></path></svg></div>`,
         slowMoving: `<div class="flex-shrink-0 w-6 h-6 md:w-8 md:h-8 rounded-full bg-blue-100 flex items-center justify-center"><svg class="w-4 h-4 md:w-5 md:h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>`,
         urgentExpiry: `<div class="flex-shrink-0 w-6 h-6 md:w-8 md:h-8 rounded-full bg-red-100 flex items-center justify-center"><svg class="w-4 h-4 md:w-5 md:h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg></div>`
     };
@@ -426,10 +428,11 @@ async function renderInventoryStatusChart() {
                     labels: {
                         usePointStyle: true,
                         pointStyle: 'circle',
-                        padding: isMobile ? 6 : 12,
+                        // --- NÂNG CẤP: Giảm tối đa padding chú thích trên mobile ---
+                        padding: isMobile ? 4 : 12,
                         boxWidth: 8,
                         font: {
-                            size: 10,
+                            size: isMobile ? 8 : 10,
                             weight: '600'
                         },
                         generateLabels: (chart) => {
@@ -450,7 +453,7 @@ async function renderInventoryStatusChart() {
                                         index: i,
                                         // Áp dụng font gạch ngang (strikethrough) khi bị ẩn
                                         font: {
-                                            size: 10,
+                                            size: isMobile ? 8 : 10,
                                             weight: '600',
                                             decoration: isHidden ? 'line-through' : 'none'
                                         }

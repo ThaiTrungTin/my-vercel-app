@@ -95,6 +95,34 @@
                 color: #2563eb !important;
                 border: 1px solid #bfdbfe !important;
             }
+
+            /* Thu nhỏ Droplist bộ lọc trên Mobile */
+            .filter-popover {
+                min-width: 180px !important;
+                padding: 6px !important;
+            }
+            .filter-popover .filter-search-input {
+                font-size: 10px !important;
+                padding: 4px 8px !important;
+                margin-bottom: 4px !important;
+            }
+            .filter-popover .filter-options-list {
+                max-height: 160px !important;
+            }
+            .filter-popover label {
+                padding: 3px 6px !important;
+            }
+            .filter-popover label span {
+                font-size: 10px !important;
+            }
+            .filter-popover input[type="checkbox"] {
+                width: 12px;
+                height: 12px;
+            }
+            .filter-popover .filter-apply-btn {
+                font-size: 10px !important;
+                padding: 2px 8px !important;
+            }
         }
 
         #toast-container {
@@ -201,7 +229,7 @@
 
                 <nav class="mt-4 flex-grow">
                     <button data-view="view-phat-trien" class="nav-button w-full flex items-center px-6 py-3 text-gray-400 hover:bg-gray-700 active">
-                        <svg class="w-6 h-6 mr-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                        <svg class="w-6 h-6 mr-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 01-2-2v-2z"></path></svg>
                         <span class="nav-text transition-opacity duration-300">Tổng Quan</span>
                     </button>
                     <button data-view="view-san-pham" class="nav-button w-full flex items-center px-6 py-3 text-gray-400 hover:bg-gray-700">
@@ -284,14 +312,14 @@
                                         <li class="text-center text-gray-500 py-4">Đang kiểm tra...</li>
                                     </ul>
                                 </div>
-                                <div class="bg-white pt-2 pb-1 px-4 md:p-6 rounded-lg shadow-md flex flex-col md:col-span-1">
-                                    <div class="flex justify-between items-center mb-1 md:mb-4 flex-shrink-0">
+                                <div class="bg-white pt-1 pb-0 px-4 md:p-6 rounded-lg shadow-md flex flex-col md:col-span-1">
+                                    <div class="flex justify-between items-center mb-0 md:mb-4 flex-shrink-0">
                                         <h3 class="text-sm md:text-lg font-semibold text-gray-800">Tồn Kho</h3>
                                         <div class="relative">
                                             <button id="tq-inventory-nganh-filter-btn" data-filter-key="nganh" data-context="inventory" class="filter-btn text-center px-2 py-1 md:px-3 md:py-2 border rounded-md bg-white w-24 md:w-32 shadow-sm text-[10px] md:text-sm">Ngành</button>
                                         </div>
                                     </div>
-                                    <div id="tq-inventory-chart-container" class="relative flex-grow flex items-center justify-center min-h-[135px] md:min-h-[250px]">
+                                    <div id="tq-inventory-chart-container" class="relative flex-grow flex items-center justify-center min-h-[90px] md:min-h-[250px]">
                                         <canvas id="tq-inventory-chart"></canvas>
                                     </div>
                                 </div>
@@ -660,7 +688,7 @@
         <!-- Mobile Bottom Navigation -->
         <nav id="bottom-nav" class="fixed bottom-0 left-0 right-0 bg-gray-900 text-gray-400 flex justify-around items-center h-16 md:hidden z-40 border-t border-gray-700 shadow-[0_-2px_10px_rgba(0,0,0,0.3)]">
             <button data-view="view-phat-trien" class="nav-button mobile-nav-btn flex flex-col items-center justify-center w-full h-full active">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 01-2-2v-2z"></path></svg>
                 <span class="text-[10px] mt-1">Tổng Quan</span>
             </button>
             <button data-view="view-san-pham" class="nav-button mobile-nav-btn flex flex-col items-center justify-center w-full h-full">
