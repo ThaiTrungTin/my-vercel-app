@@ -19,6 +19,7 @@ let currentDistributingItem = null;
 let detailVtItems = [];
 let initialDetailVtItems = []; 
 let nameSuggestionsCache = []; 
+let isModalListenersInitialized = false;
 
 const VIEW_HTML = `
     <div class="flex-shrink-0">
@@ -87,7 +88,7 @@ const VIEW_HTML = `
                 <div class="flex flex-wrap gap-2 items-center w-full md:w-auto justify-end mt-2 md:mt-0">
                     <button id="chi-tiet-reset-filters" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md text-[10px] md:text-sm">Xóa Lọc</button>
                     <button id="chi-tiet-btn-settings" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-3 rounded-md text-[10px] md:text-sm flex items-center gap-1" title="Cài đặt cột hiển thị">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 0 0-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 0 0-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 0 0-2.573-1.066-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 0 0 1.066-2.573c-.94-1.543.826 3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path></svg>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543-.94-3.31.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 00 1.066-2.573c-.94-1.543-.826-3.31-2.37-2.37.996.608 2.296.07 2.572-1.065z"></path></svg>
                         <span class="hidden lg:inline">Cài Đặt Cột</span>
                     </button>
                     <button id="chi-tiet-btn-excel" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md text-[10px] md:text-sm">Excel</button>
@@ -455,9 +456,8 @@ function openActionMenu(e, button) {
     };
 
     const closeHandler = (event) => {
-        if (!popover.contains(event.target) && event.target !== button) {
-            closeActionPopover();
-        }
+        if (popover.contains(event.target) || event.target === button) return;
+        closeActionPopover();
     };
     
     setTimeout(() => document.addEventListener('click', closeHandler), 0);
@@ -500,13 +500,130 @@ export async function refreshCurrentDetailVtModal() {
     }
 }
 
-async function openDetailVtModal(ct, isReadOnly = false) {
+/**
+ * Gán các sự kiện cố định cho Modal Phân bổ chi tiết.
+ * Cần chạy hàm này một lần duy nhất.
+ */
+function ensureModalListenersAttached() {
+    if (isModalListenersInitialized) return;
+
+    document.getElementById('close-ct-vt-modal').onclick = () => {
+        currentDistributingItem = null;
+        document.getElementById('chi-tiet-vt-modal').classList.add('hidden');
+    };
+    
+    document.getElementById('cancel-ct-vt-btn').onclick = () => {
+        currentDistributingItem = null;
+        document.getElementById('chi-tiet-vt-modal').classList.add('hidden');
+    };
+    
+    document.getElementById('add-ct-vt-row-btn').onclick = () => {
+        if (!currentDistributingItem) return;
+        const newItem = {
+            id: crypto.randomUUID(),
+            id_ct: currentDistributingItem.id,
+            nguoi_nhan: '',
+            sl: 0,
+            dia_diem: '',
+            ghi_chu: '',
+            trang_thai: '', 
+            lich_su: '',
+            created_at: new Date().toISOString(),
+            is_new: true 
+        };
+        detailVtItems.push(newItem);
+        renderDetailVtRows(false);
+    };
+
+    document.getElementById('save-ct-vt-btn').onclick = async () => {
+        if (!currentDistributingItem) return;
+        const currentActiveSum = detailVtItems.reduce((s, i) => i.trang_thai !== 'Xóa' ? s + (parseFloat(i.sl) || 0) : s, 0);
+        const original = parseFloat(document.getElementById('ct-vt-original-qty').textContent) || 0;
+
+        if (currentActiveSum > original) {
+            showToast("Tổng số lượng không được vượt quá số gốc.", 'error');
+            return;
+        }
+
+        showLoading(true);
+        try {
+            const nowStr = new Date().toLocaleString('vi-VN');
+            const currentUserLabel = currentUser.ho_ten || 'Admin';
+
+            const finalDataToSave = detailVtItems.map(item => {
+                const initialItem = initialDetailVtItems.find(it => it.id === item.id);
+                let logs = item.lich_su || '';
+
+                if (!initialItem) {
+                    if (item.trang_thai !== 'Xóa') {
+                        const log = `${currentUserLabel} thêm mới người nhận [${item.nguoi_nhan || 'N/A'}]: SL ${item.sl} tại ${item.dia_diem || 'N/A'} lúc ${nowStr}`;
+                        logs = logs ? `${logs}\n${log}` : log;
+                    }
+                    item.created_at = new Date().toISOString(); 
+                } else {
+                    const hasNameChanged = initialItem.nguoi_nhan !== item.nguoi_nhan;
+                    const hasSlChanged = parseFloat(initialItem.sl) !== parseFloat(item.sl);
+                    const hasPlaceChanged = initialItem.dia_diem !== item.dia_diem;
+                    const hasNoteChanged = initialItem.ghi_chu !== item.ghi_chu;
+                    const hasStatusChanged = initialItem.trang_thai !== item.trang_thai;
+
+                    if (hasNameChanged || hasSlChanged || hasPlaceChanged || hasNoteChanged || hasStatusChanged) {
+                        let changes = [];
+                        if (hasNameChanged) changes.push(`Tên: ${initialItem.nguoi_nhan || 'Trống'} -> ${item.nguoi_nhan || 'Trống'}`);
+                        if (hasSlChanged) changes.push(`SL: ${initialItem.sl} -> ${item.sl}`);
+                        if (hasPlaceChanged) changes.push(`Địa điểm: ${initialItem.dia_diem || 'Trống'} -> ${item.dia_diem || 'Trống'}`);
+                        if (hasNoteChanged) changes.push(`Ghi chú: ${initialItem.ghi_chu || 'Trống'} -> ${item.ghi_chu || 'Trống'}`);
+                        
+                        if (!hasStatusChanged && (hasNameChanged || hasSlChanged || hasPlaceChanged || hasNoteChanged)) {
+                            const log = `${currentUserLabel} cập nhật dòng [${item.nguoi_nhan || 'N/A'}]: ${changes.join(', ')} lúc ${nowStr}`;
+                            logs = logs ? `${logs}\n${log}` : log;
+                        }
+                    }
+                    item.created_at = new Date().toISOString();
+                }
+
+                return {
+                    id: item.id,
+                    id_ct: item.id_ct,
+                    nguoi_nhan: item.nguoi_nhan,
+                    sl: item.sl,
+                    dia_diem: item.dia_diem,
+                    ghi_chu: item.ghi_chu,
+                    trang_thai: item.trang_thai || '',
+                    lich_su: logs,
+                    created_at: item.created_at
+                };
+            });
+
+            const { error: deleteError } = await sb.from('chi_tiet_vt').delete().eq('id_ct', currentDistributingItem.id);
+            if (deleteError) throw deleteError;
+
+            if (finalDataToSave.length > 0) {
+                const { error: insertError } = await sb.from('chi_tiet_vt').insert(finalDataToSave);
+                if (insertError) throw insertError;
+            }
+
+            showToast("Lưu phân bổ thành công!", 'success');
+            document.getElementById('chi-tiet-vt-modal').classList.add('hidden');
+        } catch (err) {
+            showToast("Lỗi khi lưu dữ liệu: " + err.message, 'error');
+        } finally {
+            showLoading(false);
+        }
+    };
+
+    isModalListenersInitialized = true;
+}
+
+export async function openDetailVtModal(ct, isReadOnly = false) {
+    // Đảm bảo các nút điều khiển modal (Lưu, Hủy) luôn được gán sự kiện
+    ensureModalListenersAttached();
+    
     currentDistributingItem = ct;
     const modal = document.getElementById('chi-tiet-vt-modal');
     const headerEl = document.getElementById('ct-vt-info-header');
     const originalQtyEl = document.getElementById('ct-vt-original-qty');
     
-    // Ép Header modal luôn nằm trên 1 hàng
     headerEl.innerHTML = `
         <div class="flex flex-col gap-1 md:gap-1.5 overflow-hidden">
             <div class="text-[11px] md:text-lg font-black flex items-center gap-1.5 whitespace-nowrap overflow-x-auto no-scrollbar">
@@ -519,6 +636,9 @@ async function openDetailVtModal(ct, isReadOnly = false) {
                 <span class="text-indigo-600 flex-shrink-0">${ct.ma_nx}</span>
                 <span class="w-1 h-1 rounded-full bg-gray-300 flex-shrink-0"></span>
                 <span class="flex-shrink-0">Y/c: <span class="text-gray-800 underline underline-offset-2">${ct.yeu_cau || 'N/A'}</span></span>
+            </div>
+            <div class="text-[9px] md:text-xs text-gray-400 mt-1 bg-gray-50 p-1.5 rounded border border-gray-100 italic line-clamp-2" title="${ct.muc_dich || ''}">
+                Mục đích: <span class="text-gray-600 not-italic font-medium">${ct.muc_dich || 'Không có'}</span>
             </div>
         </div>
     `;
@@ -567,13 +687,10 @@ function renderHistory() {
     detailVtItems.forEach(item => {
         if (item.lich_su) {
             const logs = item.lich_su.split('\n').filter(Boolean);
-            // Chúng ta giả định item.created_at là thời điểm cập nhật cuối
-            // Để các dòng log trong 1 item có thể sort được, ta gán thời gian ảo giảm dần theo vị trí dòng
             logs.forEach((log, index) => {
                 allHistory.push({
                     id: item.id,
                     text: log,
-                    // Mỗi dòng log cách nhau 1 giây ảo để đảm bảo tính thứ tự khi sort
                     time: new Date(new Date(item.created_at || Date.now()).getTime() + (index * 1000)).toISOString(),
                     trangThaiHienTai: item.trang_thai
                 });
@@ -586,7 +703,6 @@ function renderHistory() {
         return;
     }
 
-    // --- NÂNG CẤP: Sắp xếp lịch sử giảm dần (mới nhất lên đầu) ---
     allHistory.sort((a, b) => new Date(b.time) - new Date(a.time));
 
     historyList.innerHTML = allHistory.map(log => {
@@ -949,6 +1065,7 @@ export function initChiTietView() {
     }
     
     applyChiTietColumnSettings();
+    ensureModalListenersAttached();
 
     const handleSearch = debounce(() => {
         const val = document.getElementById('chi-tiet-search').value || document.getElementById('chi-tiet-search-mobile').value;
@@ -1074,106 +1191,4 @@ export function initChiTietView() {
         pageInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); handlePageJump(); e.target.blur(); } });
         pageInput.addEventListener('change', handlePageJump);
     }
-
-    document.getElementById('close-ct-vt-modal').onclick = () => {
-        currentDistributingItem = null;
-        document.getElementById('chi-tiet-vt-modal').classList.add('hidden');
-    };
-    document.getElementById('cancel-ct-vt-btn').onclick = () => {
-        currentDistributingItem = null;
-        document.getElementById('chi-tiet-vt-modal').classList.add('hidden');
-    };
-    
-    document.getElementById('add-ct-vt-row-btn').onclick = () => {
-        const newItem = {
-            id: crypto.randomUUID(),
-            id_ct: currentDistributingItem.id,
-            nguoi_nhan: '',
-            sl: 0,
-            dia_diem: '',
-            ghi_chu: '',
-            trang_thai: '', 
-            lich_su: '',
-            created_at: new Date().toISOString(),
-            is_new: true 
-        };
-        detailVtItems.push(newItem);
-        renderDetailVtRows(false);
-    };
-
-    document.getElementById('save-ct-vt-btn').onclick = async () => {
-        const currentActiveSum = detailVtItems.reduce((s, i) => i.trang_thai !== 'Xóa' ? s + (parseFloat(i.sl) || 0) : s, 0);
-        const original = parseFloat(document.getElementById('ct-vt-original-qty').textContent) || 0;
-
-        if (currentActiveSum > original) {
-            showToast("Tổng số lượng không được vượt quá số gốc.", 'error');
-            return;
-        }
-
-        showLoading(true);
-        try {
-            const nowStr = new Date().toLocaleString('vi-VN');
-            const currentUserLabel = currentUser.ho_ten || 'Admin';
-
-            const finalDataToSave = detailVtItems.map(item => {
-                const initialItem = initialDetailVtItems.find(it => it.id === item.id);
-                let logs = item.lich_su || '';
-
-                if (!initialItem) {
-                    if (item.trang_thai !== 'Xóa') {
-                        const log = `${currentUserLabel} thêm mới người nhận [${item.nguoi_nhan || 'N/A'}]: SL ${item.sl} tại ${item.dia_diem || 'N/A'} lúc ${nowStr}`;
-                        logs = logs ? `${logs}\n${log}` : log;
-                    }
-                    item.created_at = new Date().toISOString(); 
-                } else {
-                    const hasNameChanged = initialItem.nguoi_nhan !== item.nguoi_nhan;
-                    const hasSlChanged = parseFloat(initialItem.sl) !== parseFloat(item.sl);
-                    const hasPlaceChanged = initialItem.dia_diem !== item.dia_diem;
-                    const hasNoteChanged = initialItem.ghi_chu !== item.ghi_chu;
-                    const hasStatusChanged = initialItem.trang_thai !== item.trang_thai;
-
-                    if (hasNameChanged || hasSlChanged || hasPlaceChanged || hasNoteChanged || hasStatusChanged) {
-                        let changes = [];
-                        if (hasNameChanged) changes.push(`Tên: ${initialItem.nguoi_nhan || 'Trống'} -> ${item.nguoi_nhan || 'Trống'}`);
-                        if (hasSlChanged) changes.push(`SL: ${initialItem.sl} -> ${item.sl}`);
-                        if (hasPlaceChanged) changes.push(`Địa điểm: ${initialItem.dia_diem || 'Trống'} -> ${item.dia_diem || 'Trống'}`);
-                        if (hasNoteChanged) changes.push(`Ghi chú: ${initialItem.ghi_chu || 'Trống'} -> ${item.ghi_chu || 'Trống'}`);
-                        
-                        if (!hasStatusChanged && (hasNameChanged || hasSlChanged || hasPlaceChanged || hasNoteChanged)) {
-                            const log = `${currentUserLabel} cập nhật dòng [${item.nguoi_nhan || 'N/A'}]: ${changes.join(', ')} lúc ${nowStr}`;
-                            logs = logs ? `${logs}\n${log}` : log;
-                        }
-                    }
-                    item.created_at = new Date().toISOString();
-                }
-
-                return {
-                    id: item.id,
-                    id_ct: item.id_ct,
-                    nguoi_nhan: item.nguoi_nhan,
-                    sl: item.sl,
-                    dia_diem: item.dia_diem,
-                    ghi_chu: item.ghi_chu,
-                    trang_thai: item.trang_thai || '',
-                    lich_su: logs,
-                    created_at: item.created_at
-                };
-            });
-
-            const { error: deleteError } = await sb.from('chi_tiet_vt').delete().eq('id_ct', currentDistributingItem.id);
-            if (deleteError) throw deleteError;
-
-            if (finalDataToSave.length > 0) {
-                const { error: insertError } = await sb.from('chi_tiet_vt').insert(finalDataToSave);
-                if (insertError) throw insertError;
-            }
-
-            showToast("Lưu phân bổ thành công!", 'success');
-            document.getElementById('chi-tiet-vt-modal').classList.add('hidden');
-        } catch (err) {
-            showToast("Lỗi khi lưu dữ liệu: " + err.message, 'error');
-        } finally {
-            showLoading(false);
-        }
-    };
 }

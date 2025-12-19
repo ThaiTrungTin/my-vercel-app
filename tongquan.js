@@ -1,4 +1,5 @@
-import { sb, viewStates, showView, currentUser, cache, showToast } from './app.js';
+
+import { sb, viewStates, showView, currentUser, cache, showToast, showLoading } from './app.js';
 
 let activityChart = null;
 let inventoryStatusChart = null;
@@ -10,6 +11,8 @@ let activeHierarchyPopover = null;
 
 // Biến lưu trữ các path đang được mở trong phả hệ để giữ trạng thái khi chuyển mode
 const expandedHierarchyPaths = new Set();
+// Set lưu trữ danh sách ID có phân bổ để đánh dấu trên phả hệ
+let idsWithDistribution = new Set();
 
 const STATUS_CONFIG = {
     'Hết hạn sử dụng': { color: '#ef4444', order: 0 },
@@ -57,19 +60,102 @@ function updateTQFilterButtonTexts() {
         'tq-alert-filter-phu-trach-btn': 'Phụ Trách',
         'tq-inventory-nganh-filter-btn': 'Ngành',
         'tq-hierarchy-ma-vt-filter-btn': 'Mã VT',
-        'tq-hierarchy-yeu-cau-filter-btn': 'Người YC'
+        'tq-hierarchy-yeu-cau-filter-btn': 'Yêu Cầu',
+        'tq-hierarchy-time-filter-btn': 'Thời Gian'
     };
     
-    document.querySelectorAll('#view-phat-trien .filter-btn').forEach(btn => {
+    document.querySelectorAll('#view-phat-trien .filter-btn, #tq-hierarchy-time-filter-btn').forEach(btn => {
         const context = btn.dataset.context || 'alerts';
-        const filterKey = btn.dataset.filterKey;
+        const filterKey = btn.dataset.filterKey || (btn.id === 'tq-hierarchy-time-filter-btn' ? 'time_preset' : '');
         const state = tongQuanState[context];
+        
+        if (btn.id === 'tq-hierarchy-time-filter-btn') {
+            const preset = document.getElementById('tq-hierarchy-time-preset').value;
+            const presets = {
+                all: 'Tất cả', today: 'Hôm nay', week: 'Tuần này', month: 'Tháng này',
+                quarter: 'Quý này', year: 'Năm nay', last_year: 'Năm trước', custom: 'Tùy chọn'
+            };
+            btn.textContent = presets[preset] || 'Thời Gian';
+            return;
+        }
+
         if (state && state[filterKey]) {
             const selectedCount = state[filterKey].length;
             const defaultText = defaultTexts[btn.id] || 'Filter';
             btn.textContent = selectedCount > 0 ? `${defaultText} (${selectedCount})` : defaultText;
         }
     });
+}
+
+/**
+ * Hàm mở popover chọn preset thời gian phả hệ (Tối ưu Mobile)
+ */
+function openHierarchyTimePresetPopover(button) {
+    const template = document.getElementById('filter-popover-template');
+    if (!template) return;
+    const popover = template.content.cloneNode(true).querySelector('.filter-popover');
+    document.body.appendChild(popover);
+
+    const rect = button.getBoundingClientRect();
+    const isMobile = window.innerWidth <= 768;
+    
+    if (isMobile) {
+        popover.style.position = 'fixed';
+        popover.style.left = '50%';
+        popover.style.top = '50%';
+        popover.style.transform = 'translate(-50%, -50%)';
+        popover.style.width = '200px';
+    } else {
+        popover.style.left = `${rect.left}px`;
+        popover.style.top = `${rect.bottom + window.scrollY + 5}px`;
+    }
+
+    const searchInput = popover.querySelector('.filter-search-input');
+    searchInput.classList.add('hidden'); // Không cần search cho preset
+    const optionsList = popover.querySelector('.filter-options-list');
+    const applyBtn = popover.querySelector('.filter-apply-btn');
+    applyBtn.classList.add('hidden'); // Chọn xong áp dụng luôn
+    popover.querySelector('.filter-toggle-all-btn').classList.add('hidden');
+    popover.querySelector('.filter-selection-count').classList.add('hidden');
+
+    const presets = [
+        { value: 'all', label: 'Tất cả' },
+        { value: 'today', label: 'Hôm nay' },
+        { value: 'week', label: 'Tuần này' },
+        { value: 'month', label: 'Tháng này' },
+        { value: 'quarter', label: 'Quý này' },
+        { value: 'year', label: 'Năm nay' },
+        { value: 'last_year', label: 'Năm trước' },
+        { value: 'custom', label: 'Tùy chọn' }
+    ];
+
+    const currentPreset = document.getElementById('tq-hierarchy-time-preset').value;
+
+    optionsList.innerHTML = presets.map(p => `
+        <label class="flex items-center space-x-2 px-2 py-2 hover:bg-blue-50 rounded cursor-pointer border-b last:border-0 border-gray-50">
+            <input type="radio" name="time_preset_choice" value="${p.value}" class="time-preset-radio w-4 h-4" ${p.value === currentPreset ? 'checked' : ''}>
+            <span class="text-sm font-medium ${p.value === currentPreset ? 'text-blue-600' : 'text-gray-700'}">${p.label}</span>
+        </label>
+    `).join('');
+
+    const closeHandler = (e) => {
+        if (!popover.contains(e.target) && e.target !== button) {
+            popover.remove();
+            document.removeEventListener('click', closeHandler);
+        }
+    };
+
+    optionsList.onchange = (e) => {
+        const val = e.target.value;
+        document.getElementById('tq-hierarchy-time-preset').value = val;
+        document.getElementById('tq-hierarchy-custom-dates').classList.toggle('hidden', val !== 'custom');
+        updateTQFilterButtonTexts();
+        fetchAndRenderHierarchy();
+        popover.remove();
+        document.removeEventListener('click', closeHandler);
+    };
+
+    setTimeout(() => document.addEventListener('click', closeHandler), 0);
 }
 
 /**
@@ -189,7 +275,6 @@ async function openTongQuanFilterPopover(button) {
     } else if (context === 'inventory' && filterKey === 'nganh') {
         options = allNganhOptions;
     } else if (context === 'hierarchy') {
-        // --- NÂNG CẤP: Lấy options phụ thuộc cho Phả hệ ---
         options = await getHierarchyDependentOptions(filterKey);
     }
 
@@ -299,8 +384,9 @@ async function fetchAndRenderHierarchy() {
     const hState = tongQuanState.hierarchy;
 
     try {
+        // Phả hệ từ view chi_tiet_v1
         let query = sb.from('chi_tiet_v1')
-            .select('bu, franchise, ma_vt, yeu_cau, ma_nx, xuat, nhap, yc_sl')
+            .select('id, bu, franchise, ma_vt, yeu_cau, ma_nx, xuat, nhap, yc_sl')
             .gte('thoi_gian', start)
             .lte('thoi_gian', end);
 
@@ -321,6 +407,10 @@ async function fetchAndRenderHierarchy() {
                 query = query.eq('phu_trach', currentUser.ho_ten);
             }
         }
+
+        // Lấy danh sách ID đã có phân bổ trong chi_tiet_vt
+        const { data: distData } = await sb.from('chi_tiet_vt').select('id_ct');
+        idsWithDistribution = new Set((distData || []).map(d => d.id_ct));
 
         const { data, error } = await query;
         if (error) throw error;
@@ -349,6 +439,7 @@ function buildHierarchy(data, mode) {
         const ma_vt = row.ma_vt;
         const yeu_cau = row.yeu_cau || 'Chưa rõ';
         const ma_nx = row.ma_nx || 'N/A';
+        const id_ct = row.id; 
         
         const xuatVal = parseFloat(row.xuat) || 0;
         const nhapVal = parseFloat(row.nhap) || 0;
@@ -380,7 +471,9 @@ function buildHierarchy(data, mode) {
                 if (!prodNode.children[cat].children[yeu_cau]) prodNode.children[cat].children[yeu_cau] = { total: 0, children: {} };
                 prodNode.children[cat].children[yeu_cau].total += xuatVal;
                 
-                if (!prodNode.children[cat].children[yeu_cau].children[ma_nx]) prodNode.children[cat].children[yeu_cau].children[ma_nx] = { total: 0 };
+                if (!prodNode.children[cat].children[yeu_cau].children[ma_nx]) {
+                    prodNode.children[cat].children[yeu_cau].children[ma_nx] = { total: 0, id_ct: id_ct, isMaNX: true, children: {} };
+                }
                 prodNode.children[cat].children[yeu_cau].children[ma_nx].total += xuatVal;
             }
 
@@ -392,14 +485,18 @@ function buildHierarchy(data, mode) {
                 if (!prodNode.children[cat].children[yeu_cau]) prodNode.children[cat].children[yeu_cau] = { total: 0, children: {} };
                 prodNode.children[cat].children[yeu_cau].total += shortageVal;
                 
-                if (!prodNode.children[cat].children[yeu_cau].children[ma_nx]) prodNode.children[cat].children[yeu_cau].children[ma_nx] = { total: 0 };
+                if (!prodNode.children[cat].children[yeu_cau].children[ma_nx]) {
+                    prodNode.children[cat].children[yeu_cau].children[ma_nx] = { total: 0, id_ct: id_ct, isMaNX: true, children: {} };
+                }
                 prodNode.children[cat].children[yeu_cau].children[ma_nx].total += shortageVal;
             }
         } else {
             if (!prodNode.children[yeu_cau]) prodNode.children[yeu_cau] = { total: 0, children: {} };
             prodNode.children[yeu_cau].total += nhapVal;
 
-            if (!prodNode.children[yeu_cau].children[ma_nx]) prodNode.children[yeu_cau].children[ma_nx] = { total: 0 };
+            if (!prodNode.children[yeu_cau].children[ma_nx]) {
+                prodNode.children[yeu_cau].children[ma_nx] = { total: 0, id_ct: id_ct, isMaNX: true, children: {} };
+            }
             prodNode.children[yeu_cau].children[ma_nx].total += nhapVal;
         }
     });
@@ -412,7 +509,11 @@ function renderTree(container, node, level, mode, parentPath) {
 
     sortedKeys.forEach(key => {
         const child = node.children[key];
-        const hasChildren = child.children && Object.keys(child.children).length > 0;
+        const hasActualChildren = child.children && Object.keys(child.children).length > 0;
+        const isMaNXNode = child.isMaNX;
+        const canExpandMaNX = isMaNXNode && idsWithDistribution.has(child.id_ct);
+        const hasChildren = hasActualChildren || canExpandMaNX;
+
         const currentPath = parentPath ? `${parentPath}|${key}` : key;
         const isPreviouslyExpanded = expandedHierarchyPaths.has(currentPath);
 
@@ -421,7 +522,6 @@ function renderTree(container, node, level, mode, parentPath) {
         if (isPreviouslyExpanded) nodeEl.classList.add('expanded');
         
         const contentEl = document.createElement('div');
-        // Nâng cấp: Sử dụng flex-wrap để tránh bị đẩy ra ngoài màn hình trên Mobile
         contentEl.className = `tree-node-content group flex-wrap ${level === 0 ? 'bg-white shadow-sm border border-gray-100 mb-1 py-3' : 'py-1.5'}`;
         
         let labelColor = 'text-gray-700';
@@ -441,10 +541,8 @@ function renderTree(container, node, level, mode, parentPath) {
         }
 
         const isMaVT = level === 2;
-        // Kiểm tra xem có phải dòng cuối cùng chứa Mã NX không
-        const isMaNX = !hasChildren && (key.includes('IN.') || key.includes('OUT.') || key.includes('RO-') || key.includes('DO-'));
+        const isMaNX = isMaNXNode;
 
-        // Loại bỏ 'truncate' để hiển thị hết nội dung
         contentEl.innerHTML = `
             <div class="flex items-center gap-2 flex-grow min-w-0 overflow-hidden">
                 ${hasChildren ? `
@@ -459,8 +557,8 @@ function renderTree(container, node, level, mode, parentPath) {
                         </button>
                     ` : ''}
                     ${isMaNX ? `
-                        <button class="hierarchy-nx-action-btn flex-shrink-0 p-1 text-gray-300 hover:text-green-500 rounded opacity-0 group-hover:opacity-100 transition-opacity" data-ma-nx="${key}">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        <button class="hierarchy-nx-action-btn flex-shrink-0 p-1 text-gray-300 hover:text-green-500 rounded opacity-0 group-hover:opacity-100 transition-opacity" data-ma-nx="${key}" data-ct-id="${child.id_ct}">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path></svg>
                         </button>
                     ` : ''}
                 </div>
@@ -471,50 +569,74 @@ function renderTree(container, node, level, mode, parentPath) {
 
         nodeEl.appendChild(contentEl);
 
-        // Gắn sự kiện cho các nút hành động
-        const vtActionBtn = contentEl.querySelector('.hierarchy-vt-action-btn');
-        if (vtActionBtn) {
-            vtActionBtn.onclick = (e) => {
-                e.stopPropagation();
-                openHierarchyVtActionMenu(e, vtActionBtn);
-            };
-        }
-
-        const nxActionBtn = contentEl.querySelector('.hierarchy-nx-action-btn');
-        if (nxActionBtn) {
-            nxActionBtn.onclick = (e) => {
-                e.stopPropagation();
-                const ma_nx = nxActionBtn.dataset.maNx;
-                const state = viewStates['view-chi-tiet'];
-                state.searchTerm = '';
-                Object.keys(state.filters).forEach(k => state.filters[k] = Array.isArray(state.filters[k]) ? [] : '');
-                state.filters.ma_nx = [ma_nx];
-                showView('view-chi-tiet');
-            };
-        }
-
         const childrenContainer = document.createElement('div');
         childrenContainer.className = 'tree-children';
         nodeEl.appendChild(childrenContainer);
 
+        const vtActionBtn = contentEl.querySelector('.hierarchy-vt-action-btn');
+        if (vtActionBtn) vtActionBtn.onclick = (e) => { e.stopPropagation(); openHierarchyVtActionMenu(e, vtActionBtn); };
+
+        const nxActionBtn = contentEl.querySelector('.hierarchy-nx-action-btn');
+        if (nxActionBtn) nxActionBtn.onclick = (e) => {
+            e.stopPropagation();
+            openHierarchyNxActionMenu(e, nxActionBtn);
+        };
+
         if (hasChildren) {
-            contentEl.onclick = (e) => {
-                if (e.target.closest('button')) return; // Không đóng/mở node khi bấm nút hành động
+            contentEl.onclick = async (e) => {
+                if (e.target.closest('button')) return;
                 e.stopPropagation();
                 const isExpanded = nodeEl.classList.toggle('expanded');
                 if (isExpanded) {
                     expandedHierarchyPaths.add(currentPath);
                     if (childrenContainer.innerHTML === '') {
-                        renderTree(childrenContainer, child, level + 1, mode, currentPath);
+                        if (canExpandMaNX) {
+                            childrenContainer.innerHTML = '<div class="p-2 text-center text-[9px] text-gray-400 italic">Đang tải phân bổ...</div>';
+                            try {
+                                const { data: distributions } = await sb.from('chi_tiet_vt')
+                                    .select('sl, nguoi_nhan, dia_diem, created_at')
+                                    .eq('id_ct', child.id_ct)
+                                    .order('created_at', { ascending: true });
+                                
+                                if (distributions && distributions.length > 0) {
+                                    childrenContainer.innerHTML = distributions.map(d => {
+                                        const dt = new Date(d.created_at);
+                                        const dateStr = `${dt.getDate().toString().padStart(2,'0')}/${(dt.getMonth()+1).toString().padStart(2,'0')}/${dt.getFullYear()}`;
+                                        return `
+                                            <div class="flex items-center gap-2 py-1.5 px-3 border-b border-gray-50 last:border-0 hover:bg-white rounded transition-colors group/dist overflow-hidden">
+                                                <div class="flex-shrink-0 w-1 h-1 rounded-full bg-indigo-300 group-hover/dist:bg-indigo-500"></div>
+                                                <div class="flex-grow overflow-x-auto no-scrollbar">
+                                                    <div class="text-[10px] md:text-xs text-gray-600 whitespace-nowrap">
+                                                        <strong class="text-blue-700">${d.sl}</strong> - 
+                                                        <span class="font-bold text-gray-800">${d.nguoi_nhan || 'Chưa rõ'}</span> - 
+                                                        <span class="italic text-gray-500">${d.dia_diem || 'N/A'}</span> - 
+                                                        <span class="text-gray-400 font-medium">${dateStr}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        `;
+                                    }).join('');
+                                } else {
+                                    childrenContainer.innerHTML = '<div class="p-2 text-center text-[9px] text-gray-400 italic">Không có thông tin phân bổ.</div>';
+                                }
+                            } catch (err) {
+                                childrenContainer.innerHTML = '<div class="p-2 text-center text-[9px] text-red-400 italic">Lỗi tải.</div>';
+                            }
+                        } else {
+                            renderTree(childrenContainer, child, level + 1, mode, currentPath);
+                        }
                     }
                 } else {
                     expandedHierarchyPaths.delete(currentPath);
                 }
             };
 
-            // Nếu node này đã từng được mở, render con của nó luôn
             if (isPreviouslyExpanded) {
-                renderTree(childrenContainer, child, level + 1, mode, currentPath);
+                if (canExpandMaNX) {
+                    setTimeout(() => contentEl.click(), 10);
+                } else {
+                    renderTree(childrenContainer, child, level + 1, mode, currentPath);
+                }
             }
         }
 
@@ -523,7 +645,6 @@ function renderTree(container, node, level, mode, parentPath) {
 }
 
 async function openHierarchyVtActionMenu(e, button) {
-    // FIX: Toggle menu (ấn lần 2 vào cùng một nút sẽ tắt menu)
     if (activeHierarchyPopover && activeHierarchyPopover.sourceButton === button) {
         closeHierarchyPopover();
         return;
@@ -543,17 +664,15 @@ async function openHierarchyVtActionMenu(e, button) {
     
     popover.style.position = 'fixed';
     if (isMobile) {
-        // Tối ưu vị trí cho Mobile để không bị khuất
         popover.style.left = '50%';
         popover.style.top = `${rect.bottom + 5}px`;
         popover.style.transform = 'translateX(-50%)';
     } else {
-        popover.style.left = `${rect.left - 100}px`;
+        popover.style.left = `${rect.left - 120}px`;
         popover.style.top = `${rect.bottom + 5}px`;
     }
     popover.style.zIndex = '1000';
 
-    // Lấy thông tin N|X|T
     const nEl = popover.querySelector('#h-pop-n');
     const xEl = popover.querySelector('#h-pop-x');
     const tEl = popover.querySelector('#h-pop-t');
@@ -562,7 +681,7 @@ async function openHierarchyVtActionMenu(e, button) {
     const { start, end } = getRangeDates(preset);
     const hState = tongQuanState.hierarchy;
 
-    let nxQuery = sb.from('chi_tiet_v1')
+    let nxQuery = sb.from('chi_tiet')
         .select('nhap, xuat')
         .eq('ma_vt', ma_vt)
         .gte('thoi_gian', start)
@@ -609,7 +728,78 @@ async function openHierarchyVtActionMenu(e, button) {
     };
 
     const closeHandler = (event) => {
-        // Fix logic đóng menu khi click ra ngoài
+        if (!popover.contains(event.target) && !button.contains(event.target)) {
+            closeHierarchyPopover();
+        }
+    };
+    
+    setTimeout(() => document.addEventListener('click', closeHandler), 0);
+    activeHierarchyPopover = { element: popover, sourceButton: button };
+}
+
+/**
+ * Hàm mở menu hành động cho Mã NX trong phả hệ
+ */
+async function openHierarchyNxActionMenu(e, button) {
+    if (activeHierarchyPopover && activeHierarchyPopover.sourceButton === button) {
+        closeHierarchyPopover();
+        return;
+    }
+    
+    closeHierarchyPopover();
+    
+    const ct_id = button.dataset.ctId; // Lấy ID của dòng chi_tiet
+    const template = document.getElementById('hierarchy-nx-action-menu-template');
+    if (!template) return;
+
+    const popover = template.content.cloneNode(true).querySelector('.action-popover');
+    document.body.appendChild(popover);
+
+    const rect = button.getBoundingClientRect();
+    const isMobile = window.innerWidth <= 768;
+    
+    popover.style.position = 'fixed';
+    if (isMobile) {
+        popover.style.left = '50%';
+        popover.style.top = `${rect.bottom + 5}px`;
+        popover.style.transform = 'translateX(-50%)';
+    } else {
+        popover.style.left = `${rect.left - 120}px`;
+        popover.style.top = `${rect.bottom + 5}px`;
+    }
+    popover.style.zIndex = '1000';
+
+    const handleOrderForm = async (mode) => {
+        showLoading(true);
+        try {
+            // Lấy thông tin đầy đủ của dòng chi tiết dựa trên ID
+            const { data: ct, error: ctError } = await sb.from('chi_tiet').select('*').eq('id', ct_id).single();
+            if (ctError || !ct) throw new Error("Không tìm thấy thông tin dòng chi tiết.");
+
+            const { openDetailVtModal } = await import('./chitiet.js');
+            const isReadOnly = mode === 'view';
+            await openDetailVtModal(ct, isReadOnly);
+        } catch (err) {
+            showToast("Lỗi: " + err.message, "error");
+        } finally {
+            showLoading(false);
+            closeHierarchyPopover();
+        }
+    };
+
+    popover.querySelector('.h-nx-action-view').onclick = () => handleOrderForm('view');
+    popover.querySelector('.h-nx-action-edit').onclick = () => handleOrderForm('edit');
+    popover.querySelector('.h-nx-action-goto').onclick = () => {
+        const ma_nx = button.dataset.maNx;
+        const state = viewStates['view-chi-tiet'];
+        state.searchTerm = '';
+        Object.keys(state.filters).forEach(k => state.filters[k] = Array.isArray(state.filters[k]) ? [] : '');
+        state.filters.ma_nx = [ma_nx];
+        showView('view-chi-tiet');
+        closeHierarchyPopover();
+    };
+
+    const closeHandler = (event) => {
         if (!popover.contains(event.target) && !button.contains(event.target)) {
             closeHierarchyPopover();
         }
@@ -823,11 +1013,22 @@ async function renderInventoryStatusChart() {
                 legend: {
                     position: 'right', align: 'center',
                     labels: {
-                        usePointStyle: true, padding: isMobile ? 4 : 12, boxWidth: 8, font: { size: isMobile ? 8 : 10, weight: '600' },
+                        usePointStyle: true, padding: isMobile ? 4 : 12, boxWidth: 8,
+                        font: { size: isMobile ? 8 : 14, weight: '700' }, // NÂNG CẤP: Tăng font size desktop lên 14
                         generateLabels: (chart) => chart.data.labels.map((label, i) => {
+                            const isHidden = !chart.getDataVisibility(i); // NÂNG CẤP: Kiểm tra trạng thái ẩn
                             const value = chart.data.datasets[0].data[i];
                             const percentage = totalCount > 0 ? ((value / totalCount) * 100).toFixed(1) : 0;
-                            return { text: `${label}: ${value.toLocaleString()} (${percentage}%)`, fillStyle: chart.data.datasets[0].backgroundColor[i], strokeStyle: chart.data.datasets[0].backgroundColor[i], lineWidth: 0, index: i, font: { size: isMobile ? 8 : 10, weight: '600' } };
+                            return { 
+                                text: `${label}: ${value.toLocaleString()} (${percentage}%)`, 
+                                fillStyle: chart.data.datasets[0].backgroundColor[i], 
+                                strokeStyle: chart.data.datasets[0].backgroundColor[i], 
+                                lineWidth: 0, 
+                                index: i, 
+                                hidden: isHidden, // Quan trọng để icon mờ đi
+                                textDecoration: isHidden ? 'line-through' : 'none', // NÂNG CẤP: Gạch ngang khi ẩn
+                                font: { size: isMobile ? 8 : 14, weight: '700' }
+                            };
                         })
                     }
                 },
@@ -876,23 +1077,21 @@ export async function fetchTongQuanData() {
         const [spRes, tkRes] = await Promise.all([sanPhamCountQuery, tonKhoQuery]);
         const allStockItems = tkRes.data || [];
         
+        // Thẻ 1: Tổng Sản Phẩm
         document.getElementById('tq-stat-san-pham').textContent = (spRes.count ?? 0).toLocaleString();
         document.getElementById('tq-sub-stat-san-pham').innerHTML = `Khả dụng: ${allStockItems.filter(i => i.ton_cuoi > 0).reduce((s, i) => s + i.ton_cuoi, 0).toLocaleString()}`;
 
-        const canDateItems = allStockItems.filter(i => i.tinh_trang === 'Cận date' && i.ton_cuoi > 0);
-        document.getElementById('tq-stat-can-date').textContent = `${new Set(canDateItems.map(i => i.ma_vt)).size} mặt hàng`;
-        document.getElementById('tq-sub-stat-can-date').innerHTML = `Số lượng: ${canDateItems.reduce((s, i) => s + i.ton_cuoi, 0).toLocaleString()}`;
+        // Thẻ 2: Hết hạn trong 30 ngày tới (tinh_trang = 'Từ 1-30 ngày' & ton_cuoi > 0)
+        const urgentItems = allStockItems.filter(i => i.tinh_trang === 'Từ 1-30 ngày' && i.ton_cuoi > 0);
+        document.getElementById('tq-stat-can-date').textContent = `${new Set(urgentItems.map(i => i.ma_vt)).size} mặt hàng`;
+        document.getElementById('tq-sub-stat-can-date').innerHTML = `Số lượng: ${urgentItems.reduce((s, i) => s + i.ton_cuoi, 0).toLocaleString()}`;
+
+        // Thẻ 3: Hàng hết han (tinh_trang = 'Hết hạn sử dụng' & ton_cuoi > 0)
+        const expiredItems = allStockItems.filter(i => i.tinh_trang === 'Hết hạn sử dụng' && i.ton_cuoi > 0);
+        document.getElementById('tq-stat-het-han').textContent = `${new Set(expiredItems.map(i => i.ma_vt)).size} mặt hàng`;
+        document.getElementById('tq-sub-stat-het-han').innerHTML = `Số lượng: ${expiredItems.reduce((s, i) => s + i.ton_cuoi, 0).toLocaleString()}`;
 
         const today = new Date();
-        const hetHanItems = allStockItems.filter(i => {
-            if (!i.date) return false;
-            const [d, m, y] = i.date.split('/').map(Number);
-            const exp = new Date(y, m - 1, d);
-            return exp.getMonth() === today.getMonth() && exp.getFullYear() === today.getFullYear() && exp <= today;
-        });
-        document.getElementById('tq-stat-het-han').textContent = `${new Set(hetHanItems.map(i => i.ma_vt)).size} mặt hàng`;
-        document.getElementById('tq-sub-stat-het-han').innerHTML = `Số lượng: ${hetHanItems.reduce((s, i) => s + i.ton_cuoi, 0).toLocaleString()}`;
-
         const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(today.getDate() - 30);
         let chiTietQuery = sb.from('chi_tiet').select('thoi_gian, nhap, xuat, nganh, phu_trach').gte('thoi_gian', thirtyDaysAgo.toISOString());
         if (isNotAdmin) chiTietQuery = chiTietQuery.or(allowedNganh.length > 0 ? `phu_trach.eq."${userName}",nganh.in.(${allowedNganh.map(n => `"${n}"`).join(',')})` : `phu_trach.eq."${userName}"`);
@@ -906,6 +1105,7 @@ export async function fetchTongQuanData() {
         updateAlertFiltersAndRender();
         renderInventoryStatusChart();
         fetchAndRenderHierarchy();
+        updateTQFilterButtonTexts();
     } catch (e) { console.error(e); }
 }
 
@@ -917,13 +1117,16 @@ export function initTongQuanView() {
         const filterBtn = e.target.closest('.filter-btn');
         if (filterBtn) { openTongQuanFilterPopover(filterBtn); return; }
 
+        const timeFilterBtn = e.target.closest('#tq-hierarchy-time-filter-btn');
+        if (timeFilterBtn) { openHierarchyTimePresetPopover(timeFilterBtn); return; }
+
         const resetAndShow = (viewId, filters) => {
             const state = viewStates[viewId];
             if (state) {
                 state.searchTerm = '';
                 Object.keys(state.filters).forEach(k => state.filters[k] = Array.isArray(state.filters[k]) ? [] : '');
                 Object.assign(state.filters, filters);
-                if (viewId === 'view-ton-kho') state.stockAvailability = filters.tinh_trang ? 'available' : 'all';
+                if (viewId === 'view-ton-kho') state.stockAvailability = 'available';
                 showView(viewId);
             }
         };
@@ -938,7 +1141,7 @@ export function initTongQuanView() {
         if (e.target.closest('#tq-card-san-pham')) {
             const s = viewStates['view-ton-kho']; s.stockAvailability = 'available'; showView('view-ton-kho');
         } else if (e.target.closest('#tq-card-can-date')) {
-            resetAndShow('view-ton-kho', { tinh_trang: ['Cận date'] });
+            resetAndShow('view-ton-kho', { tinh_trang: ['Từ 1-30 ngày'] });
         } else if (e.target.closest('#tq-card-het-han')) {
             resetAndShow('view-ton-kho', { tinh_trang: ['Hết hạn sử dụng'] });
         }
@@ -957,29 +1160,58 @@ export function initTongQuanView() {
         renderActivityChart();
     };
 
-    document.getElementById('tq-hierarchy-time-preset').onchange = (e) => {
-        document.getElementById('tq-hierarchy-custom-dates').classList.toggle('hidden', e.target.value !== 'custom');
+    document.getElementById('tq-hierarchy-refresh-btn').onclick = () => {
+        expandedHierarchyPaths.clear();
         fetchAndRenderHierarchy();
     };
-    document.getElementById('tq-hierarchy-refresh-btn').onclick = fetchAndRenderHierarchy;
+    
     document.getElementById('tq-hierarchy-date-from').onchange = fetchAndRenderHierarchy;
     document.getElementById('tq-hierarchy-date-to').onchange = fetchAndRenderHierarchy;
 
     const xuatBtn = document.getElementById('tq-hierarchy-mode-xuat');
     const nhapBtn = document.getElementById('tq-hierarchy-mode-nhap');
+    const xuatDot = document.getElementById('tq-hierarchy-mode-xuat-dot');
+    const nhapDot = document.getElementById('tq-hierarchy-mode-nhap-dot');
+
     const setMode = (mode) => {
         tongQuanState.hierarchy.mode = mode;
-        [xuatBtn, nhapBtn].forEach(btn => {
-            const isActive = btn.dataset.mode === mode;
-            btn.classList.toggle('bg-white', isActive);
-            btn.classList.toggle('shadow-sm', isActive);
-            btn.classList.toggle('text-blue-600', isActive);
-            btn.classList.toggle('text-gray-400', !isActive);
-        });
+        const isActiveXuat = mode === 'xuat';
+        
+        // Desktop styles
+        if (xuatBtn) {
+            xuatBtn.classList.toggle('bg-white', isActiveXuat);
+            xuatBtn.classList.toggle('shadow-sm', isActiveXuat);
+            xuatBtn.classList.toggle('text-blue-600', isActiveXuat);
+            xuatBtn.classList.toggle('text-gray-400', !isActiveXuat);
+        }
+        if (nhapBtn) {
+            nhapBtn.classList.toggle('bg-white', !isActiveXuat);
+            nhapBtn.classList.toggle('shadow-sm', !isActiveXuat);
+            nhapBtn.classList.toggle('text-blue-600', !isActiveXuat);
+            nhapBtn.classList.toggle('text-gray-400', isActiveXuat);
+        }
+
+        // Mobile dot styles
+        if (xuatDot) {
+            xuatDot.classList.toggle('bg-red-500', isActiveXuat);
+            xuatDot.classList.toggle('bg-gray-300', !isActiveXuat);
+            xuatDot.classList.toggle('border-red-200', isActiveXuat);
+            xuatDot.classList.toggle('border-transparent', !isActiveXuat);
+        }
+        if (nhapDot) {
+            nhapDot.classList.toggle('bg-green-500', !isActiveXuat);
+            nhapDot.classList.toggle('bg-gray-300', isActiveXuat);
+            nhapDot.classList.toggle('border-green-200', !isActiveXuat);
+            nhapDot.classList.toggle('border-transparent', isActiveXuat);
+        }
+
         fetchAndRenderHierarchy();
     };
-    xuatBtn.onclick = () => setMode('xuat');
-    nhapBtn.onclick = () => setMode('nhap');
+    
+    if (xuatBtn) xuatBtn.onclick = () => setMode('xuat');
+    if (nhapBtn) nhapBtn.onclick = () => setMode('nhap');
+    if (xuatDot) xuatDot.onclick = () => setMode('xuat');
+    if (nhapDot) nhapDot.onclick = () => setMode('nhap');
 
     view.dataset.listenerAttached = 'true';
 }
