@@ -1,4 +1,4 @@
-import { sb, currentUser, cache, viewStates, showLoading, showToast, showConfirm, debounce, renderPagination, filterButtonDefaultTexts, openAutocomplete, updateTonKhoToggleUI } from './app.js';
+import { sb, currentUser, cache, viewStates, showLoading, showToast, showConfirm, debounce, renderPagination, filterButtonDefaultTexts, openAutocomplete, updateTonKhoToggleUI, updateMobileFilterIconStatus } from './app.js';
 import { fetchSanPham } from './sanpham.js';
 
 // Configuration for toggleable columns on Desktop
@@ -233,6 +233,7 @@ export async function fetchTonKho(page = viewStates['view-ton-kho'].currentPage,
             applyTonKhoColumnSettings(); 
             renderPagination('ton-kho', count, from, to);
             updateFilterButtonTexts('ton-kho');
+            updateMobileFilterIconStatus('ton-kho');
         }
     } finally {
         if (showLoader) showLoading(false);

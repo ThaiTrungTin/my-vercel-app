@@ -1,4 +1,4 @@
-import { sb, cache, viewStates, showLoading, showToast, showConfirm, debounce, renderPagination, sanitizeFileName, filterButtonDefaultTexts, PLACEHOLDER_IMAGE_URL, currentUser, showView } from './app.js';
+import { sb, cache, viewStates, showLoading, showToast, showConfirm, debounce, renderPagination, sanitizeFileName, filterButtonDefaultTexts, PLACEHOLDER_IMAGE_URL, currentUser, showView, updateMobileFilterIconStatus } from './app.js';
 
 function buildSanPhamQuery() {
     const state = viewStates['view-san-pham'];
@@ -53,6 +53,7 @@ export async function fetchSanPham(page = viewStates['view-san-pham'].currentPag
             cache.sanPhamList = dataWithStock;
             renderSanPhamTable(dataWithStock);
             renderPagination('san-pham', count, from, to);
+            updateMobileFilterIconStatus('san-pham');
         }
     } finally { if (showLoader) showLoading(false); }
 }

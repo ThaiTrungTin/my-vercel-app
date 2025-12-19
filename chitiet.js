@@ -1,4 +1,4 @@
-import { sb, cache, viewStates, currentUser, showLoading, showToast, debounce, renderPagination, filterButtonDefaultTexts, showView } from './app.js';
+import { sb, cache, viewStates, currentUser, showLoading, showToast, debounce, renderPagination, filterButtonDefaultTexts, showView, updateMobileFilterIconStatus } from './app.js';
 
 // Configuration for toggleable columns on Desktop
 const OPTIONAL_COLUMNS_CT = [
@@ -93,9 +93,11 @@ const VIEW_HTML = `
         <div class="table-container min-w-full overflow-auto flex-1">
             <table class="min-w-full border-collapse table-fixed md:table-auto">
                 <thead class="bg-gray-200 sticky top-0 z-30"><tr>
-                    <th class="px-2 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300 w-24">Thời Gian</th>
+                    <th class="px-2 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300 w-24">
+                        <span class="md:hidden">TG</span><span class="hidden md:inline">Thời Gian</span>
+                    </th>
                     <th class="hidden md:table-cell ct-col-ma-kho px-2 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300 w-28">Mã Kho</th>
-                    <th class="sticky left-0 z-40 bg-gray-200 px-3 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300 whitespace-nowrap min-w-max md:whitespace-normal md:min-w-[180px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.2)]">Mã NX</th>
+                    <th class="sticky left-0 z-40 bg-gray-200 px-3 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300 whitespace-nowrap min-w-max md:whitespace-normal md:min-w-[180px] shadow-[2px_0_5_px_-2px_rgba(0,0,0,0.2)]">Mã NX</th>
                     <th class="hidden md:table-cell ct-col-ma-vach px-2 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300 w-64">Code + Lot + EXP</th>
                     <th class="px-2 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300 w-32">Mã VT</th>
                     <th class="hidden md:table-cell ct-col-ten-vt px-2 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300 min-w-[400px] w-auto">Tên VT</th>
@@ -339,6 +341,7 @@ export async function fetchChiTiet(page = viewStates['view-chi-tiet'].currentPag
             renderChiTietTable(data);
             applyChiTietColumnSettings();
             renderPagination('chi-tiet', count, from, to);
+            updateMobileFilterIconStatus('chi-tiet');
         }
     } finally {
         if (showLoader) showLoading(false);
@@ -451,6 +454,7 @@ async function openChiTietFilterPopover(button, view) {
         popover.style.left = '50%';
         popover.style.top = '50%';
         popover.style.transform = 'translate(-50%, -50%)';
+        popover.style.zIndex = '100';
     } else {
         popover.style.left = `${rect.left}px`;
         popover.style.top = `${rect.bottom + window.scrollY + 5}px`;

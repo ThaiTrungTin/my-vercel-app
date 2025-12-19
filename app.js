@@ -281,6 +281,35 @@ function updateFilterButtonTexts(viewPrefix) {
     });
 }
 
+/**
+ * Cập nhật trạng thái "sáng" cho nút bộ lọc mobile khi có dữ liệu lọc/search
+ */
+export function updateMobileFilterIconStatus(viewPrefix) {
+    const state = viewStates[`view-${viewPrefix}`];
+    const btnIdMap = {
+        'san-pham': 'sp-mobile-filter-toggle',
+        'ton-kho': 'tk-mobile-filter-toggle',
+        'chi-tiet': 'ct-mobile-filter-toggle'
+    };
+    const btnId = btnIdMap[viewPrefix];
+    const btn = document.getElementById(btnId);
+    if (!btn || !state) return;
+
+    const hasSearch = state.searchTerm && state.searchTerm.trim() !== '';
+    const hasFilters = Object.values(state.filters).some(val => {
+        if (Array.isArray(val)) return val.length > 0;
+        return !!val;
+    });
+
+    // Đối với Tồn kho, kiểm tra cả chế độ 'Tất cả' so với mặc định 'Khả dụng'
+    let isChanged = hasSearch || hasFilters;
+    if (viewPrefix === 'ton-kho' && state.stockAvailability !== 'available') {
+        isChanged = true;
+    }
+
+    btn.classList.toggle('filter-active-mobile', isChanged);
+}
+
 function closeActiveAutocompletePopover() {
     if (activeAutocompletePopover) {
         activeAutocompletePopover.element.remove();
