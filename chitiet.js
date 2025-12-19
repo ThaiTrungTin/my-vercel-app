@@ -510,7 +510,7 @@ async function openDetailVtModal(ct, isReadOnly = false) {
     headerEl.innerHTML = `
         <div class="flex flex-col gap-1 md:gap-1.5 overflow-hidden">
             <div class="text-[11px] md:text-lg font-black flex items-center gap-1.5 whitespace-nowrap overflow-x-auto no-scrollbar">
-                <span class="text-gray-800 uppercase tracking-tight flex-shrink-0">Quản lý phân bổ vật tư :</span>
+                <span class="text-gray-800 uppercase tracking-tight flex-shrink-0">Phân bổ:</span>
                 <span class="text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100 flex-shrink-0">${ct.ma_vt} - ${ct.lot || 'No LOT'} - ${ct.date || 'No Date'}</span>
             </div>
             <div class="text-[9px] md:text-sm font-bold text-gray-500 flex items-center gap-2 whitespace-nowrap overflow-x-auto no-scrollbar">
@@ -676,7 +676,7 @@ function renderDetailVtRows(isReadOnly = false) {
                     <input type="text" class="w-full p-2 border-none bg-transparent text-[11px] md:text-sm font-medium vt-input-nguoi-nhan text-center md:text-left" value="${item.nguoi_nhan || ''}" placeholder="..." ${isReadOnly ? 'readonly' : ''}>
                 </td>
                 <td class="border p-0">
-                    <input type="number" class="w-full p-2 border-none bg-transparent text-[11px] md:text-sm font-black text-blue-700 vt-input-sl text-center" value="${item.sl || 0}" step="1" min="0" ${isReadOnly ? 'readonly' : ''}>
+                    <input type="number" class="w-full p-1 border-none bg-transparent text-[11px] md:text-sm font-black text-blue-700 vt-input-sl text-center" value="${item.sl || 0}" step="1" min="0" ${isReadOnly ? 'readonly' : ''}>
                 </td>
                 <td class="border p-0">
                     <textarea class="w-full p-2 border-none bg-transparent text-[10px] md:text-sm vt-input-dia-diem resize-none line-clamp-2 h-[42px] leading-tight focus:line-clamp-none focus:h-auto cursor-pointer" placeholder="..." ${isReadOnly ? 'readonly' : ''}>${item.dia_diem || ''}</textarea>
