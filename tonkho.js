@@ -401,12 +401,12 @@ function updateFilterButtonTexts(viewPrefix) {
         const filterKey = btn.dataset.filterKey;
         if (filterKey && state.filters.hasOwnProperty(filterKey)) {
             const selectedOptions = state.filters[filterKey] || [];
-            const defaultText = filterButtonDefaultTexts[btn.id] || 'Filter';
+            const defaultText = filterButtonDefaultTexts[btn.id.replace('-mobile', '')] || 'Filter';
             
             if (Array.isArray(selectedOptions)) {
                 const newText = selectedOptions.length > 0 ? `${defaultText} (${selectedOptions.length})` : defaultText;
                 btn.textContent = newText;
-                const mobileBtn = document.getElementById(`${btn.id}-mobile`);
+                const mobileBtn = document.getElementById(`${btn.id.replace('-mobile', '')}-mobile`);
                 if(mobileBtn) mobileBtn.textContent = newText;
             }
         }
@@ -454,21 +454,25 @@ export function initTonKhoView() {
     state.stockAvailability = sessionStorage.getItem('tonKhoStockAvailability') || 'available';
     updateTonKhoToggleUI();
 
-    document.getElementById('ton-kho-reset-filters').addEventListener('click', () => {
+    const resetFilters = () => {
         document.getElementById('ton-kho-search').value = '';
         document.getElementById('ton-kho-search-mobile').value = '';
         viewStates['view-ton-kho'].searchTerm = '';
         viewStates['view-ton-kho'].filters = { ma_vt: [], lot: [], date: [], tinh_trang: [], nganh: [], phu_trach: [] };
         
-        viewContainer.querySelectorAll('#view-ton-kho .filter-btn').forEach(btn => {
-            if(!btn.id.includes('mobile')) btn.textContent = filterButtonDefaultTexts[btn.id];
+        viewContainer.querySelectorAll('.filter-btn').forEach(btn => {
+            const baseId = btn.id.replace('-mobile', '');
+            btn.textContent = filterButtonDefaultTexts[baseId];
         });
         
         state.stockAvailability = 'available';
         sessionStorage.setItem('tonKhoStockAvailability', 'available');
         updateTonKhoToggleUI();
         fetchTonKho(1);
-    });
+    };
+
+    document.getElementById('ton-kho-reset-filters').addEventListener('click', resetFilters);
+    document.getElementById('ton-kho-reset-filters-mobile').addEventListener('click', resetFilters);
 
     const drawer = document.getElementById('tk-filter-drawer');
     const overlay = document.getElementById('tk-filter-drawer-overlay');
@@ -566,6 +570,7 @@ async function openTonKhoFilterPopoverCustom(button, view) {
         popover.style.transform = 'translate(-50%, -50%)';
         popover.style.width = '90%';
         popover.style.maxWidth = '300px';
+        popover.style.zIndex = '100'; // Đảm bảo nổi trên drawer
     } else {
         popover.style.left = `${rect.left}px`;
         popover.style.top = `${rect.bottom + window.scrollY + 5}px`;
@@ -707,8 +712,15 @@ async function openTonKhoFilterPopoverCustom(button, view) {
     };
     applyBtn.onclick = async () => {
         state.filters[filterKey] = [...tempSelectedOptions];
-        const defaultText = filterButtonDefaultTexts[button.id] || button.id;
-        button.textContent = tempSelectedOptions.size > 0 ? `${defaultText} (${tempSelectedOptions.size})` : defaultText;
+        const baseId = button.id.replace('-mobile', '');
+        const defText = filterButtonDefaultTexts[baseId] || baseId;
+        const newTxt = tempSelectedOptions.size > 0 ? `${defText} (${tempSelectedOptions.size})` : defText;
+        
+        const dBtn = document.getElementById(baseId);
+        const mBtn = document.getElementById(`${baseId}-mobile`);
+        if(dBtn) dBtn.textContent = newTxt;
+        if(mBtn) mBtn.textContent = newTxt;
+
         fetchTonKho(1);
         popover.remove();
         document.removeEventListener('click', closePopover);

@@ -131,8 +131,27 @@ async function openFilterPopover(button, view) {
     const popover = template.content.cloneNode(true).querySelector('.filter-popover');
     document.body.appendChild(popover);
     const rect = button.getBoundingClientRect();
-    if (button.closest('#sp-filter-drawer')) { popover.style.position = 'fixed'; popover.style.right = '280px'; popover.style.top = `${rect.top}px`; }
-    else { popover.style.left = `${rect.left}px`; popover.style.top = `${rect.bottom + window.scrollY + 5}px`; }
+
+    if (window.innerWidth <= 768) {
+        // Tối ưu vị trí cho Mobile
+        popover.style.position = 'fixed';
+        popover.style.left = '50%';
+        popover.style.top = '50%';
+        popover.style.transform = 'translate(-50%, -50%)';
+        popover.style.width = '90%';
+        popover.style.maxWidth = '300px';
+        popover.style.zIndex = '100';
+    } else {
+        // Desktop
+        if (button.closest('#sp-filter-drawer')) {
+            popover.style.position = 'fixed';
+            popover.style.right = '280px';
+            popover.style.top = `${rect.top}px`;
+        } else {
+            popover.style.left = `${rect.left}px`;
+            popover.style.top = `${rect.bottom + window.scrollY + 5}px`;
+        }
+    }
 
     const optList = popover.querySelector('.filter-options-list');
     const applyBtn = popover.querySelector('.filter-apply-btn');
@@ -173,7 +192,7 @@ async function openFilterPopover(button, view) {
     const close = (e) => { if (!popover.contains(e.target) && e.target !== button) { popover.remove(); document.removeEventListener('click', close); } };
     applyBtn.onclick = () => {
         state.filters[filterKey] = [...tempSel];
-        const def = filterButtonDefaultTexts[button.id] || button.id;
+        const def = filterButtonDefaultTexts[button.id.replace('-mobile', '')] || button.id;
         const txt = tempSel.size > 0 ? `${def} (${tempSel.size})` : def;
         const dBtn = document.getElementById(`san-pham-filter-${filterKey.replace('_', '-')}-btn`);
         const mBtn = document.getElementById(`san-pham-filter-${filterKey.replace('_', '-')}-btn-mobile`);
