@@ -123,7 +123,7 @@ function setupNetworkStatusWatcher() {
             activeColor = 'rgba(8, 201, 69, 1)'; // Cam
         } else if (rtt >= 400) {
             activeLevel = 2;
-            activeColor = '#FACC15'; // Vàng
+            activeColor = '#93770aff'; // Vàng
         }
 
         // Cập nhật giao diện Online (Mảnh mai, không nền)
