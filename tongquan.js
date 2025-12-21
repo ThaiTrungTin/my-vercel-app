@@ -1253,13 +1253,13 @@ export async function fetchTongQuanData() {
         const urgentItems = allStockItems.filter(i => i.tinh_trang === 'Từ 1-30 ngày' && i.ton_cuoi > 0);
         const statCanDateEl = document.getElementById('tq-stat-can-date');
         const subStatCanDateEl = document.getElementById('tq-sub-stat-can-date');
-        if (statCanDateEl) statCanDateEl.textContent = `${new Set(urgentItems.map(i => i.ma_vt)).size} mặt hàng`;
+        if (statCanDateEl) statCanDateEl.textContent = `${new Set(urgentItems.map(i => i.ma_vt)).size} vật tư`;
         if (subStatCanDateEl) subStatCanDateEl.innerHTML = `Số lượng: ${urgentItems.reduce((s, i) => s + i.ton_cuoi, 0).toLocaleString()}`;
 
         const expiredItems = allStockItems.filter(i => i.tinh_trang === 'Hết hạn sử dụng' && i.ton_cuoi > 0);
         const statHetHanEl = document.getElementById('tq-stat-het-han');
         const subStatHetHanEl = document.getElementById('tq-sub-stat-het-han');
-        if (statHetHanEl) statHetHanEl.textContent = `${new Set(expiredItems.map(i => i.ma_vt)).size} mặt hàng`;
+        if (statHetHanEl) statHetHanEl.textContent = `${new Set(expiredItems.map(i => i.ma_vt)).size} vật tư`;
         if (subStatHetHanEl) subStatHetHanEl.innerHTML = `Số lượng: ${expiredItems.reduce((s, i) => s + i.ton_cuoi, 0).toLocaleString()}`;
 
         const today = new Date();
