@@ -442,7 +442,7 @@ async function fetchAndRenderHierarchy() {
 }
 
 function buildHierarchy(data, mode, subMode = 'all') {
-    const root = { total: 0, xuatTotal: 0, shortageTotal: 0, nxSet: new Set(), children: {} };
+    const root = { total: 0, xuatTotal: 0, shortageTotal: 0, nxSet: new Set(), vtSet: new Set(), children: {} };
 
     data.forEach(row => {
         const bu = row.bu || 'KHÔNG XÁC ĐỊNH';
@@ -470,30 +470,33 @@ function buildHierarchy(data, mode, subMode = 'all') {
         root.xuatTotal += mode === 'xuat' ? xuatVal : 0;
         root.shortageTotal += mode === 'xuat' ? shortageVal : 0;
         if(ma_nx) root.nxSet.add(ma_nx);
+        if(ma_vt) root.vtSet.add(ma_vt);
 
-        if (!root.children[bu]) root.children[bu] = { total: 0, xuatTotal: 0, shortageTotal: 0, nxSet: new Set(), children: {} };
+        if (!root.children[bu]) root.children[bu] = { total: 0, xuatTotal: 0, shortageTotal: 0, nxSet: new Set(), vtSet: new Set(), children: {} };
         root.children[bu].total += mainVal;
         root.children[bu].xuatTotal += mode === 'xuat' ? xuatVal : 0;
         root.children[bu].shortageTotal += mode === 'xuat' ? shortageVal : 0;
         if(ma_nx) root.children[bu].nxSet.add(ma_nx);
+        if(ma_vt) root.children[bu].vtSet.add(ma_vt);
 
-        if (!root.children[bu].children[franchise]) root.children[bu].children[franchise] = { total: 0, xuatTotal: 0, shortageTotal: 0, nxSet: new Set(), children: {} };
+        if (!root.children[bu].children[franchise]) root.children[bu].children[franchise] = { total: 0, xuatTotal: 0, shortageTotal: 0, nxSet: new Set(), vtSet: new Set(), children: {} };
         root.children[bu].children[franchise].total += mainVal;
         root.children[bu].children[franchise].xuatTotal += mode === 'xuat' ? xuatVal : 0;
         root.children[bu].children[franchise].shortageTotal += mode === 'xuat' ? shortageVal : 0;
         if(ma_nx) root.children[bu].children[franchise].nxSet.add(ma_nx);
+        if(ma_vt) root.children[bu].children[franchise].vtSet.add(ma_vt);
 
-        if (!root.children[bu].children[franchise].children[ma_vt]) root.children[bu].children[franchise].children[ma_vt] = { total: 0, xuatTotal: 0, shortageTotal: 0, nxSet: new Set(), children: {} };
+        if (!root.children[bu].children[franchise].children[ma_vt]) root.children[bu].children[franchise].children[ma_vt] = { total: 0, xuatTotal: 0, shortageTotal: 0, nxSet: new Set(), vtSet: new Set(), children: {} };
         root.children[bu].children[franchise].children[ma_vt].total += mainVal;
         root.children[bu].children[franchise].children[ma_vt].xuatTotal += mode === 'xuat' ? xuatVal : 0;
         root.children[bu].children[franchise].children[ma_vt].shortageTotal += mode === 'xuat' ? shortageVal : 0;
         if(ma_nx) root.children[bu].children[franchise].children[ma_vt].nxSet.add(ma_nx);
+        if(ma_vt) root.children[bu].children[franchise].children[ma_vt].vtSet.add(ma_vt);
 
         const prodNode = root.children[bu].children[franchise].children[ma_vt];
 
         if (mode === 'xuat') {
             if (subMode === 'all') {
-                // Giữ nguyên cấu trúc phân nhánh trung gian nếu xem "Tất cả"
                 if (xuatVal > 0) {
                     const cat = "Đã xuất";
                     if (!prodNode.children[cat]) prodNode.children[cat] = { total: 0, xuatTotal: 0, shortageTotal: 0, nxSet: new Set(), children: {} };
@@ -507,11 +510,13 @@ function buildHierarchy(data, mode, subMode = 'all') {
                     if(ma_nx) prodNode.children[cat].children[yeu_cau].nxSet.add(ma_nx);
                     
                     if (!prodNode.children[cat].children[yeu_cau].children[ma_nx]) {
-                        prodNode.children[cat].children[yeu_cau].children[ma_nx] = { total: 0, xuatTotal: 0, shortageTotal: 0, id_ct: id_ct, isMaNX: true, nxSet: new Set(), children: {} };
+                        prodNode.children[cat].children[yeu_cau].children[ma_nx] = { total: 0, xuatTotal: 0, shortageTotal: 0, id_cts: [], isMaNX: true, nxSet: new Set(), children: {} };
                     }
-                    prodNode.children[cat].children[yeu_cau].children[ma_nx].total += xuatVal;
-                    prodNode.children[cat].children[yeu_cau].children[ma_nx].xuatTotal += xuatVal;
-                    if(ma_nx) prodNode.children[cat].children[yeu_cau].children[ma_nx].nxSet.add(ma_nx);
+                    const nxNode = prodNode.children[cat].children[yeu_cau].children[ma_nx];
+                    nxNode.total += xuatVal;
+                    nxNode.xuatTotal += xuatVal;
+                    nxNode.id_cts.push(id_ct);
+                    if(ma_nx) nxNode.nxSet.add(ma_nx);
                 }
 
                 if (shortageVal > 0) {
@@ -527,14 +532,15 @@ function buildHierarchy(data, mode, subMode = 'all') {
                     if(ma_nx) prodNode.children[cat].children[yeu_cau].nxSet.add(ma_nx);
                     
                     if (!prodNode.children[cat].children[yeu_cau].children[ma_nx]) {
-                        prodNode.children[cat].children[yeu_cau].children[ma_nx] = { total: 0, xuatTotal: 0, shortageTotal: 0, id_ct: id_ct, isMaNX: true, nxSet: new Set(), children: {} };
+                        prodNode.children[cat].children[yeu_cau].children[ma_nx] = { total: 0, xuatTotal: 0, shortageTotal: 0, id_cts: [], isMaNX: true, nxSet: new Set(), children: {} };
                     }
-                    prodNode.children[cat].children[yeu_cau].children[ma_nx].total += shortageVal;
-                    prodNode.children[cat].children[yeu_cau].children[ma_nx].shortageTotal += shortageVal;
-                    if(ma_nx) prodNode.children[cat].children[yeu_cau].children[ma_nx].nxSet.add(ma_nx);
+                    const nxNode = prodNode.children[cat].children[yeu_cau].children[ma_nx];
+                    nxNode.total += shortageVal;
+                    nxNode.shortageTotal += shortageVal;
+                    nxNode.id_cts.push(id_ct);
+                    if(ma_nx) nxNode.nxSet.add(ma_nx);
                 }
             } else {
-                // Tinh gọn: Bỏ qua nhánh "Thiếu hàng" hoặc "Đã xuất", hiển thị thẳng Yêu cầu
                 const valToUse = subMode === 'xuat' ? xuatVal : shortageVal;
                 if (valToUse > 0) {
                     if (!prodNode.children[yeu_cau]) prodNode.children[yeu_cau] = { total: 0, xuatTotal: 0, shortageTotal: 0, nxSet: new Set(), children: {} };
@@ -544,12 +550,14 @@ function buildHierarchy(data, mode, subMode = 'all') {
                     if(ma_nx) prodNode.children[yeu_cau].nxSet.add(ma_nx);
 
                     if (!prodNode.children[yeu_cau].children[ma_nx]) {
-                        prodNode.children[yeu_cau].children[ma_nx] = { total: 0, xuatTotal: 0, shortageTotal: 0, id_ct: id_ct, isMaNX: true, nxSet: new Set(), children: {} };
+                        prodNode.children[yeu_cau].children[ma_nx] = { total: 0, xuatTotal: 0, shortageTotal: 0, id_cts: [], isMaNX: true, nxSet: new Set(), children: {} };
                     }
-                    prodNode.children[yeu_cau].children[ma_nx].total += valToUse;
-                    if (subMode === 'xuat') prodNode.children[yeu_cau].children[ma_nx].xuatTotal += valToUse;
-                    else prodNode.children[yeu_cau].children[ma_nx].shortageTotal += valToUse;
-                    if(ma_nx) prodNode.children[yeu_cau].children[ma_nx].nxSet.add(ma_nx);
+                    const nxNode = prodNode.children[yeu_cau].children[ma_nx];
+                    nxNode.total += valToUse;
+                    if (subMode === 'xuat') nxNode.xuatTotal += valToUse;
+                    else nxNode.shortageTotal += valToUse;
+                    nxNode.id_cts.push(id_ct);
+                    if(ma_nx) nxNode.nxSet.add(ma_nx);
                 }
             }
         } else {
@@ -558,10 +566,12 @@ function buildHierarchy(data, mode, subMode = 'all') {
             if(ma_nx) prodNode.children[yeu_cau].nxSet.add(ma_nx);
 
             if (!prodNode.children[yeu_cau].children[ma_nx]) {
-                prodNode.children[yeu_cau].children[ma_nx] = { total: 0, id_ct: id_ct, isMaNX: true, nxSet: new Set(), children: {} };
+                prodNode.children[yeu_cau].children[ma_nx] = { total: 0, id_cts: [], isMaNX: true, nxSet: new Set(), children: {} };
             }
-            prodNode.children[yeu_cau].children[ma_nx].total += nhapVal;
-            if(ma_nx) prodNode.children[yeu_cau].children[ma_nx].nxSet.add(ma_nx);
+            const nxNode = prodNode.children[yeu_cau].children[ma_nx];
+            nxNode.total += nhapVal;
+            nxNode.id_cts.push(id_ct);
+            if(ma_nx) nxNode.nxSet.add(ma_nx);
         }
     });
 
@@ -571,14 +581,13 @@ function buildHierarchy(data, mode, subMode = 'all') {
 function renderTree(container, node, level, mode, parentPath, subMode = 'all') {
     const sortedKeys = Object.keys(node.children || {}).sort((a, b) => node.children[b].total - node.children[a].total);
 
-    // Bản đồ độ in đậm theo cấp bậc
     const weightMap = [
-        'font-black',      // Cấp 0 (BU)
-        'font-extrabold',  // Cấp 1 (Franchise)
-        'font-bold',       // Cấp 2 (Mã VT)
-        'font-semibold',   // Cấp 3 (Trạng thái hoặc Yêu cầu nếu mất cấp 3)
-        'font-medium',     // Cấp 4 (Yêu cầu hoặc Mã NX nếu mất cấp 3)
-        'font-normal'      // Cấp 5+ (Mã NX)
+        'font-black',      
+        'font-extrabold',  
+        'font-bold',       
+        'font-semibold',   
+        'font-medium',     
+        'font-normal'      
     ];
     const currentWeight = weightMap[level] || 'font-normal';
 
@@ -586,7 +595,10 @@ function renderTree(container, node, level, mode, parentPath, subMode = 'all') {
         const child = node.children[key];
         const hasActualChildren = child.children && Object.keys(child.children).length > 0;
         const isMaNXNode = child.isMaNX;
-        const canExpandMaNX = isMaNXNode && idsWithDistribution.has(child.id_ct);
+        
+        // Hợp nhất phân bổ: Kiểm tra xem bất kỳ ID nào trong mảng id_cts có phân bổ không
+        const hasAnyDistribution = isMaNXNode && child.id_cts.some(id => idsWithDistribution.has(id));
+        const canExpandMaNX = isMaNXNode && hasAnyDistribution;
         const hasChildren = hasActualChildren || canExpandMaNX;
 
         const currentPath = parentPath ? `${parentPath}|${key}` : key;
@@ -606,8 +618,6 @@ function renderTree(container, node, level, mode, parentPath, subMode = 'all') {
         if (level === 1) { labelColor = 'text-gray-800'; }
         if (level === 2) { labelColor = 'text-indigo-700'; }
         
-        // Logic màu sắc linh hoạt:
-        // Nếu tiêu đề là "Thiếu hàng" hoặc đang ở chế độ xem "Thiếu hàng" và đã vượt qua cấp Mã VT
         if (key === "Thiếu hàng" || (mode === 'xuat' && subMode === 'shortage' && level >= 3)) {
             labelColor = 'text-amber-500';
         } else if (key === "Đã xuất" || (mode === 'xuat' && subMode === 'xuat' && level >= 3)) {
@@ -617,13 +627,19 @@ function renderTree(container, node, level, mode, parentPath, subMode = 'all') {
         const isMaVT = level === 2;
         const isMaNX = isMaNXNode;
 
-        // Số đếm đơn hàng màu đen (đặt sau tiêu đề) - cũng áp dụng độ đậm theo cấp
-        const nxCount = child.nxSet.size;
-        const blackCountHtml = !isMaNX ? `<span class="text-[10px] md:text-xs ${currentWeight} text-black ml-1.5 tracking-tighter">(${nxCount})</span>` : '';
+        // Số đếm đơn hàng (Đen)
+        const nxCount = child.nxSet ? child.nxSet.size : 0;
+        const blackCountHtml = !isMaNX ? `<span class="text-[10px] md:text-xs ${currentWeight} text-black ml-1.5 tracking-tighter" title="Số lượng đơn hàng">(${nxCount})</span>` : '';
+
+        // MỚI: Số đếm Mã vật tư (Tím xanh da trời) - Chỉ cho cấp BU và Franchise
+        let vtCountHtml = '';
+        if (level < 2 && child.vtSet) {
+            const vtCount = child.vtSet.size;
+            vtCountHtml = `<span class="text-[10px] md:text-xs ${currentWeight} text-indigo-400 ml-1 tracking-tighter cursor-help" title="Số lượng mã vật tư">(${vtCount})</span>`;
+        }
 
         let badgeHtml = '';
         if (isMaNX) {
-            // Nhánh cuối cùng (Mã NX): Số lượng theo màu (Xuất: Đỏ, Nhập: Xanh lá, Thiếu: Vàng)
             let nxColor = 'text-gray-700'; 
             if (mode === 'nhap') {
                 nxColor = 'text-green-600';
@@ -661,7 +677,6 @@ function renderTree(container, node, level, mode, parentPath, subMode = 'all') {
                     `;
                 }
             } else {
-                // Chế độ Nhập: Số lượng màu xanh lá
                 badgeHtml = `
                     <div class="ml-auto flex items-center gap-1.5 flex-shrink-0 whitespace-nowrap">
                         <span class="text-green-600 px-2 py-0.5 text-xs md:text-sm ${currentWeight}">${child.total.toLocaleString()}</span>
@@ -679,13 +694,14 @@ function renderTree(container, node, level, mode, parentPath, subMode = 'all') {
                 <div class="flex-grow flex items-center gap-1 md:gap-1.5 overflow-hidden min-w-0">
                     <span class="${branchLabelWeight} ${labelColor} truncate leading-tight text-[10px] md:text-sm">${key}</span>
                     ${blackCountHtml}
+                    ${vtCountHtml}
                     ${isMaVT ? `
                         <button class="hierarchy-vt-action-btn flex-shrink-0 p-1 text-gray-300 hover:text-indigo-500 rounded opacity-0 group-hover:opacity-100 transition-opacity" data-ma-vt="${key}">
                             <svg class="w-3 h-3 md:w-4 md:h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path></svg>
                         </button>
                     ` : ''}
                     ${isMaNX ? `
-                        <button class="hierarchy-nx-action-btn flex-shrink-0 p-1 text-gray-300 hover:text-green-500 rounded opacity-0 group-hover:opacity-100 transition-opacity" data-ma-nx="${key}" data-ct-id="${child.id_ct}">
+                        <button class="hierarchy-nx-action-btn flex-shrink-0 p-1 text-gray-300 hover:text-green-500 rounded opacity-0 group-hover:opacity-100 transition-opacity" data-ma-nx="${key}" data-ct-id="${child.id_cts[0]}">
                             <svg class="w-3 h-3 md:w-4 md:h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path></svg>
                         </button>
                     ` : ''}
@@ -720,9 +736,10 @@ function renderTree(container, node, level, mode, parentPath, subMode = 'all') {
                         if (canExpandMaNX) {
                             childrenContainer.innerHTML = '<div class="p-2 text-center text-[9px] text-gray-400 italic">Đang tải phân bổ...</div>';
                             try {
+                                // Hợp nhất phân bổ: Query cho toàn bộ danh sách ID trong đơn hàng (gộp)
                                 const { data: distributions } = await sb.from('chi_tiet_vt')
                                     .select('sl, nguoi_nhan, dia_diem, created_at')
-                                    .eq('id_ct', child.id_ct)
+                                    .in('id_ct', child.id_cts)
                                     .order('created_at', { ascending: true });
                                 
                                 if (distributions && distributions.length > 0) {
@@ -976,7 +993,7 @@ async function fetchAlerts() {
     const [allStockRes, recentMovementRes, urgentExpiryRes] = await Promise.all([
         allStockQuery,
         recentMovementQuery,
-        urgentExpiryQuery 
+        urgentExpiryQuery // SỬA LỖI TẠI ĐÂY: urgentExpiryResQuery -> urgentExpiryQuery
     ]);
 
     const stockByProduct = new Map();

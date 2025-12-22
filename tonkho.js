@@ -1,3 +1,4 @@
+
 import { sb, currentUser, cache, viewStates, showLoading, showToast, showConfirm, debounce, renderPagination, filterButtonDefaultTexts, openAutocomplete, updateTonKhoToggleUI, updateMobileFilterIconStatus } from './app.js';
 import { fetchSanPham } from './sanpham.js';
 
@@ -101,20 +102,22 @@ async function updateTonKhoHeaderCounts() {
     const nhapEl = document.getElementById('ton-kho-header-nhap-count');
     const xuatEl = document.getElementById('ton-kho-header-xuat-count');
     const cuoiEl = document.getElementById('ton-kho-header-cuoi-count');
-    const mobileSummaryEl = document.getElementById('tk-summary-info');
+    const summaryContainer = document.getElementById('tk-summary-info');
 
-    if (!dauEl || !nhapEl || !xuatEl || !cuoiEl) return;
+    if (!dauEl || !nhapEl || !xuatEl || !cuoiEl || !summaryContainer) return;
 
     [dauEl, nhapEl, xuatEl, cuoiEl].forEach(el => el.textContent = '(...)');
-    if (mobileSummaryEl) mobileSummaryEl.innerHTML = '<span class="text-gray-400 font-normal text-[8px]">...</span>';
+    summaryContainer.innerHTML = '<span class="text-gray-400 font-normal text-[8px] md:text-xs italic">Đang tính toán...</span>';
 
     try {
         let query = buildTonKhoQuery();
-        const { data, error } = await query.select('ton_dau, nhap, xuat, ton_cuoi');
+        // Cần lấy ma_vt để đếm duy nhất
+        const { data, error } = await query.select('ma_vt, ton_dau, nhap, xuat, ton_cuoi');
 
         if (error) throw error;
 
         let totalDau = 0, totalNhap = 0, totalXuat = 0, totalCuoi = 0;
+        const uniqueMaVts = new Set();
         
         if (data && data.length > 0) {
             data.forEach(item => {
@@ -122,6 +125,7 @@ async function updateTonKhoHeaderCounts() {
                 totalNhap += (item.nhap || 0);
                 totalXuat += (item.xuat || 0);
                 totalCuoi += (item.ton_cuoi || 0);
+                if(item.ma_vt) uniqueMaVts.add(item.ma_vt);
             });
         }
 
@@ -129,6 +133,7 @@ async function updateTonKhoHeaderCounts() {
         const nVal = totalNhap.toLocaleString();
         const xVal = totalXuat.toLocaleString();
         const cVal = totalCuoi.toLocaleString();
+        const vtCount = uniqueMaVts.size.toLocaleString();
 
         dauEl.textContent = `(${dVal})`;
         nhapEl.textContent = `(${nVal})`;
@@ -138,33 +143,36 @@ async function updateTonKhoHeaderCounts() {
         cuoiEl.classList.toggle('text-red-600', totalCuoi > 0);
         cuoiEl.classList.toggle('text-green-600', totalCuoi <= 0);
 
-        if (mobileSummaryEl) {
-            mobileSummaryEl.innerHTML = `
-                <div class="mobile-summary-container">
-                    <div class="mobile-summary-content flex items-center gap-1 sm:gap-1.5 text-[7px] sm:text-[9px] font-bold border-x border-gray-100 px-1">
-                        <span class="text-blue-600">Đ:${dVal}</span>
-                        <span class="text-gray-300">|</span>
-                        <span class="text-green-600">N:${nVal}</span>
-                        <span class="text-gray-300">|</span>
-                        <span class="text-red-500">X:${xVal}</span>
-                        <span class="text-gray-300">|</span>
-                        <span class="${totalCuoi > 0 ? 'text-red-600' : 'text-green-600'}">C:${cVal}</span>
+        // Giao diện hợp nhất cho cả Desktop và Mobile
+        summaryContainer.innerHTML = `
+            <div class="mobile-summary-container">
+                <div class="mobile-summary-content flex items-center gap-1 sm:gap-2 text-[7px] sm:text-[10px] md:text-xs font-bold border-x border-gray-100 px-2">
+                    <span class="text-black whitespace-nowrap hidden md:inline" title="Số lượng mã vật tư duy nhất">Mã: ${vtCount}</span>
+                    <span class="text-gray-200 hidden md:inline">|</span>
+                    <span class="text-blue-600 whitespace-nowrap">Đ:${dVal}</span>
+                    <span class="text-gray-200">|</span>
+                    <span class="text-green-600 whitespace-nowrap">N:${nVal}</span>
+                    <span class="text-gray-200">|</span>
+                    <span class="text-red-500 whitespace-nowrap">X:${xVal}</span>
+                    <span class="text-gray-200">|</span>
+                    <div class="flex items-center gap-0.5">
+                        <span class="${totalCuoi > 0 ? 'text-red-600' : 'text-green-600'} whitespace-nowrap">C:${cVal}</span>
+                        <span class="text-black font-bold md:hidden">(${vtCount})</span>
                     </div>
                 </div>
-            `;
-            // Tự động cuộn về bên phải để ưu tiên hiển thị số liệu 'Cuối'
-            const container = mobileSummaryEl.querySelector('.mobile-summary-container');
-            if (container) {
-                setTimeout(() => {
-                    container.scrollLeft = container.scrollWidth;
-                }, 50);
-            }
+            </div>
+        `;
+        
+        // Tự động cuộn cho mobile
+        const container = summaryContainer.querySelector('.mobile-summary-container');
+        if (container && window.innerWidth <= 768) {
+            setTimeout(() => { container.scrollLeft = container.scrollWidth; }, 50);
         }
 
     } catch (err) {
         console.error("Error updating counts:", err);
         [dauEl, nhapEl, xuatEl, cuoiEl].forEach(el => el.textContent = '(lỗi)');
-        if (mobileSummaryEl) mobileSummaryEl.innerHTML = '<span class="text-red-500 text-[8px]">Lỗi</span>';
+        summaryContainer.innerHTML = '<span class="text-red-500 text-[8px] md:text-xs">Lỗi tính toán</span>';
     }
 }
 
@@ -378,10 +386,11 @@ function openTonKhoSettingsModal() {
     const container = document.getElementById('ton-kho-column-toggles');
     const settings = getColumnSettings();
 
+    // NÂNG CẤP: Form đẹp hơn, checkbox to rõ, nhãn dễ nhấn
     container.innerHTML = OPTIONAL_COLUMNS.map(col => `
-        <label class="flex items-center justify-between p-3 rounded-md bg-gray-50 border hover:bg-gray-100 cursor-pointer">
-            <span class="text-sm font-medium text-gray-700">${col.label}</span>
-            <input type="checkbox" class="tk-col-toggle-cb w-5 h-5 accent-blue-600" data-key="${col.key}" ${settings[col.key] ? 'checked' : ''}>
+        <label class="flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-100 hover:bg-indigo-50 hover:border-indigo-200 cursor-pointer transition-all active:scale-[0.98]">
+            <span class="text-sm font-bold text-gray-700">${col.label}</span>
+            <input type="checkbox" class="tk-col-toggle-cb w-5 h-5 rounded-md text-indigo-600 focus:ring-indigo-500" data-key="${col.key}" ${settings[col.key] ? 'checked' : ''}>
         </label>
     `).join('');
 
@@ -577,7 +586,7 @@ async function openTonKhoFilterPopoverCustom(button, view) {
         popover.style.transform = 'translate(-50%, -50%)';
         popover.style.width = '90%';
         popover.style.maxWidth = '300px';
-        popover.style.zIndex = '100'; // Đảm bảo nổi trên drawer
+        popover.style.zIndex = '100'; 
     } else {
         popover.style.left = `${rect.left}px`;
         popover.style.top = `${rect.bottom + window.scrollY + 5}px`;
@@ -665,10 +674,8 @@ async function openTonKhoFilterPopoverCustom(button, view) {
     applyBtn.disabled = true;
 
     try {
-        // --- NÂNG CẤP: Lấy dữ liệu bộ lọc tuân thủ PHÂN QUYỀN và PHỤ THUỘC LẪN NHAU ---
         let query = sb.from('ton_kho_update').select(filterKey);
 
-        // 1. Áp dụng phân quyền (Phụ trách / Ngành được phép)
         if (currentUser.phan_quyen !== 'Admin') {
             const name = currentUser.ho_ten;
             const allowedNganh = (currentUser.xem_data || '').split(',').filter(Boolean);
@@ -680,7 +687,6 @@ async function openTonKhoFilterPopoverCustom(button, view) {
             }
         }
 
-        // 2. Áp dụng trạng thái tìm kiếm và nút "Khả dụng"
         if (state.searchTerm) {
             query = query.or(`ma_vach.ilike.%${state.searchTerm}%,ma_vt.ilike.%${state.searchTerm}%,ten_vt.ilike.%${state.searchTerm}%,lot.ilike.%${state.searchTerm}%,tinh_trang.ilike.%${state.searchTerm}%,nganh.ilike.%${state.searchTerm}%,phu_trach.ilike.%${state.searchTerm}%,note.ilike.%${state.searchTerm}%`);
         }
@@ -688,7 +694,6 @@ async function openTonKhoFilterPopoverCustom(button, view) {
             query = query.gt('ton_cuoi', 0);
         }
 
-        // 3. Áp dụng CÁC BỘ LỌC KHÁC (Logic phụ thuộc lẫn nhao)
         Object.keys(state.filters).forEach(key => {
             if (key !== filterKey && state.filters[key] && state.filters[key].length > 0) {
                 query = query.in(key, state.filters[key]);

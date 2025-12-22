@@ -9,7 +9,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
@@ -537,7 +537,7 @@
                                     <option value="100">100</option>
                                 </select>
                                 <button id="san-pham-prev-page" class="px-2 py-1 md:px-3 border rounded-md bg-white text-[10px] md:text-sm">
-                                    <svg class="w-3 h-3 md:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                                    <svg class="w-3 h-3 fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                                     <span class="hidden md:inline">Trước</span>
                                 </button>
                                 <div class="flex items-center gap-1 mx-1">
@@ -545,7 +545,7 @@
                                     <span id="san-pham-total-pages" class="text-[10px] md:text-sm text-gray-700 whitespace-nowrap">/ 1</span>
                                 </div>
                                 <button id="san-pham-next-page" class="px-2 py-1 md:px-3 border rounded-md bg-white text-[10px] md:text-sm">
-                                    <svg class="w-3 h-3 md:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                    <svg class="w-3 h-3 fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                                     <span class="hidden md:inline">Sau</span>
                                 </button>
                             </div>
@@ -637,7 +637,7 @@
                                         <th class="tk-col-tinh-trang hidden md:table-cell px-1 py-2 border border-gray-300 text-center uppercase tracking-wider font-bold">T.Trạng</th>
                                         <th class="tk-col-tray hidden md:table-cell px-1 py-2 border border-gray-300 text-center uppercase tracking-wider font-bold">Tray</th>
                                         <th class="tk-col-nganh hidden md:table-cell px-1 md:px-4 py-2 text-center font-bold text-black uppercase tracking-wider border border-gray-300">Ngành</th>
-                                        <th class="tk-col-phu-trach hidden md:table-cell px-1 py-2 text-sm text-gray-600 border border-gray-300 text-center">${tk.phu_trach || ''}</td>
+                                        <th class="tk-col-phu-trach hidden md:table-cell px-1 py-2 text-sm text-gray-600 border border-gray-300 text-center">Phụ Trách</td>
                                         <th class="tk-col-ghi-chu hidden md:table-cell px-1 py-2 border border-gray-300 text-center">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                         </th>
@@ -648,7 +648,7 @@
                         </div>
                         <div class="flex-shrink-0 flex flex-row justify-between items-center mt-2 md:mt-4 p-2 md:p-4 bg-white rounded-lg shadow-md flex-nowrap overflow-hidden">
                             <span id="ton-kho-pagination-info" class="text-[9px] md:text-sm text-gray-600 mr-2 whitespace-nowrap flex-shrink-0"></span>
-                            <div id="tk-summary-info" class="flex-grow flex justify-end md:hidden overflow-hidden no-scrollbar"></div>
+                            <div id="tk-summary-info" class="flex-grow flex justify-end md:justify-center overflow-hidden no-scrollbar px-2"></div>
                             <div class="flex items-center gap-1 flex-nowrap flex-shrink-0">
                                 <select id="ton-kho-items-per-page" class="hidden md:block px-3 py-1 border rounded-md bg-white">
                                     <option value="50">50</option>
@@ -657,7 +657,7 @@
                                     <option value="500">500</option>
                                 </select>
                                 <button id="ton-kho-prev-page" class="px-2 py-1 md:px-3 border rounded-md bg-white text-[10px] md:text-sm">
-                                    <svg class="w-3 h-3 md:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                                    <svg class="w-3 h-3 fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                                     <span class="hidden md:inline">Trước</span>
                                 </button>
                                 <div class="flex items-center gap-1 mx-1">
@@ -665,7 +665,7 @@
                                     <span id="ton-kho-total-pages" class="text-[10px] md:text-sm text-gray-700 whitespace-nowrap">/ 1</span>
                                 </div>
                                 <button id="ton-kho-next-page" class="px-2 py-1 md:px-3 border rounded-md bg-white text-[10px] md:text-sm">
-                                    <svg class="w-3 h-3 md:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                    <svg class="w-3 h-3 fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                                     <span class="hidden md:inline">Sau</span>
                                 </button>
                             </div>
@@ -1024,7 +1024,7 @@
     </div>
 
     <div id="ton-kho-settings-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop">
-        <div class="bg-white rounded-lg shadow-xl w-full max-md mx-4 flex flex-col modal-content-custom">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 flex flex-col modal-content-custom">
             <div class="p-4 border-b">
                 <h3 class="text-lg font-bold text-gray-800">Cài đặt hiển thị cột</h3>
                 <p class="text-xs text-gray-500 mt-1">Chọn các cột bạn muốn hiển thị trên màn hình máy tính.</p>
