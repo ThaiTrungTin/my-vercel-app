@@ -1,8 +1,18 @@
 
+// Khởi tạo đối tượng process giả lập để chứa API Key cho trình duyệt
+window.process = {
+    env: {
+        API_KEY: "AIzaSyDPjEdZPjh8iSqlqikFYSdSpnEc8tbXgQk"
+    }
+};
+
 const { createClient } = supabase;
 const SUPABASE_URL = "https://uefydnefprcannlviimp.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVlZnlkbmVmcHJjYW5ubHZpaW1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwNTcwMDUsImV4cCI6MjA3NjYzMzAwNX0.X274J_1_crUknJEOT1WWUD1h0HM9WdYScDW2eWWsiLk";
 export const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Import module voice assistant để đăng ký sự kiện ngay lập tức
+import './voice-assistant.js';
 
 export let currentUser = null;
 let currentView = 'view-phat-trien'; 
@@ -649,7 +659,7 @@ function updateNotificationBar() {
     const year = now.getFullYear();
     const dateString = `${dayOfWeek}, Ngày ${day}/${month}/${year}`;
 
-    const ho_ten = currentUser.ho_ten || 'Guest';
+    const ho_ten = currentUser.ho_ten || 'User';
     const phan_quyen = currentUser.phan_quyen || 'View';
 
     let roleMessage = '';
@@ -1001,6 +1011,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 { id: 'ton-kho-settings-modal', closeBtnId: 'ton-kho-settings-close-btn' },
                 { id: 'chi-tiet-settings-modal', closeBtnId: 'chi-tiet-settings-close-btn' },
                 { id: 'chi-tiet-vt-modal', closeBtnId: 'close-ct-vt-modal' },
+                { id: 'voice-settings-modal', closeBtnId: 'close-voice-settings-modal' },
             ];
             for (const modalInfo of modals) {
                 const modalEl = document.getElementById(modalInfo.id);

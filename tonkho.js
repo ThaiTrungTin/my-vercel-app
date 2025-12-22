@@ -1,6 +1,6 @@
-
 import { sb, currentUser, cache, viewStates, showLoading, showToast, showConfirm, debounce, renderPagination, filterButtonDefaultTexts, openAutocomplete, updateTonKhoToggleUI, updateMobileFilterIconStatus } from './app.js';
 import { fetchSanPham } from './sanpham.js';
+import { startVoiceAssistant, stopVoiceAssistant } from './voice-assistant.js';
 
 // Configuration for toggleable columns on Desktop
 const OPTIONAL_COLUMNS = [
@@ -566,6 +566,20 @@ export function initTonKhoView() {
     document.getElementById('close-ton-kho-view-btn').onclick = () => {
         document.getElementById('ton-kho-modal').classList.add('hidden');
     };
+
+    // Voice Assistant Event Listeners
+    const voiceBtn = document.getElementById('voice-assistant-trigger');
+    if (voiceBtn) {
+        voiceBtn.onclick = () => {
+            startVoiceAssistant();
+        };
+    }
+    const closeVoiceBtn = document.getElementById('close-voice-chat-btn');
+    if (closeVoiceBtn) {
+        closeVoiceBtn.onclick = () => {
+            stopVoiceAssistant();
+        };
+    }
 }
 
 async function openTonKhoFilterPopoverCustom(button, view) {
