@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Modality, Type } from '@google/genai';
-import { sb, showToast } from './app.js';
+import { sb, showToast, viewStates, showView } from './app.js';
 
 let liveSession = null;
 let audioContext = null;
@@ -40,7 +40,7 @@ async function getInventoryStock(ma_vt) {
         if (error) throw error;
         
         const total = (data || []).reduce((sum, item) => sum + (item.ton_cuoi || 0), 0);
-        return { ma_vt, ton_cuoi: total, found: (data && data.length > 0) };
+        return { ma_vt: ma_vt.toUpperCase().trim(), ton_cuoi: total, found: (data && data.length > 0) };
     } catch (err) {
         console.error("Tool Error:", err);
         return { error: "Lỗi kết nối cơ sở dữ liệu." };
@@ -102,7 +102,6 @@ export async function startVoiceAssistant() {
     transcriptText.textContent = "";
 
     try {
-        // Sử dụng khóa được cung cấp bởi người dùng và xử lý an toàn biến process
         const apiKey = (typeof process !== 'undefined' && process.env?.API_KEY) 
             ? process.env.API_KEY 
             : "AIzaSyCvro3yJ6eSNxkFM56coHwomzx_nH10-GY";
@@ -146,7 +145,10 @@ export async function startVoiceAssistant() {
                 onmessage: async (message) => {
                     const base64EncodedAudioString = message.serverContent?.modelTurn?.parts[0]?.inlineData?.data;
                     if (base64EncodedAudioString) {
-                        statusText.textContent = "Trợ lý đang trả lời...";
+                        // Không ghi đè statusText ở đây nếu đang hiển thị kết quả lọc
+                        if (!statusText.textContent.includes("Đang hiển thị tồn kho")) {
+                            statusText.textContent = "Trợ lý đang trả lời...";
+                        }
                         nextStartTime = Math.max(nextStartTime, outputAudioContext.currentTime);
                         const audioBuffer = await decodeAudioData(decode(base64EncodedAudioString), outputAudioContext, 24000, 1);
                         const source = outputAudioContext.createBufferSource();
@@ -154,7 +156,12 @@ export async function startVoiceAssistant() {
                         source.connect(outputAudioContext.destination);
                         source.addEventListener('ended', () => {
                             sources.delete(source);
-                            if (sources.size === 0 && liveSession) statusText.textContent = "Tôi đang nghe...";
+                            if (sources.size === 0 && liveSession) {
+                                // Sau khi nói xong, nếu không có tin nhắn đặc biệt thì quay lại trạng thái nghe
+                                if (!statusText.textContent.includes("Đang hiển thị tồn kho")) {
+                                    statusText.textContent = "Tôi đang nghe...";
+                                }
+                            }
                         });
                         source.start(nextStartTime);
                         nextStartTime = nextStartTime + audioBuffer.duration;
@@ -171,6 +178,36 @@ export async function startVoiceAssistant() {
                         for (const fc of message.toolCall.functionCalls) {
                             if (fc.name === 'get_inventory_stock') {
                                 const result = await getInventoryStock(fc.args.ma_vt);
+                                
+                                // LOGIC THÔNG MINH: Lọc bảng và hiển thị thông báo
+                                if (result.found) {
+                                    const state = viewStates['view-ton-kho'];
+                                    state.searchTerm = '';
+                                    state.filters = { 
+                                        ma_vt: [result.ma_vt], 
+                                        lot: [], 
+                                        date: [], 
+                                        tinh_trang: [], 
+                                        nganh: [], 
+                                        phu_trach: [] 
+                                    };
+                                    // Theo yêu cầu: Chỉ để lọc khả dụng (available)
+                                    state.stockAvailability = 'available';
+                                    sessionStorage.setItem('tonKhoStockAvailability', 'available');
+                                    
+                                    // Cập nhật dòng chữ thông báo trên Voice Chat
+                                    statusText.textContent = `Đang hiển thị tồn kho của: ${result.ma_vt}`;
+                                    statusText.classList.add('text-green-600');
+
+                                    // Chuyển view và tải lại bảng
+                                    showView('view-ton-kho').then(() => {
+                                        import('./tonkho.js').then(m => m.fetchTonKho(1));
+                                    });
+                                } else {
+                                    statusText.textContent = `Không tìm thấy mã VT: ${fc.args.ma_vt}`;
+                                    statusText.classList.remove('text-green-600');
+                                }
+
                                 sessionPromise.then((session) => {
                                     session.sendToolResponse({
                                         functionResponses: {
@@ -198,6 +235,7 @@ export async function startVoiceAssistant() {
                 },
                 onclose: () => {
                     statusText.textContent = "Đã ngắt kết nối.";
+                    statusText.classList.remove('text-green-600');
                     pulseRing.classList.remove('voice-pulse');
                     stopVoiceAssistant();
                 },
@@ -257,5 +295,9 @@ export function stopVoiceAssistant() {
     nextStartTime = 0;
     
     const panel = document.getElementById('voice-chat-panel');
-    if (panel) panel.classList.add('hidden');
+    if (panel) {
+        panel.classList.add('hidden');
+        const statusText = document.getElementById('voice-status-text');
+        if (statusText) statusText.classList.remove('text-green-600');
+    }
 }
