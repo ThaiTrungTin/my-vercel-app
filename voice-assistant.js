@@ -9,38 +9,96 @@ let stream = null;
 let nextStartTime = 0;
 const sources = new Set();
 
+// Biến lưu trữ trạng thái hiển thị của lượt chat hiện tại
+let currentAiResponse = "";
+let currentStockSummary = ""; // Lưu phần chú thích Mã : SL
+
 const SYSTEM_INSTRUCTION = `Bạn là trợ lý kho hàng thông minh cho J&J. 
-Nhiệm vụ của bạn là giúp người dùng kiểm tra số lượng tồn kho của các mã vật tư (Mã VT). 
-Khi người dùng hỏi về một mã nào đó (ví dụ: "Số lượng của mã 123456 là bao nhiêu?"), hãy sử dụng công cụ 'get_inventory_stock' để tra cứu.
-Trả lời bằng tiếng Việt tự nhiên, ngắn gọn và chính xác. 
-Nếu mã vật tư không tồn tại, hãy thông báo lịch sự.
-Luôn cộng dồn tổng số lượng nếu mã đó có nhiều Lot khác nhau.`;
+Nhiệm vụ của bạn là giúp người dùng kiểm tra số lượng tồn kho. 
+
+QUY TẮC PHẢN HỒI:
+1. Nếu người dùng hỏi những câu không liên quan đến kiểm tra tồn kho vật tư, bạn PHẢI trả lời nguyên văn là: "Anh Tín chỉ dạy tôi đọc tồn kho, những thứ khác tôi chưa học tới".
+2. Khi người dùng hỏi về một hoặc nhiều mã vật tư, hãy sử dụng công cụ 'get_inventory_stock'.
+3. Báo cáo số lượng tồn kho của TỪNG MÃ riêng biệt. TUYỆT ĐỐI không cộng dồn tổng số lượng của các mã khác nhau lại với nhau.
+4. Chỉ báo cáo các mã có tồn kho khả dụng.
+5. Trả lời bằng tiếng Việt tự nhiên, ngắn gọn và chuyên nghiệp.`;
 
 const getStockTool = {
     name: 'get_inventory_stock',
     parameters: {
         type: Type.OBJECT,
-        description: 'Lấy tổng số lượng tồn kho cuối cùng của một mã vật tư cụ thể.',
+        description: 'Lấy số lượng tồn kho khả dụng của một hoặc nhiều mã vật tư cụ thể.',
         properties: {
-            ma_vt: {
-                type: Type.STRING,
-                description: 'Mã vật tư cần tra cứu (ví dụ: "123456", "VTV01").',
+            ma_vts: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
+                description: 'Danh sách các mã vật tư cần tra cứu (ví dụ: ["1962", "1961"]).',
             },
         },
-        required: ['ma_vt'],
+        required: ['ma_vts'],
     },
 };
 
-async function getInventoryStock(ma_vt) {
+// --- DRAGGABLE LOGIC ---
+function makeDraggable(el, handle = el) {
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    handle.onmousedown = dragMouseDown;
+    handle.ontouchstart = dragMouseDown;
+
+    function dragMouseDown(e) {
+        if (['INPUT', 'BUTTON', 'TEXTAREA', 'A'].includes(e.target.tagName)) return;
+        
+        let clientX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
+        let clientY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+        
+        pos3 = clientX;
+        pos4 = clientY;
+        document.onmouseup = closeDragElement;
+        document.ontouchend = closeDragElement;
+        document.onmousemove = elementDrag;
+        document.ontouchmove = elementDrag;
+    }
+
+    function elementDrag(e) {
+        let clientX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
+        let clientY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+        
+        pos1 = pos3 - clientX;
+        pos2 = pos4 - clientY;
+        pos3 = clientX;
+        pos4 = clientY;
+        
+        el.style.top = (el.offsetTop - pos2) + "px";
+        el.style.left = (el.offsetLeft - pos1) + "px";
+        el.style.bottom = 'auto';
+        el.style.right = 'auto';
+    }
+
+    function closeDragElement() {
+        document.onmouseup = null;
+        document.onmousemove = null;
+        document.ontouchend = null;
+        document.ontouchmove = null;
+    }
+}
+
+async function getInventoryStock(ma_vts) {
     try {
+        const cleanVts = ma_vts.map(v => v.toUpperCase().trim());
         const { data, error } = await sb.from('ton_kho_update')
-            .select('ton_cuoi')
-            .eq('ma_vt', ma_vt.toUpperCase().trim());
+            .select('ma_vt, ton_cuoi')
+            .in('ma_vt', cleanVts)
+            .gt('ton_cuoi', 0); 
         
         if (error) throw error;
         
-        const total = (data || []).reduce((sum, item) => sum + (item.ton_cuoi || 0), 0);
-        return { ma_vt: ma_vt.toUpperCase().trim(), ton_cuoi: total, found: (data && data.length > 0) };
+        const results = cleanVts.map(vt => {
+            const items = (data || []).filter(d => d.ma_vt === vt);
+            const total = items.reduce((sum, item) => sum + (item.ton_cuoi || 0), 0);
+            return { ma_vt: vt, ton_cuoi: total, found: items.length > 0 };
+        });
+
+        return { results };
     } catch (err) {
         console.error("Tool Error:", err);
         return { error: "Lỗi kết nối cơ sở dữ liệu." };
@@ -91,6 +149,35 @@ function createBlob(data) {
     };
 }
 
+// Hàm render giao diện chat AI
+function updateAiChatUI(transcriptContainer) {
+    let aiMsgBox = transcriptContainer.querySelector('.ai-msg-box');
+    if (!aiMsgBox) {
+        aiMsgBox = document.createElement('div');
+        aiMsgBox.className = 'ai-msg-box text-left pt-2';
+        transcriptContainer.innerHTML = ''; // Clear everything else
+        transcriptContainer.appendChild(aiMsgBox);
+    }
+
+    let summaryHtml = "";
+    if (currentStockSummary) {
+        summaryHtml = `<div class="mb-2 p-2 bg-blue-50 rounded-xl border border-blue-100 text-[11px] space-y-0.5 shadow-sm animate-in fade-in duration-300">
+            ${currentStockSummary}
+        </div>`;
+    }
+
+    let textHtml = "";
+    if (currentAiResponse) {
+        textHtml = `
+            <p class="text-indigo-600 font-bold text-[9px] uppercase tracking-wider mb-0.5">Trợ lý phản hồi:</p>
+            <p class="text-gray-800 font-medium leading-relaxed italic text-[11px]">"${currentAiResponse}"</p>
+        `;
+    }
+
+    aiMsgBox.innerHTML = summaryHtml + textHtml;
+    transcriptContainer.scrollTop = transcriptContainer.scrollHeight;
+}
+
 export async function startVoiceAssistant() {
     const panel = document.getElementById('voice-chat-panel');
     const statusText = document.getElementById('voice-status-text');
@@ -99,12 +186,14 @@ export async function startVoiceAssistant() {
     
     panel.classList.remove('hidden');
     statusText.textContent = "Đang khởi tạo...";
+    statusText.classList.remove('text-red-500');
     transcriptText.textContent = "";
+    currentAiResponse = ""; 
+    currentStockSummary = "";
 
     try {
-        const apiKey = (typeof process !== 'undefined' && process.env?.API_KEY) 
-            ? process.env.API_KEY 
-            : "AIzaSyCvro3yJ6eSNxkFM56coHwomzx_nH10-GY";
+        const customApiKey = localStorage.getItem('gemini_voice_api_key');
+        const apiKey = customApiKey || (typeof process !== 'undefined' && process.env?.API_KEY) || "AIzaSyCvro3yJ6eSNxkFM56coHwomzx_nH10-GY";
 
         const ai = new GoogleGenAI({ apiKey });
         
@@ -143,10 +232,10 @@ export async function startVoiceAssistant() {
                     scriptProcessor.connect(inputAudioContext.destination);
                 },
                 onmessage: async (message) => {
+                    // Xử lý Audio Output
                     const base64EncodedAudioString = message.serverContent?.modelTurn?.parts[0]?.inlineData?.data;
                     if (base64EncodedAudioString) {
-                        // Không ghi đè statusText ở đây nếu đang hiển thị kết quả lọc
-                        if (!statusText.textContent.includes("Đang hiển thị tồn kho")) {
+                        if (!statusText.textContent.includes("Đang lọc")) {
                             statusText.textContent = "Trợ lý đang trả lời...";
                         }
                         nextStartTime = Math.max(nextStartTime, outputAudioContext.currentTime);
@@ -157,8 +246,7 @@ export async function startVoiceAssistant() {
                         source.addEventListener('ended', () => {
                             sources.delete(source);
                             if (sources.size === 0 && liveSession) {
-                                // Sau khi nói xong, nếu không có tin nhắn đặc biệt thì quay lại trạng thái nghe
-                                if (!statusText.textContent.includes("Đang hiển thị tồn kho")) {
+                                if (!statusText.textContent.includes("Đang lọc")) {
                                     statusText.textContent = "Tôi đang nghe...";
                                 }
                             }
@@ -168,44 +256,50 @@ export async function startVoiceAssistant() {
                         sources.add(source);
                     }
 
+                    // Xử lý Transcription
                     if (message.serverContent?.inputTranscription) {
-                        transcriptText.textContent = `Bạn: "${message.serverContent.inputTranscription.text}"`;
+                        // Khi người dùng bắt đầu nói lượt mới, reset trạng thái
+                        currentAiResponse = "";
+                        currentStockSummary = "";
+                        transcriptText.innerHTML = ""; 
                     } else if (message.serverContent?.outputTranscription) {
-                        transcriptText.textContent = `AI: "${message.serverContent.outputTranscription.text}"`;
+                        currentAiResponse += message.serverContent.outputTranscription.text;
+                        updateAiChatUI(transcriptText);
                     }
 
+                    // Xử lý Tool Call
                     if (message.toolCall) {
                         for (const fc of message.toolCall.functionCalls) {
                             if (fc.name === 'get_inventory_stock') {
-                                const result = await getInventoryStock(fc.args.ma_vt);
+                                const toolResult = await getInventoryStock(fc.args.ma_vts);
+                                const results = toolResult.results || [];
+                                const foundVts = results.filter(r => r.found).map(r => r.ma_vt);
                                 
-                                // LOGIC THÔNG MINH: Lọc bảng và hiển thị thông báo
-                                if (result.found) {
+                                // Tạo nội dung chú thích (Mã : SL)
+                                currentStockSummary = results.map(r => {
+                                    if (r.found) {
+                                        return `<p class="font-bold text-gray-700">Mã ${r.ma_vt} : <span class="text-blue-600">${r.ton_cuoi.toLocaleString()}</span></p>`;
+                                    } else {
+                                        return `<p class="font-bold text-gray-400">Mã ${r.ma_vt} : <span class="text-red-400 uppercase">Hết</span></p>`;
+                                    }
+                                }).join('');
+
+                                // Cập nhật UI ngay lập tức
+                                updateAiChatUI(transcriptText);
+
+                                if (foundVts.length > 0) {
                                     const state = viewStates['view-ton-kho'];
                                     state.searchTerm = '';
-                                    state.filters = { 
-                                        ma_vt: [result.ma_vt], 
-                                        lot: [], 
-                                        date: [], 
-                                        tinh_trang: [], 
-                                        nganh: [], 
-                                        phu_trach: [] 
-                                    };
-                                    // Theo yêu cầu: Chỉ để lọc khả dụng (available)
+                                    state.filters = { ma_vt: foundVts, lot: [], date: [], tinh_trang: [], nganh: [], phu_trach: [] };
                                     state.stockAvailability = 'available';
                                     sessionStorage.setItem('tonKhoStockAvailability', 'available');
                                     
-                                    // Cập nhật dòng chữ thông báo trên Voice Chat
-                                    statusText.textContent = `Đang hiển thị tồn kho của: ${result.ma_vt}`;
+                                    statusText.textContent = `Đang lọc: ${foundVts.join(', ')}`;
                                     statusText.classList.add('text-green-600');
-
-                                    // Chuyển view và tải lại bảng
+                                    
                                     showView('view-ton-kho').then(() => {
                                         import('./tonkho.js').then(m => m.fetchTonKho(1));
                                     });
-                                } else {
-                                    statusText.textContent = `Không tìm thấy mã VT: ${fc.args.ma_vt}`;
-                                    statusText.classList.remove('text-green-600');
                                 }
 
                                 sessionPromise.then((session) => {
@@ -213,7 +307,7 @@ export async function startVoiceAssistant() {
                                         functionResponses: {
                                             id: fc.id,
                                             name: fc.name,
-                                            response: { result: result },
+                                            response: { result: toolResult },
                                         }
                                     });
                                 });
@@ -222,22 +316,28 @@ export async function startVoiceAssistant() {
                     }
 
                     if (message.serverContent?.interrupted) {
-                        for (const source of sources.values()) {
-                            try { source.stop(); } catch(e) {}
-                        }
+                        for (const source of sources.values()) { try { source.stop(); } catch(e) {} }
                         sources.clear();
                         nextStartTime = 0;
+                        currentAiResponse = ""; 
                     }
                 },
                 onerror: (e) => {
                     console.error("Live API Error:", e);
-                    statusText.textContent = "Lỗi kết nối!";
+                    const msg = e.message || "";
+                    if (msg.includes("429") || msg.includes("quota") || msg.includes("limit") || msg.includes("Requested entity was not found")) {
+                        statusText.innerHTML = "Key API hết lượt dùng, vui lòng cập nhật Key mới trong cài đặt.";
+                        statusText.classList.add('text-red-500');
+                        pulseRing.classList.remove('bg-green-400');
+                        pulseRing.classList.add('bg-red-500');
+                    } else {
+                        statusText.textContent = "Lỗi kết nối!";
+                    }
                 },
-                onclose: () => {
+                onclose: (e) => {
                     statusText.textContent = "Đã ngắt kết nối.";
-                    statusText.classList.remove('text-green-600');
                     pulseRing.classList.remove('voice-pulse');
-                    stopVoiceAssistant();
+                    currentAiResponse = "";
                 },
             },
             config: {
@@ -263,23 +363,17 @@ export async function startVoiceAssistant() {
 
 export function stopVoiceAssistant() {
     if (scriptProcessor) {
-        try {
-            scriptProcessor.disconnect();
-            scriptProcessor.onaudioprocess = null;
-        } catch (e) {}
+        try { scriptProcessor.disconnect(); scriptProcessor.onaudioprocess = null; } catch (e) {}
         scriptProcessor = null;
     }
-
     if (liveSession) {
-        try { liveSession.close(); } catch(e) {}
+        try { liveSession.close(); } catch (e) {}
         liveSession = null;
     }
-
     if (stream) {
         stream.getTracks().forEach(track => track.stop());
         stream = null;
     }
-
     if (audioContext) {
         try {
             if (audioContext.input.state !== 'closed') audioContext.input.close();
@@ -287,17 +381,56 @@ export function stopVoiceAssistant() {
         } catch (e) {}
         audioContext = null;
     }
-
-    for (const source of sources.values()) {
-        try { source.stop(); } catch(e) {}
-    }
+    for (const source of sources.values()) { try { source.stop(); } catch(e) {} }
     sources.clear();
     nextStartTime = 0;
-    
+    currentAiResponse = "";
     const panel = document.getElementById('voice-chat-panel');
-    if (panel) {
-        panel.classList.add('hidden');
-        const statusText = document.getElementById('voice-status-text');
-        if (statusText) statusText.classList.remove('text-green-600');
-    }
+    if (panel) panel.classList.add('hidden');
 }
+
+// Initialization of Draggability and Settings
+document.addEventListener('DOMContentLoaded', () => {
+    const trigger = document.getElementById('voice-assistant-trigger');
+    const panel = document.getElementById('voice-chat-panel');
+    const header = document.getElementById('voice-chat-header');
+    
+    if (trigger) makeDraggable(trigger);
+    if (panel && header) makeDraggable(panel, header);
+
+    // API Key Settings Logic
+    const settingsBtn = document.getElementById('open-voice-settings-btn');
+    const settingsModal = document.getElementById('voice-settings-modal');
+    const closeSettingsBtn = document.getElementById('close-voice-settings-modal');
+    const saveSettingsBtn = document.getElementById('save-voice-settings-btn');
+    const keyInput = document.getElementById('voice-api-key-input');
+
+    if (settingsBtn) {
+        settingsBtn.onclick = () => {
+            keyInput.value = localStorage.getItem('gemini_voice_api_key') || "";
+            settingsModal.classList.remove('hidden');
+        };
+    }
+
+    if (closeSettingsBtn) {
+        closeSettingsBtn.onclick = () => settingsModal.classList.add('hidden');
+    }
+
+    if (saveSettingsBtn) {
+        saveSettingsBtn.onclick = () => {
+            const val = keyInput.value.trim();
+            if (val) {
+                localStorage.setItem('gemini_voice_api_key', val);
+                showToast("Đã cập nhật API Key!", "success");
+            } else {
+                localStorage.removeItem('gemini_voice_api_key');
+                showToast("Đã quay lại Key mặc định.", "info");
+            }
+            settingsModal.classList.add('hidden');
+            if (liveSession) {
+                stopVoiceAssistant();
+                setTimeout(startVoiceAssistant, 300);
+            }
+        };
+    }
+});
