@@ -1,4 +1,3 @@
-
 import { sb, currentUser } from './app.js';
 
 export const STATUS_CONFIG = {
@@ -73,7 +72,7 @@ export function renderActivityChart(data, mode) {
             maintainAspectRatio: false, 
             interaction: { mode: 'index', intersect: false },
             plugins: { 
-                legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9, weight: 'bold' } } },
+                legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 9, weight: 'bold' } } },
                 tooltip: { padding: 10, bodyFont: { size: 11 } }
             },
             scales: {
@@ -112,8 +111,15 @@ export async function renderInventoryStatusChart(selectedNganh) {
                     position: 'right', labels: {
                         usePointStyle: true, font: { size: isM ? 8 : 11, weight: '700' },
                         generateLabels: (chart) => chart.data.labels.map((l, i) => {
+                            const isHidden = !chart.getDataVisibility(i);
                             const v = chart.data.datasets[0].data[i];
-                            return { text: `${l}: ${v.toLocaleString()} (${total>0?((v/total)*100).toFixed(1):0}%)`, fillStyle: chart.data.datasets[0].backgroundColor[i], strokeStyle: 'transparent', index: i };
+                            return { 
+                                text: `${l}: ${v.toLocaleString()} (${total>0?((v/total)*100).toFixed(1):0}%)`, 
+                                fillStyle: chart.data.datasets[0].backgroundColor[i], 
+                                strokeStyle: 'transparent', 
+                                index: i,
+                                hidden: isHidden
+                            };
                         })
                     }
                 }
