@@ -92,6 +92,11 @@ function updateSanPhamSelectionInfo() {
 }
 
 async function handleSanPhamExcelExport() {
+    if (typeof window.XLSX === 'undefined') {
+        showToast("Thư viện Excel đang tải, vui lòng thử lại sau giây lát.", "info");
+        return;
+    }
+
     const modal = document.getElementById('excel-export-modal');
     modal.classList.remove('hidden');
 
@@ -99,8 +104,8 @@ async function handleSanPhamExcelExport() {
         modal.classList.add('hidden');
         showLoading(true);
         try {
-            const query = exportAll ? sb.from('san_pham').select('*') : buildSanPhamQuery().select('*');
-            const { data, error } = await query.order('ma_vt').limit(50000);
+            const query = exportAll ? sb.from('san_pham').select('*') : buildSanPhamQuery();
+            const { data, error } = await query.order('ma_vt', { ascending: true }).limit(30000);
             
             if (error) throw error;
             if (!data || data.length === 0) {
@@ -108,10 +113,10 @@ async function handleSanPhamExcelExport() {
                 return;
             }
 
-            const worksheet = XLSX.utils.json_to_sheet(data);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "SanPham");
-            XLSX.writeFile(workbook, `SanPham_${new Date().toISOString().slice(0,10)}.xlsx`);
+            const worksheet = window.XLSX.utils.json_to_sheet(data);
+            const workbook = window.XLSX.utils.book_new();
+            window.XLSX.utils.book_append_sheet(workbook, worksheet, "SanPham");
+            window.XLSX.writeFile(workbook, `SanPham_${new Date().toISOString().slice(0,10)}.xlsx`);
             showToast("Xuất Excel thành công!", 'success');
         } catch (err) {
             showToast(`Lỗi khi xuất Excel: ${err.message}`, 'error');

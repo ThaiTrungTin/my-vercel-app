@@ -1,4 +1,3 @@
-
 import { sb, cache, viewStates, currentUser, showLoading, showToast, debounce, renderPagination, filterButtonDefaultTexts, showView, updateMobileFilterIconStatus, openAutocomplete } from './app.js';
 
 const OPTIONAL_COLUMNS_CT = [
@@ -151,7 +150,7 @@ const VIEW_HTML = `
                 <span id="chi-tiet-total-pages" class="text-[9px] md:text-sm text-gray-700 whitespace-nowrap">/1</span>
             </div>
             <button id="chi-tiet-next-page" class="px-1.5 py-1 md:px-3 border rounded-md bg-white text-[10px] md:text-sm">
-                <svg class="w-3 h-3 md:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                <svg class="w-3 h-3 fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                 <span class="hidden md:inline">Sau</span>
             </button>
         </div>

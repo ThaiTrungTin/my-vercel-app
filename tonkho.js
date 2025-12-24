@@ -332,6 +332,11 @@ async function openTonKhoModal(tk = null, mode = 'view') {
 }
 
 async function handleTonKhoExcelExport() {
+    if (typeof window.XLSX === 'undefined') {
+        showToast("Thư viện Excel đang tải, vui lòng thử lại sau giây lát.", "info");
+        return;
+    }
+
     const modal = document.getElementById('excel-export-modal');
     modal.classList.remove('hidden');
 
@@ -339,8 +344,8 @@ async function handleTonKhoExcelExport() {
         modal.classList.add('hidden');
         showLoading(true);
         try {
-            const query = exportAll ? sb.from('ton_kho_update').select('*') : buildTonKhoQuery().select('*');
-            const { data, error } = await query.order('ma_vach').limit(50000);
+            const query = exportAll ? sb.from('ton_kho_update').select('*') : buildTonKhoQuery();
+            const { data, error } = await query.order('ma_vach', { ascending: true }).limit(30000);
             
             if (error) throw error;
             if (!data || data.length === 0) {
@@ -348,10 +353,10 @@ async function handleTonKhoExcelExport() {
                 return;
             }
 
-            const worksheet = XLSX.utils.json_to_sheet(data);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "TonKho");
-            XLSX.writeFile(workbook, `TonKho_${new Date().toISOString().slice(0,10)}.xlsx`);
+            const worksheet = window.XLSX.utils.json_to_sheet(data);
+            const workbook = window.XLSX.utils.book_new();
+            window.XLSX.utils.book_append_sheet(workbook, worksheet, "TonKho");
+            window.XLSX.writeFile(workbook, `TonKho_${new Date().toISOString().slice(0,10)}.xlsx`);
             showToast("Xuất Excel thành công!", 'success');
         } catch (err) {
             showToast(`Lỗi khi xuất Excel: ${err.message}`, 'error');
