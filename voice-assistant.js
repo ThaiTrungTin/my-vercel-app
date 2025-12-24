@@ -293,7 +293,7 @@ export async function startVoiceAssistant() {
                             if (fc.name === 'get_inventory_stock') {
                                 const toolResult = await getInventoryStock(fc.args.ma_vts);
                                 const results = toolResult.results || [];
-                                const foundVts = results.filter(r => r.status === "VALID" || r.status === "OUT_OF_STOCK").map(r => r.ma_vt);
+                                const foundVts = results.filter(r => r.status === "VALID").map(r => r.ma_vt);
                                 
                                 currentStockSummary = results.map(r => {
                                     if (r.status === "VALID") {
@@ -312,8 +312,10 @@ export async function startVoiceAssistant() {
                                     const state = viewStates['view-ton-kho'];
                                     state.searchTerm = '';
                                     state.filters = { ma_vt: foundVts, lot: [], date: [], tinh_trang: [], nganh: [], phu_trach: [] };
-                                    state.stockAvailability = 'all'; 
-                                    sessionStorage.setItem('tonKhoStockAvailability', 'all');
+                                    
+                                    // CHỈNH SỬA TẠI ĐÂY: Luôn giữ chế độ 'available' (khả dụng) để ẩn các mã có SL = 0
+                                    state.stockAvailability = 'available'; 
+                                    sessionStorage.setItem('tonKhoStockAvailability', 'available');
                                     
                                     statusText.textContent = `Đang lọc: ${foundVts.join(', ')}`;
                                     statusText.classList.add('text-green-600');
