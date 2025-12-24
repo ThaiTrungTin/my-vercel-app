@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -364,30 +365,30 @@
                                     <div class="bg-blue-100 p-1 md:p-3 rounded-full mb-1 md:mb-0 md:order-2">
                                         <svg class="w-4 h-4 md:w-8 md:h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 v2M7 7h10"></path></svg>
                                     </div>
-                                    <div class="md:order-1">
+                                    <div class="md:order-1 overflow-hidden">
                                         <p class="text-[9px] md:text-sm font-medium text-gray-500 leading-tight">Tổng Sản Phẩm</p>
                                         <p id="tq-stat-san-pham" class="text-xs md:text-3xl font-black text-blue-600">...</p>
-                                        <p id="tq-sub-stat-san-pham" class="hidden md:block text-xs text-gray-500 mt-1"></p>
+                                        <p id="tq-sub-stat-san-pham" class="text-[8px] md:text-xs text-gray-500 mt-1 truncate"></p>
                                     </div>
                                 </div>
                                 <div id="tq-card-can-date" class="bg-white p-1 md:p-6 rounded-lg shadow-md flex flex-col md:flex-row justify-between items-center md:items-start hover:bg-indigo-50 cursor-pointer transition-colors text-center md:text-left h-full">
                                     <div class="bg-indigo-100 p-1 md:p-3 rounded-full mb-1 md:mb-0 md:order-2">
                                         <svg class="w-4 h-4 md:w-8 md:h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                                     </div>
-                                    <div class="md:order-1">
+                                    <div class="md:order-1 overflow-hidden">
                                         <p class="text-[9px] md:text-sm font-medium text-gray-500 leading-tight">Hết hạn trong 30 ngày</p>
                                         <p id="tq-stat-can-date" class="text-xs md:text-3xl font-black text-indigo-600">...</p>
-                                        <p id="tq-sub-stat-can-date" class="hidden md:block text-xs text-gray-500 mt-1"></p>
+                                        <p id="tq-sub-stat-can-date" class="text-[8px] md:text-xs text-gray-500 mt-1 truncate"></p>
                                     </div>
                                 </div>
                                 <div id="tq-card-het-han" class="bg-white p-1 md:p-6 rounded-lg shadow-md flex flex-col md:flex-row justify-between items-center md:items-start hover:bg-red-50 cursor-pointer transition-colors text-center md:text-left h-full">
                                     <div class="bg-red-100 p-1 md:p-3 rounded-full mb-1 md:mb-0 md:order-2">
                                         <svg class="w-4 h-4 md:w-8 md:h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
                                     </div>
-                                    <div class="md:order-1">
+                                    <div class="md:order-1 overflow-hidden">
                                         <p class="text-[9px] md:text-sm font-medium text-gray-500 leading-tight">Hàng hết hạn</p>
                                         <p id="tq-stat-het-han" class="text-xs md:text-3xl font-black text-red-600">...</p>
-                                        <p id="tq-sub-stat-het-han" class="hidden md:block text-xs text-gray-500 mt-1"></p>
+                                        <p id="tq-sub-stat-het-han" class="text-[8px] md:text-xs text-gray-500 mt-1 truncate"></p>
                                     </div>
                                 </div>
                             </div>
@@ -449,6 +450,68 @@
                                 </div>
                             </div>
 
+                            <!-- PHẦN PHÂN TÍCH CHUYÊN SÂU (REGION & RECIPIENTS) -->
+                            <div id="tq-analytics-section" class="bg-white p-3 md:p-6 rounded-2xl shadow-md border-t border-gray-100">
+                                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                                    <h3 class="text-sm md:text-lg font-bold text-gray-800 flex items-center tracking-tight">
+                                        <svg class="w-5 h-5 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                                        Phân tích khu vực & Người nhận
+                                    </h3>
+                                    <!-- Thanh bộ lọc riêng cho Analytics -->
+                                    <div class="flex flex-nowrap items-center gap-1.5 md:gap-2 w-full md:w-auto overflow-x-auto no-scrollbar">
+                                        <div class="relative flex-shrink-0">
+                                            <button id="tq-ana-nganh-filter-btn" data-filter-key="bu" data-context="analytics" class="filter-btn text-left px-2 py-1.5 border rounded-lg bg-white text-[9px] md:text-xs font-bold min-w-[60px] shadow-sm">Ngành (BU)</button>
+                                        </div>
+                                        <div class="relative flex-shrink-0">
+                                            <button id="tq-ana-time-filter-btn" class="px-2 py-1.5 border rounded-lg bg-white text-[9px] md:text-xs font-bold min-w-[70px] shadow-sm">Thời Gian</button>
+                                            <input type="hidden" id="tq-ana-time-preset" value="all">
+                                        </div>
+                                        <div class="relative flex-shrink-0">
+                                            <button id="tq-ana-yeu-cau-filter-btn" data-filter-key="yeu_cau" data-context="analytics" class="filter-btn text-left px-2 py-1.5 border rounded-lg bg-white text-[9px] md:text-xs font-bold min-w-[70px] shadow-sm">Yêu Cầu</button>
+                                        </div>
+                                        <div class="relative flex-shrink-0">
+                                            <button id="tq-ana-ma-vt-filter-btn" data-filter-key="ma_vt" data-context="analytics" class="filter-btn text-left px-2 py-1.5 border rounded-lg bg-white text-[9px] md:text-xs font-bold min-w-[60px] shadow-sm">Mã VT</button>
+                                        </div>
+                                        <button id="tq-ana-refresh-btn" class="flex-shrink-0 p-1.5 bg-gray-50 text-gray-400 rounded-lg border border-gray-100 hover:bg-gray-100 transition-colors shadow-sm" title="Reset lọc">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+                                    <!-- Khu vực -->
+                                    <div class="flex flex-col bg-gray-50/50 rounded-2xl p-4 border border-gray-100">
+                                        <div class="flex items-center justify-between mb-4">
+                                            <h4 class="text-[9px] md:text-xs font-bold text-gray-400 tracking-wider">Phân tích theo khu vực</h4>
+                                            <div id="tq-region-legend-container" class="flex items-center gap-2 text-[9px] font-bold"></div>
+                                        </div>
+                                        <div class="h-64 md:h-80">
+                                            <canvas id="tq-region-line-chart"></canvas>
+                                        </div>
+                                    </div>
+                                    <!-- Người nhận -->
+                                    <div class="flex flex-col bg-gray-50/50 rounded-2xl p-4 border border-gray-100">
+                                        <div class="flex items-center justify-between mb-4">
+                                            <h4 class="text-[9px] md:text-xs font-bold text-gray-400 tracking-wider">Top người nhận hàng mẫu</h4>
+                                            <!-- Toolbar nhỏ cho Recipient Analysis -->
+                                            <div class="flex items-center gap-1.5 md:gap-2">
+                                                <div class="relative">
+                                                    <button id="tq-ana-nguoi-nhan-filter-btn" data-filter-key="nguoi_nhan" data-context="analytics" class="filter-btn text-center px-2 py-1 border rounded-lg bg-white text-[8px] md:text-[9px] font-bold shadow-sm min-w-[70px]">Người nhận</button>
+                                                </div>
+                                                <div class="flex items-center bg-white border border-gray-100 rounded-lg p-0.5 shadow-sm">
+                                                    <button id="tq-ana-recipient-view-chart" class="p-1 px-2.5 rounded-md text-[8px] md:text-[9px] font-bold transition-all bg-blue-600 text-white shadow-sm" data-mode="chart">Chart</button>
+                                                    <button id="tq-ana-recipient-view-list" class="p-1 px-2.5 rounded-md text-[8px] md:text-[9px] font-bold transition-all text-gray-400 hover:text-blue-600" data-mode="list">List</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div id="tq-recipient-content-container" class="h-64 md:h-80 overflow-y-auto no-scrollbar relative">
+                                            <canvas id="tq-recipient-stacked-bar-chart"></canvas>
+                                            <div id="tq-recipient-hierarchy-list" class="hidden absolute inset-0 bg-transparent p-1 md:p-2"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="flex flex-col md:grid md:grid-cols-3 gap-3 md:gap-6">
                                 <div class="bg-white pt-4 px-4 md:pt-6 md:px-6 pb-3 rounded-lg shadow-md flex flex-col md:col-span-2">
                                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 gap-2">
@@ -478,6 +541,7 @@
                                     </div>
                                 </div>
                             </div>
+
                             <div class="flex flex-col md:grid md:grid-cols-1 gap-3 md:gap-6 pb-4">
                                 <div class="bg-white p-4 md:p-6 rounded-lg shadow-md">
                                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-2">
@@ -677,8 +741,8 @@
                                         <th class="px-2 md:px-4 py-2 text-center font-bold text-black uppercase tracking-wider border border-gray-300">Cuối<span id="ton-kho-header-cuoi-count" class="hidden md:block font-bold text-red-600 text-[9px] md:text-xs"></span></th>
                                         <th class="tk-col-tinh-trang hidden md:table-cell px-1 py-2 border border-gray-300 text-center uppercase tracking-wider font-bold">T.Trạng</th>
                                         <th class="tk-col-tray hidden md:table-cell px-1 py-2 border border-gray-300 text-center uppercase tracking-wider font-bold">Tray</th>
-                                        <th class="tk-col-nganh hidden md:table-cell px-1 md:px-4 py-2 text-center font-bold text-black uppercase tracking-wider border border-gray-300">Ngành</th>
-                                        <th class="tk-col-phu-trach hidden md:table-cell px-1 py-2 text-sm text-gray-600 border border-gray-300 text-center">Phụ Trách</td>
+                                        <th class="tk-col-nganh hidden md:table-cell px-1 md:px-4 py-2 text-[9px] md:text-sm text-gray-600 border border-gray-300 text-center whitespace-nowrap overflow-hidden text-ellipsis">Ngành</th>
+                                        <th class="tk-col-phu-trach hidden md:table-cell px-1 py-2 text-sm text-gray-600 border border-gray-300 text-center">${tk.phu_trach || ''}</td>
                                         <th class="tk-col-ghi-chu hidden md:table-cell px-1 py-2 border border-gray-300 text-center">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                         </th>

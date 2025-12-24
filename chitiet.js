@@ -1,3 +1,4 @@
+
 import { sb, cache, viewStates, currentUser, showLoading, showToast, debounce, renderPagination, filterButtonDefaultTexts, showView, updateMobileFilterIconStatus, openAutocomplete } from './app.js';
 
 const OPTIONAL_COLUMNS_CT = [
@@ -421,14 +422,19 @@ function closeActionPopover() {
 
 function openActionMenu(e, button) {
     e.stopPropagation(); 
-    closeActionPopover();
     
-    // NÂNG CẤP: Ép kiểu string và trim khoảng trắng tuyệt đối
+    // Logic Toggle cho menu chi tiết
+    if (activeActionPopover) {
+        const isSameButton = activeActionPopover._trigger === button;
+        activeActionPopover.remove();
+        activeActionPopover = null;
+        if (isSameButton) return;
+    }
+    
     const ctId = String(button.dataset.ctId || '').trim();
     if (!ctId) return;
 
     const ct = cache.chiTietList.find(i => String(i.id).trim() === ctId);
-    
     if (!ct) {
         showToast("Không tìm thấy dữ liệu dòng này.", "error");
         return;
@@ -436,6 +442,7 @@ function openActionMenu(e, button) {
 
     const template = document.getElementById('chi-tiet-action-menu-template');
     const popover = template.content.cloneNode(true).querySelector('.action-popover');
+    popover._trigger = button; // Lưu nút kích hoạt
     document.body.appendChild(popover);
 
     const rect = button.getBoundingClientRect();
@@ -453,21 +460,24 @@ function openActionMenu(e, button) {
 
     popover.querySelector('.ct-action-view-purpose').onclick = () => {
         openDetailVtModal(ct, true);
-        closeActionPopover();
+        popover.remove(); activeActionPopover = null;
     };
 
     popover.querySelector('.ct-action-edit-vt').onclick = () => {
         openDetailVtModal(ct, false);
-        closeActionPopover();
+        popover.remove(); activeActionPopover = null;
     };
+
+    activeActionPopover = popover;
 
     const closeHandler = (event) => {
         if (popover.contains(event.target) || event.target === button) return;
-        closeActionPopover();
+        popover.remove();
+        if (activeActionPopover === popover) activeActionPopover = null;
+        document.removeEventListener('click', closeHandler);
     };
     
     setTimeout(() => document.addEventListener('click', closeHandler), 0);
-    activeActionPopover = popover;
 }
 
 async function fetchNameSuggestions() {
