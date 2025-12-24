@@ -4,6 +4,7 @@ import { sb, showToast } from './app.js';
 
 let liveSession = null;
 let audioContext = null;
+let scriptProcessor = null;
 let stream = null;
 let nextStartTime = 0;
 const sources = new Set();
@@ -101,23 +102,106 @@ export async function startVoiceAssistant() {
     transcriptText.textContent = "";
 
     try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        // Sử dụng khóa được cung cấp bởi người dùng và xử lý an toàn biến process
+        const apiKey = (typeof process !== 'undefined' && process.env?.API_KEY) 
+            ? process.env.API_KEY 
+            : "AIzaSyCvro3yJ6eSNxkFM56coHwomzx_nH10-GY";
+
+        const ai = new GoogleGenAI({ apiKey });
         
-        statusText.textContent = "Đang mở Microphone...";
         stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         
-        const inputCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-        const outputCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+        const inputAudioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+        const outputAudioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
         
-        if (inputCtx.state === 'suspended') await inputCtx.resume();
-        if (outputCtx.state === 'suspended') await outputCtx.resume();
+        if (inputAudioContext.state === 'suspended') await inputAudioContext.resume();
+        if (outputAudioContext.state === 'suspended') await outputAudioContext.resume();
 
-        audioContext = { input: inputCtx, output: outputCtx };
-
-        statusText.textContent = "Đang kết nối Gemini...";
+        audioContext = { input: inputAudioContext, output: outputAudioContext };
 
         const sessionPromise = ai.live.connect({
             model: 'gemini-2.5-flash-native-audio-preview-09-2025',
+            callbacks: {
+                onopen: () => {
+                    statusText.textContent = "Mời bạn nói...";
+                    pulseRing.classList.add('voice-pulse');
+                    
+                    const source = inputAudioContext.createMediaStreamSource(stream);
+                    scriptProcessor = inputAudioContext.createScriptProcessor(4096, 1, 1);
+                    scriptProcessor.onaudioprocess = (audioProcessingEvent) => {
+                        const inputData = audioProcessingEvent.inputBuffer.getChannelData(0);
+                        const pcmBlob = createBlob(inputData);
+                        
+                        sessionPromise.then((session) => {
+                            try {
+                                if (session && liveSession) {
+                                    session.sendRealtimeInput({ media: pcmBlob });
+                                }
+                            } catch (e) {}
+                        });
+                    };
+                    source.connect(scriptProcessor);
+                    scriptProcessor.connect(inputAudioContext.destination);
+                },
+                onmessage: async (message) => {
+                    const base64EncodedAudioString = message.serverContent?.modelTurn?.parts[0]?.inlineData?.data;
+                    if (base64EncodedAudioString) {
+                        statusText.textContent = "Trợ lý đang trả lời...";
+                        nextStartTime = Math.max(nextStartTime, outputAudioContext.currentTime);
+                        const audioBuffer = await decodeAudioData(decode(base64EncodedAudioString), outputAudioContext, 24000, 1);
+                        const source = outputAudioContext.createBufferSource();
+                        source.buffer = audioBuffer;
+                        source.connect(outputAudioContext.destination);
+                        source.addEventListener('ended', () => {
+                            sources.delete(source);
+                            if (sources.size === 0 && liveSession) statusText.textContent = "Tôi đang nghe...";
+                        });
+                        source.start(nextStartTime);
+                        nextStartTime = nextStartTime + audioBuffer.duration;
+                        sources.add(source);
+                    }
+
+                    if (message.serverContent?.inputTranscription) {
+                        transcriptText.textContent = `Bạn: "${message.serverContent.inputTranscription.text}"`;
+                    } else if (message.serverContent?.outputTranscription) {
+                        transcriptText.textContent = `AI: "${message.serverContent.outputTranscription.text}"`;
+                    }
+
+                    if (message.toolCall) {
+                        for (const fc of message.toolCall.functionCalls) {
+                            if (fc.name === 'get_inventory_stock') {
+                                const result = await getInventoryStock(fc.args.ma_vt);
+                                sessionPromise.then((session) => {
+                                    session.sendToolResponse({
+                                        functionResponses: {
+                                            id: fc.id,
+                                            name: fc.name,
+                                            response: { result: result },
+                                        }
+                                    });
+                                });
+                            }
+                        }
+                    }
+
+                    if (message.serverContent?.interrupted) {
+                        for (const source of sources.values()) {
+                            try { source.stop(); } catch(e) {}
+                        }
+                        sources.clear();
+                        nextStartTime = 0;
+                    }
+                },
+                onerror: (e) => {
+                    console.error("Live API Error:", e);
+                    statusText.textContent = "Lỗi kết nối!";
+                },
+                onclose: () => {
+                    statusText.textContent = "Đã ngắt kết nối.";
+                    pulseRing.classList.remove('voice-pulse');
+                    stopVoiceAssistant();
+                },
+            },
             config: {
                 responseModalities: [Modality.AUDIO],
                 speechConfig: {
@@ -128,101 +212,47 @@ export async function startVoiceAssistant() {
                 outputAudioTranscription: {},
                 inputAudioTranscription: {}
             },
-            callbacks: {
-                onopen: () => {
-                    statusText.textContent = "Mời bạn nói...";
-                    pulseRing.classList.add('voice-pulse');
-                    
-                    const source = inputCtx.createMediaStreamSource(stream);
-                    const scriptProcessor = inputCtx.createScriptProcessor(4096, 1, 1);
-                    scriptProcessor.onaudioprocess = (audioProcessingEvent) => {
-                        const inputData = audioProcessingEvent.inputBuffer.getChannelData(0);
-                        const pcmBlob = createBlob(inputData);
-                        sessionPromise.then((session) => {
-                            session.sendRealtimeInput({ media: pcmBlob });
-                        });
-                    };
-                    source.connect(scriptProcessor);
-                    scriptProcessor.connect(inputCtx.destination);
-                },
-                onmessage: async (message) => {
-                    const base64Audio = message.serverContent?.modelTurn?.parts[0]?.inlineData?.data;
-                    if (base64Audio) {
-                        statusText.textContent = "Trợ lý đang phản hồi...";
-                        nextStartTime = Math.max(nextStartTime, outputCtx.currentTime);
-                        const audioBuffer = await decodeAudioData(decode(base64Audio), outputCtx, 24000, 1);
-                        const source = outputCtx.createBufferSource();
-                        source.buffer = audioBuffer;
-                        source.connect(outputCtx.destination);
-                        source.start(nextStartTime);
-                        nextStartTime += audioBuffer.duration;
-                        sources.add(source);
-                        source.onended = () => {
-                            sources.delete(source);
-                            if (sources.size === 0) statusText.textContent = "Đang lắng nghe...";
-                        };
-                    }
-
-                    if (message.serverContent?.inputTranscription) {
-                        transcriptText.textContent = `Bạn: "${message.serverContent.inputTranscription.text}"`;
-                    }
-                    if (message.serverContent?.outputTranscription) {
-                        transcriptText.textContent = `AI: "${message.serverContent.outputTranscription.text}"`;
-                    }
-
-                    if (message.toolCall) {
-                        for (const fc of message.toolCall.functionCalls) {
-                            if (fc.name === 'get_inventory_stock') {
-                                statusText.textContent = "Đang tra cứu kho...";
-                                const result = await getInventoryStock(fc.args.ma_vt);
-                                sessionPromise.then(s => s.sendToolResponse({
-                                    functionResponses: { id: fc.id, name: fc.name, response: { result } }
-                                }));
-                            }
-                        }
-                    }
-
-                    if (message.serverContent?.interrupted) {
-                        sources.forEach(s => { try { s.stop(); } catch(e){} });
-                        sources.clear();
-                        nextStartTime = 0;
-                    }
-                },
-                onerror: (e) => {
-                    console.error("Live API Error:", e);
-                    statusText.textContent = "Lỗi kết nối!";
-                },
-                onclose: () => {
-                    statusText.textContent = "Kết thúc.";
-                    pulseRing.classList.remove('voice-pulse');
-                }
-            }
         });
 
         liveSession = await sessionPromise;
 
     } catch (err) {
         console.error("Assistant Start Error:", err);
-        statusText.textContent = "Lỗi!";
-        transcriptText.textContent = "Không thể khởi động trợ lý giọng nói. Vui lòng kiểm tra quyền micro.";
+        statusText.textContent = "Lỗi khởi động!";
+        transcriptText.textContent = err.message;
     }
 }
 
 export function stopVoiceAssistant() {
+    if (scriptProcessor) {
+        try {
+            scriptProcessor.disconnect();
+            scriptProcessor.onaudioprocess = null;
+        } catch (e) {}
+        scriptProcessor = null;
+    }
+
     if (liveSession) {
         try { liveSession.close(); } catch(e) {}
         liveSession = null;
     }
+
     if (stream) {
         stream.getTracks().forEach(track => track.stop());
         stream = null;
     }
+
     if (audioContext) {
-        if (audioContext.input) audioContext.input.close();
-        if (audioContext.output) audioContext.output.close();
+        try {
+            if (audioContext.input.state !== 'closed') audioContext.input.close();
+            if (audioContext.output.state !== 'closed') audioContext.output.close();
+        } catch (e) {}
         audioContext = null;
     }
-    sources.forEach(s => { try { s.stop(); } catch(e){} });
+
+    for (const source of sources.values()) {
+        try { source.stop(); } catch(e) {}
+    }
     sources.clear();
     nextStartTime = 0;
     

@@ -1,11 +1,3 @@
-
-// Khởi tạo đối tượng process giả lập để chứa API Key cho trình duyệt
-window.process = {
-    env: {
-        API_KEY: "AIzaSyDPjEdZPjh8iSqlqikFYSdSpnEc8tbXgQk"
-    }
-};
-
 const { createClient } = supabase;
 const SUPABASE_URL = "https://uefydnefprcannlviimp.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVlZnlkbmVmcHJjYW5ubHZpaW1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEwNTcwMDUsImV4cCI6MjA3NjYzMzAwNX0.X274J_1_crUknJEOT1WWUD1h0HM9WdYScDW2eWWsiLk";
