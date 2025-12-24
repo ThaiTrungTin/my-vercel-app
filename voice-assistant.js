@@ -11,7 +11,8 @@ const sources = new Set();
 
 // Biến lưu trữ trạng thái hiển thị của lượt chat hiện tại
 let currentAiResponse = "";
-let currentStockSummary = ""; // Lưu phần chú thích Mã : SL
+let currentStockSummary = ""; 
+let currentMessageId = null; // Để cập nhật nội dung đang stream
 
 const SYSTEM_INSTRUCTION = `Bạn là trợ lý kho hàng thông minh cho J&J. 
 Nhiệm vụ của bạn là giúp người dùng kiểm tra số lượng tồn kho. 
@@ -85,7 +86,6 @@ async function getInventoryStock(ma_vts) {
     try {
         const cleanVts = ma_vts.map(v => v.toUpperCase().trim());
         
-        // 1. Kiểm tra danh sách sản phẩm hợp lệ
         const { data: validProducts, error: spError } = await sb.from('san_pham')
             .select('ma_vt')
             .in('ma_vt', cleanVts);
@@ -93,7 +93,6 @@ async function getInventoryStock(ma_vts) {
         if (spError) throw spError;
         const validSet = new Set((validProducts || []).map(p => p.ma_vt));
 
-        // 2. Lấy số lượng tồn kho thực tế
         const { data: stockData, error: tkError } = await sb.from('ton_kho_update')
             .select('ma_vt, ton_cuoi')
             .in('ma_vt', cleanVts);
@@ -165,17 +164,19 @@ function createBlob(data) {
 
 // Hàm render giao diện chat AI
 function updateAiChatUI(transcriptContainer) {
-    let aiMsgBox = transcriptContainer.querySelector('.ai-msg-box');
+    if (!currentMessageId) return;
+
+    let aiMsgBox = document.getElementById(currentMessageId);
     if (!aiMsgBox) {
         aiMsgBox = document.createElement('div');
-        aiMsgBox.className = 'ai-msg-box text-left pt-2';
-        transcriptContainer.innerHTML = ''; // Clear everything else
+        aiMsgBox.id = currentMessageId;
+        aiMsgBox.className = 'ai-msg-box text-left pt-2 pb-2 border-b border-gray-100 last:border-0';
         transcriptContainer.appendChild(aiMsgBox);
     }
 
     let summaryHtml = "";
     if (currentStockSummary) {
-        summaryHtml = `<div class="mb-2 p-2 bg-blue-50 rounded-xl border border-blue-100 text-[11px] space-y-0.5 shadow-sm animate-in fade-in duration-300">
+        summaryHtml = `<div class="mb-2 p-2 bg-blue-50 rounded-xl border border-blue-100 text-[11px] space-y-0.5 shadow-sm">
             ${currentStockSummary}
         </div>`;
     }
@@ -189,7 +190,12 @@ function updateAiChatUI(transcriptContainer) {
     }
 
     aiMsgBox.innerHTML = summaryHtml + textHtml;
-    transcriptContainer.scrollTop = transcriptContainer.scrollHeight;
+    
+    // Tự động cuộn xuống cuối
+    const scrollArea = document.getElementById('voice-scroll-container');
+    if (scrollArea) {
+        scrollArea.scrollTop = scrollArea.scrollHeight;
+    }
 }
 
 export async function startVoiceAssistant() {
@@ -201,9 +207,12 @@ export async function startVoiceAssistant() {
     panel.classList.remove('hidden');
     statusText.textContent = "Đang khởi tạo...";
     statusText.classList.remove('text-red-500');
-    transcriptText.textContent = "";
+    
+    // Xóa lịch sử khi mở cửa sổ mới
+    transcriptText.innerHTML = "";
     currentAiResponse = ""; 
     currentStockSummary = "";
+    currentMessageId = null;
 
     try {
         const customApiKey = localStorage.getItem('gemini_voice_api_key');
@@ -246,7 +255,6 @@ export async function startVoiceAssistant() {
                     scriptProcessor.connect(inputAudioContext.destination);
                 },
                 onmessage: async (message) => {
-                    // Xử lý Audio Output
                     const base64EncodedAudioString = message.serverContent?.modelTurn?.parts[0]?.inlineData?.data;
                     if (base64EncodedAudioString) {
                         if (!statusText.textContent.includes("Đang lọc")) {
@@ -270,18 +278,16 @@ export async function startVoiceAssistant() {
                         sources.add(source);
                     }
 
-                    // Xử lý Transcription
                     if (message.serverContent?.inputTranscription) {
-                        // Khi người dùng bắt đầu nói lượt mới, reset trạng thái
+                        // Bắt đầu một câu trả lời mới
                         currentAiResponse = "";
                         currentStockSummary = "";
-                        transcriptText.innerHTML = ""; 
+                        currentMessageId = 'msg-' + Date.now();
                     } else if (message.serverContent?.outputTranscription) {
                         currentAiResponse += message.serverContent.outputTranscription.text;
                         updateAiChatUI(transcriptText);
                     }
 
-                    // Xử lý Tool Call
                     if (message.toolCall) {
                         for (const fc of message.toolCall.functionCalls) {
                             if (fc.name === 'get_inventory_stock') {
@@ -289,7 +295,6 @@ export async function startVoiceAssistant() {
                                 const results = toolResult.results || [];
                                 const foundVts = results.filter(r => r.status === "VALID" || r.status === "OUT_OF_STOCK").map(r => r.ma_vt);
                                 
-                                // Tạo nội dung chú thích (Mã : SL)
                                 currentStockSummary = results.map(r => {
                                     if (r.status === "VALID") {
                                         return `<p class="font-bold text-gray-700">Mã ${r.ma_vt} : <span class="text-blue-600">${r.ton_cuoi.toLocaleString()}</span></p>`;
@@ -300,14 +305,14 @@ export async function startVoiceAssistant() {
                                     }
                                 }).join('');
 
-                                // Cập nhật UI ngay lập tức
+                                if (!currentMessageId) currentMessageId = 'msg-' + Date.now();
                                 updateAiChatUI(transcriptText);
 
                                 if (foundVts.length > 0) {
                                     const state = viewStates['view-ton-kho'];
                                     state.searchTerm = '';
                                     state.filters = { ma_vt: foundVts, lot: [], date: [], tinh_trang: [], nganh: [], phu_trach: [] };
-                                    state.stockAvailability = 'all'; // Đổi thành all để xem được cả mã hết hàng
+                                    state.stockAvailability = 'all'; 
                                     sessionStorage.setItem('tonKhoStockAvailability', 'all');
                                     
                                     statusText.textContent = `Đang lọc: ${foundVts.join(', ')}`;
@@ -335,7 +340,6 @@ export async function startVoiceAssistant() {
                         for (const source of sources.values()) { try { source.stop(); } catch(e) {} }
                         sources.clear();
                         nextStartTime = 0;
-                        currentAiResponse = ""; 
                     }
                 },
                 onerror: (e) => {
@@ -353,7 +357,6 @@ export async function startVoiceAssistant() {
                 onclose: (e) => {
                     statusText.textContent = "Đã ngắt kết nối.";
                     pulseRing.classList.remove('voice-pulse');
-                    currentAiResponse = "";
                 },
             },
             config: {
