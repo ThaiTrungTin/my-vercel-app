@@ -20,8 +20,7 @@ QUY TẮC PHẢN HỒI:
 1. Nếu người dùng hỏi những câu không liên quan đến kiểm tra tồn kho vật tư, bạn PHẢI trả lời nguyên văn là: "Anh Tín chỉ dạy tôi đọc tồn kho, những thứ khác tôi chưa học tới".
 2. Khi người dùng hỏi về một hoặc nhiều mã vật tư, hãy sử dụng công cụ 'get_inventory_stock'.
 3. Báo cáo số lượng tồn kho của TỪNG MÃ riêng biệt. TUYỆT ĐỐI không cộng dồn tổng số lượng của các mã khác nhau lại với nhau.
-4. Chỉ báo cáo các mã có tồn kho khả dụng.
-5. Trả lời bằng tiếng Việt tự nhiên, ngắn gọn và chuyên nghiệp.`;
+4. Trả lời bằng tiếng Việt tự nhiên, ngắn gọn và chuyên nghiệp.`;
 
 const getStockTool = {
     name: 'get_inventory_stock',
@@ -85,17 +84,32 @@ function makeDraggable(el, handle = el) {
 async function getInventoryStock(ma_vts) {
     try {
         const cleanVts = ma_vts.map(v => v.toUpperCase().trim());
-        const { data, error } = await sb.from('ton_kho_update')
-            .select('ma_vt, ton_cuoi')
-            .in('ma_vt', cleanVts)
-            .gt('ton_cuoi', 0); 
         
-        if (error) throw error;
+        // 1. Kiểm tra danh sách sản phẩm hợp lệ
+        const { data: validProducts, error: spError } = await sb.from('san_pham')
+            .select('ma_vt')
+            .in('ma_vt', cleanVts);
+        
+        if (spError) throw spError;
+        const validSet = new Set((validProducts || []).map(p => p.ma_vt));
+
+        // 2. Lấy số lượng tồn kho thực tế
+        const { data: stockData, error: tkError } = await sb.from('ton_kho_update')
+            .select('ma_vt, ton_cuoi')
+            .in('ma_vt', cleanVts);
+        
+        if (tkError) throw tkError;
         
         const results = cleanVts.map(vt => {
-            const items = (data || []).filter(d => d.ma_vt === vt);
+            const isValid = validSet.has(vt);
+            const items = (stockData || []).filter(d => d.ma_vt === vt);
             const total = items.reduce((sum, item) => sum + (item.ton_cuoi || 0), 0);
-            return { ma_vt: vt, ton_cuoi: total, found: items.length > 0 };
+            
+            let status = "VALID";
+            if (!isValid) status = "INVALID";
+            else if (total <= 0) status = "OUT_OF_STOCK";
+
+            return { ma_vt: vt, ton_cuoi: total, status };
         });
 
         return { results };
@@ -273,14 +287,16 @@ export async function startVoiceAssistant() {
                             if (fc.name === 'get_inventory_stock') {
                                 const toolResult = await getInventoryStock(fc.args.ma_vts);
                                 const results = toolResult.results || [];
-                                const foundVts = results.filter(r => r.found).map(r => r.ma_vt);
+                                const foundVts = results.filter(r => r.status === "VALID" || r.status === "OUT_OF_STOCK").map(r => r.ma_vt);
                                 
                                 // Tạo nội dung chú thích (Mã : SL)
                                 currentStockSummary = results.map(r => {
-                                    if (r.found) {
+                                    if (r.status === "VALID") {
                                         return `<p class="font-bold text-gray-700">Mã ${r.ma_vt} : <span class="text-blue-600">${r.ton_cuoi.toLocaleString()}</span></p>`;
-                                    } else {
+                                    } else if (r.status === "OUT_OF_STOCK") {
                                         return `<p class="font-bold text-gray-400">Mã ${r.ma_vt} : <span class="text-red-400 uppercase">Hết</span></p>`;
+                                    } else {
+                                        return `<p class="font-bold text-gray-300 italic">Mã ${r.ma_vt} : <span class="text-gray-400 uppercase text-[9px]">Mã không hợp lệ</span></p>`;
                                     }
                                 }).join('');
 
@@ -291,8 +307,8 @@ export async function startVoiceAssistant() {
                                     const state = viewStates['view-ton-kho'];
                                     state.searchTerm = '';
                                     state.filters = { ma_vt: foundVts, lot: [], date: [], tinh_trang: [], nganh: [], phu_trach: [] };
-                                    state.stockAvailability = 'available';
-                                    sessionStorage.setItem('tonKhoStockAvailability', 'available');
+                                    state.stockAvailability = 'all'; // Đổi thành all để xem được cả mã hết hàng
+                                    sessionStorage.setItem('tonKhoStockAvailability', 'all');
                                     
                                     statusText.textContent = `Đang lọc: ${foundVts.join(', ')}`;
                                     statusText.classList.add('text-green-600');
