@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Modality, Type } from '@google/genai';
-import { sb, showToast, viewStates, showView } from './app.js';
+import { sb, showToast, viewStates, showView, currentUser } from './app.js';
 
 let liveSession = null;
 let audioContext = null;
@@ -20,8 +20,10 @@ Nhiệm vụ của bạn là giúp người dùng kiểm tra số lượng tồn
 QUY TẮC PHẢN HỒI:
 1. Nếu người dùng hỏi những câu không liên quan đến kiểm tra tồn kho vật tư, bạn PHẢI trả lời nguyên văn là: "Anh Tín chỉ dạy tôi đọc tồn kho, những thứ khác tôi chưa học tới".
 2. Khi người dùng hỏi về một hoặc nhiều mã vật tư, hãy sử dụng công cụ 'get_inventory_stock'.
-3. Báo cáo số lượng tồn kho của TỪNG MÃ riêng biệt. TUYỆT ĐỐI không cộng dồn tổng số lượng của các mã khác nhau lại với nhau.
-4. Trả lời bằng tiếng Việt tự nhiên, ngắn gọn và chuyên nghiệp.`;
+3. Nếu kết quả trả về báo 'NO_PERMISSION' cho một mã, bạn PHẢI trả lời cho mã đó là: "Bạn không có quyền xem tồn mã này".
+4. Nếu mã không tồn tại ('INVALID'), báo: "Mã không hợp lệ".
+5. Báo cáo số lượng tồn kho của TỪNG MÃ riêng biệt. TUYỆT ĐỐI không cộng dồn tổng số lượng của các mã khác nhau lại với nhau.
+6. Trả lời bằng tiếng Việt tự nhiên, ngắn gọn và chuyên nghiệp.`;
 
 const getStockTool = {
     name: 'get_inventory_stock',
@@ -85,14 +87,21 @@ function makeDraggable(el, handle = el) {
 async function getInventoryStock(ma_vts) {
     try {
         const cleanVts = ma_vts.map(v => v.toUpperCase().trim());
-        
-        const { data: validProducts, error: spError } = await sb.from('san_pham')
-            .select('ma_vt')
+        const isAdmin = currentUser.phan_quyen === 'Admin';
+        const userName = currentUser.ho_ten;
+        const allowedNganh = (currentUser.xem_data || '').split(',').map(s => s.trim()).filter(Boolean);
+
+        // 1. Kiểm tra danh sách sản phẩm và phân quyền
+        const { data: products, error: spError } = await sb.from('san_pham')
+            .select('ma_vt, nganh, phu_trach')
             .in('ma_vt', cleanVts);
         
         if (spError) throw spError;
-        const validSet = new Set((validProducts || []).map(p => p.ma_vt));
+        
+        const productMap = new Map();
+        (products || []).forEach(p => productMap.set(p.ma_vt, p));
 
+        // 2. Lấy số lượng tồn kho thực tế
         const { data: stockData, error: tkError } = await sb.from('ton_kho_update')
             .select('ma_vt, ton_cuoi')
             .in('ma_vt', cleanVts);
@@ -100,15 +109,27 @@ async function getInventoryStock(ma_vts) {
         if (tkError) throw tkError;
         
         const results = cleanVts.map(vt => {
-            const isValid = validSet.has(vt);
+            const product = productMap.get(vt);
+            
+            // Trường hợp 1: Mã không tồn tại
+            if (!product) return { ma_vt: vt, status: "INVALID" };
+
+            // Trường hợp 2: Kiểm tra phân quyền
+            let hasPermission = isAdmin;
+            if (!hasPermission) {
+                const isPhuTrach = product.phu_trach === userName;
+                const isInAllowedNganh = allowedNganh.includes(product.nganh);
+                hasPermission = isPhuTrach || isInAllowedNganh;
+            }
+
+            if (!hasPermission) return { ma_vt: vt, status: "NO_PERMISSION" };
+
+            // Trường hợp 3 & 4: Có quyền -> Kiểm tra số lượng
             const items = (stockData || []).filter(d => d.ma_vt === vt);
             const total = items.reduce((sum, item) => sum + (item.ton_cuoi || 0), 0);
             
-            let status = "VALID";
-            if (!isValid) status = "INVALID";
-            else if (total <= 0) status = "OUT_OF_STOCK";
-
-            return { ma_vt: vt, ton_cuoi: total, status };
+            if (total <= 0) return { ma_vt: vt, ton_cuoi: total, status: "OUT_OF_STOCK" };
+            return { ma_vt: vt, ton_cuoi: total, status: "VALID" };
         });
 
         return { results };
@@ -293,6 +314,8 @@ export async function startVoiceAssistant() {
                             if (fc.name === 'get_inventory_stock') {
                                 const toolResult = await getInventoryStock(fc.args.ma_vts);
                                 const results = toolResult.results || [];
+                                
+                                // Tạo nội dung chú thích (Mã : SL) và lọc danh sách VTs có quyền xem
                                 const foundVts = results.filter(r => r.status === "VALID").map(r => r.ma_vt);
                                 
                                 currentStockSummary = results.map(r => {
@@ -300,6 +323,8 @@ export async function startVoiceAssistant() {
                                         return `<p class="font-bold text-gray-700">Mã ${r.ma_vt} : <span class="text-blue-600">${r.ton_cuoi.toLocaleString()}</span></p>`;
                                     } else if (r.status === "OUT_OF_STOCK") {
                                         return `<p class="font-bold text-gray-400">Mã ${r.ma_vt} : <span class="text-red-400 uppercase">Hết</span></p>`;
+                                    } else if (r.status === "NO_PERMISSION") {
+                                        return `<p class="font-bold text-gray-400 italic">Mã ${r.ma_vt} : <span class="text-orange-400 uppercase text-[9px]">Bạn không có quyền xem tồn mã này</span></p>`;
                                     } else {
                                         return `<p class="font-bold text-gray-300 italic">Mã ${r.ma_vt} : <span class="text-gray-400 uppercase text-[9px]">Mã không hợp lệ</span></p>`;
                                     }
@@ -313,7 +338,7 @@ export async function startVoiceAssistant() {
                                     state.searchTerm = '';
                                     state.filters = { ma_vt: foundVts, lot: [], date: [], tinh_trang: [], nganh: [], phu_trach: [] };
                                     
-                                    // CHỈNH SỬA TẠI ĐÂY: Luôn giữ chế độ 'available' (khả dụng) để ẩn các mã có SL = 0
+                                    // Luôn giữ chế độ 'available' (khả dụng) để ẩn các mã có SL = 0
                                     state.stockAvailability = 'available'; 
                                     sessionStorage.setItem('tonKhoStockAvailability', 'available');
                                     

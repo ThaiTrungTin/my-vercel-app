@@ -1,3 +1,4 @@
+
 import { sb, viewStates, showView, currentUser, showToast, showLoading } from './app.js';
 import { fetchAndRenderHierarchy, getRangeDates, expandedHierarchyPaths } from './tongquan-hierarchy.js';
 import { renderActivityChart, renderInventoryStatusChart, renderRegionLineChart, renderRecipientStackedBarChart } from './tongquan-charts.js';
@@ -68,7 +69,7 @@ async function openFilter(button) {
     const render = (opts) => {
         const term = search.value.toLowerCase();
         const filtered = opts.filter(o => o && String(o).toLowerCase().includes(term));
-        list.innerHTML = filtered.length > 0 ? filtered.map(o => `<label class="flex items-center space-x-2 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer"><input type="checkbox" value="${o}" class="filter-option-cb" ${temp.has(String(o))?'checked':''}> <span class="text-sm">${o}</span></label>`).join('') : '<div class="p-4 text-center text-gray-400 text-xs italic">Trống.</div>';
+        list.innerHTML = filtered.length > 0 ? filtered.map(o => `<label class="flex items-center space-x-2 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer"><input type="checkbox" value="${o}" class="filter-option-cb" ${temp.has(String(o))?'checked' : ''}> <span class="text-sm">${o}</span></label>`).join('') : '<div class="p-4 text-center text-gray-400 text-xs italic">Trống.</div>';
         toggle.textContent = filtered.length > 0 && filtered.every(o => temp.has(String(o))) ? 'Bỏ chọn' : 'Tất cả';
         cntEl.textContent = temp.size > 0 ? `Chọn: ${temp.size}` : '';
     };
@@ -108,7 +109,6 @@ async function openFilter(button) {
             if (filter.yeu_cau.length > 0) q1 = q1.in('yeu_cau', filter.yeu_cau);
             if (filter.ma_vt.length > 0) q1 = q1.in('ma_vt', filter.ma_vt);
             
-            // Áp dụng phân quyền khi lấy danh sách filter
             if (currentUser.phan_quyen !== 'Admin') {
                 const allowed = (currentUser.xem_data || '').split(',').map(s => s.trim()).filter(Boolean);
                 if (allowed.length > 0) q1 = q1.in('nganh', allowed);
@@ -119,7 +119,6 @@ async function openFilter(button) {
             const v1Ids = (v1Rows || []).map(r => r.id);
             
             if (v1Ids.length > 0) {
-                // CHUNKING: Chia nhỏ v1Ids để lấy danh sách người nhận (tránh lỗi 400)
                 const vtNames = new Set();
                 const chunkSize = 500;
                 for (let i = 0; i < v1Ids.length; i += chunkSize) {
@@ -175,7 +174,6 @@ async function fetchAndRenderAnalytics() {
     const allowedBUs = (currentUser.xem_data || '').split(',').map(s => s.trim()).filter(Boolean);
 
     try {
-        // 1. Fetch chi_tiet_v1 for Region
         let q = sb.from('chi_tiet_v1').select('*').gte('thoi_gian', start).lte('thoi_gian', end);
         if (filter.bu.length > 0) q = q.in('bu', filter.bu);
         if (filter.yeu_cau.length > 0) q = q.in('yeu_cau', filter.yeu_cau);
@@ -199,7 +197,6 @@ async function fetchAndRenderAnalytics() {
         });
         renderRegionLineChart(regionMap);
 
-        // 2. Fetch Recipients với Chunking (Tránh lỗi 400 Bad Request URI Too Long)
         let qIds = sb.from('chi_tiet').select('id, ma_vt').gte('thoi_gian', start).lte('thoi_gian', end);
         if (filter.bu.length > 0) qIds = qIds.in('nganh', filter.bu);
         if (filter.yeu_cau.length > 0) qIds = qIds.in('yeu_cau', filter.yeu_cau);
@@ -348,6 +345,40 @@ function filterAlertsAndRender() {
     });
     renderAlerts(filtered);
 }
+
+const setHMode = (mode) => {
+    tongQuanState.hierarchy.mode = mode;
+    const isActiveXuat = mode === 'xuat';
+
+    const xuatBtn = document.getElementById('tq-hierarchy-mode-xuat');
+    const nhapBtn = document.getElementById('tq-hierarchy-mode-nhap');
+    
+    // Sử dụng classList.toggle để không ghi đè các class "hidden md:block" quan trọng
+    if (xuatBtn) {
+        xuatBtn.classList.toggle('bg-red-600', isActiveXuat);
+        xuatBtn.classList.toggle('text-white', isActiveXuat);
+        xuatBtn.classList.toggle('shadow-md', isActiveXuat);
+        xuatBtn.classList.toggle('text-gray-400', !isActiveXuat);
+        xuatBtn.classList.toggle('bg-white', !isActiveXuat);
+    }
+    if (nhapBtn) {
+        nhapBtn.classList.toggle('bg-green-600', !isActiveXuat);
+        nhapBtn.classList.toggle('text-white', !isActiveXuat);
+        nhapBtn.classList.toggle('shadow-md', !isActiveXuat);
+        nhapBtn.classList.toggle('text-gray-400', isActiveXuat);
+        nhapBtn.classList.toggle('bg-white', isActiveXuat);
+    }
+
+    const toggleDot = document.getElementById('tq-hierarchy-mode-toggle-dot');
+    if (toggleDot) {
+        // Dot là RED nếu là Xuất, là GREEN nếu là Nhập
+        toggleDot.className = isActiveXuat 
+            ? "w-5 h-5 rounded-full border-2 border-red-200 bg-red-500 shadow-sm transition-all"
+            : "w-5 h-5 rounded-full border-2 border-green-200 bg-green-500 shadow-sm transition-all";
+    }
+
+    fetchAndRenderHierarchy(tongQuanState, false);
+};
 
 export async function fetchTongQuanData() {
     try {
@@ -507,11 +538,20 @@ export function initTongQuanView() {
         };
     }
 
-    const setHMode = (m) => { tongQuanState.hierarchy.mode = m; fetchAndRenderHierarchy(tongQuanState, false); };
     const hModeXuat = document.getElementById('tq-hierarchy-mode-xuat');
     if (hModeXuat) hModeXuat.onclick = () => setHMode('xuat');
     const hModeNhap = document.getElementById('tq-hierarchy-mode-nhap');
     if (hModeNhap) hModeNhap.onclick = () => setHMode('nhap');
+
+    const toggleDot = document.getElementById('tq-hierarchy-mode-toggle-dot');
+    if (toggleDot) {
+        toggleDot.onclick = () => setHMode(tongQuanState.hierarchy.mode === 'xuat' ? 'nhap' : 'xuat');
+    }
+
+    const hModeXuatDot = document.getElementById('tq-hierarchy-mode-xuat-dot');
+    if (hModeXuatDot) hModeXuatDot.onclick = () => setHMode('xuat');
+    const hModeNhapDot = document.getElementById('tq-hierarchy-mode-nhap-dot');
+    if (hModeNhapDot) hModeNhapDot.onclick = () => setHMode('nhap');
 
     const chartModeQty = document.getElementById('tq-chart-mode-quantity');
     if (chartModeQty) {

@@ -144,7 +144,7 @@ const VIEW_HTML = `
             </select>
             <button id="chi-tiet-prev-page" class="px-1.5 py-1 md:px-3 border rounded-md bg-white text-[10px] md:text-sm">
                 <svg class="w-3 h-3 md:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-                <span class="hidden md:inline">Trước</span>
+                <span class="hidden md:inline"></span>
             </button>
             <div class="flex items-center gap-0.5 mx-0.5">
                 <input type="number" id="chi-tiet-page-input" class="w-7 md:w-16 text-center border rounded-md p-0.5 text-[9px] md:text-sm" value="1" min="1">
@@ -152,7 +152,7 @@ const VIEW_HTML = `
             </div>
             <button id="chi-tiet-next-page" class="px-1.5 py-1 md:px-3 border rounded-md bg-white text-[10px] md:text-sm">
                 <svg class="w-3 h-3 fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                <span class="hidden md:inline">Sau</span>
+                <span class="hidden md:inline"></span>
             </button>
         </div>
     </div>

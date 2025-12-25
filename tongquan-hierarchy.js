@@ -213,8 +213,8 @@ function renderTree(container, node, level, mode, parentPath, subMode) {
         const badge = isNX ? `<span class="text-[11px] md:text-sm ${weights[level]} ${mode === 'nhap' ? 'text-green-600' : (path.includes('Thiếu') ? 'text-amber-500' : 'text-red-600')} ml-auto whitespace-nowrap">${child.total.toLocaleString()}</span>`
             : `<div class="ml-auto flex items-center gap-1.5 flex-shrink-0 whitespace-nowrap">
                 ${mode === 'xuat' ? `<div class="flex items-center gap-1 shadow-sm rounded-full overflow-hidden border border-gray-100 bg-white">
-                    ${child.xuatTotal > 0 ? `<span class="px-2 py-0.5 text-xs md:text-sm ${weights[level]} text-red-600">${child.xuatTotal.toLocaleString()}</span>` : ''}
-                    ${child.shortageTotal > 0 ? `<span class="px-2 py-0.5 text-xs md:text-sm ${weights[level]} text-amber-500 border-l border-gray-50 bg-amber-50/20">${child.shortageTotal.toLocaleString()}</span>` : ''}
+                    ${child.shortageTotal > 0 ? `<span class="px-2 py-0.5 text-xs md:text-sm ${weights[level]} text-amber-500 bg-amber-50/20">${child.shortageTotal.toLocaleString()}</span>` : ''}
+                    ${child.xuatTotal > 0 ? `<span class="px-2 py-0.5 text-xs md:text-sm ${weights[level]} text-red-600 ${child.shortageTotal > 0 ? 'border-l border-gray-50' : ''}">${child.xuatTotal.toLocaleString()}</span>` : ''}
                 </div>` : `<span class="text-green-600 px-2 py-0.5 text-xs md:text-sm ${weights[level]}">${child.total.toLocaleString()}</span>`}
                </div>`;
 
