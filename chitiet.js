@@ -134,7 +134,7 @@ const VIEW_HTML = `
     </div>
     <div class="flex-shrink-0 flex flex-row justify-between items-center mt-2 md:mt-4 p-2 md:p-4 bg-white rounded-lg shadow-md flex-nowrap overflow-hidden">
         <span id="chi-tiet-pagination-info" class="text-[8px] md:text-sm text-gray-600 mr-1 whitespace-nowrap flex-shrink-0"></span>
-        <div id="ct-summary-info" class="text-[8px] md:text-sm font-bold flex-grow text-center px-1 overflow-hidden truncate"></div>
+        <div id="ct-summary-info" class="flex-grow flex justify-center items-center overflow-hidden no-scrollbar px-1"></div>
         <div class="flex items-center gap-1 flex-nowrap flex-shrink-0">
             <select id="chi-tiet-items-per-page" class="hidden md:block px-3 py-1 border rounded-md bg-white">
                 <option value="50">50</option>
@@ -248,39 +248,57 @@ async function updateChiTietHeaderCounts() {
     if (!nhapEl || !xuatEl) return;
     
     [nhapEl, xuatEl].forEach(el => el.textContent = '(...)');
-    if (bottomSummaryEl) bottomSummaryEl.innerHTML = '<span class="text-gray-400 font-normal">Đang tính...</span>';
+    if (bottomSummaryEl) bottomSummaryEl.innerHTML = '<span class="text-gray-400 font-normal text-[8px] md:text-xs italic">Đang tính toán...</span>';
 
     try {
-        const { data, error } = await buildChiTietQuery().select('nhap, xuat');
+        let query = buildChiTietQuery();
+        // Lấy ma_nx và ma_vt để đếm duy nhất
+        const { data, error } = await query.select('ma_nx, ma_vt, nhap, xuat');
         if (error) throw error;
         
         let totalNhap = 0;
         let totalXuat = 0;
+        const uniqueMaNx = new Set();
+        const uniqueMaVt = new Set();
         
         if (data && data.length > 0) {
             data.forEach(item => {
                 totalNhap += (item.nhap || 0);
                 totalXuat += (item.xuat || 0);
+                if (item.ma_nx) uniqueMaNx.add(item.ma_nx);
+                if (item.ma_vt) uniqueMaVt.add(item.ma_vt);
             });
         }
         
         const nVal = totalNhap.toLocaleString();
         const xVal = totalXuat.toLocaleString();
+        const nxCount = uniqueMaNx.size.toLocaleString();
+        const vtCount = uniqueMaVt.size.toLocaleString();
         
         nhapEl.textContent = `(${nVal})`;
         xuatEl.textContent = `(${xVal})`;
         
         if (bottomSummaryEl) {
             bottomSummaryEl.innerHTML = `
-                <span class="text-green-600 font-bold">N: ${nVal}</span>
-                <span class="mx-1 text-gray-300">|</span>
-                <span class="text-red-600 font-bold">X: ${xVal}</span>
+                <div class="flex items-center gap-1 sm:gap-2 text-[7px] sm:text-[10px] md:text-xs font-bold px-2">
+                    <span class="text-green-600 whitespace-nowrap hidden md:inline" title="Số lượng Mã NX duy nhất">NX: ${nxCount}</span>
+                    <span class="text-gray-200 hidden md:inline">|</span>
+                    <span class="text-blue-600 whitespace-nowrap hidden md:inline" title="Số lượng Mã VT duy nhất">VT: ${vtCount}</span>
+                    <span class="text-gray-200 hidden md:inline">|</span>
+                    <span class="text-green-600 whitespace-nowrap">N: ${nVal}</span>
+                    <span class="text-gray-200">|</span>
+                    <span class="text-red-600 whitespace-nowrap">X: ${xVal}</span>
+                    <div class="md:hidden flex items-center gap-0.5 ml-1">
+                        <span class="text-green-600">(${nxCount})</span>
+                        <span class="text-blue-600">(${vtCount})</span>
+                    </div>
+                </div>
             `;
         }
     } catch (err) {
         console.error("Error calculating chi tiet summary:", err);
         [nhapEl, xuatEl].forEach(el => el.textContent = '(lỗi)');
-        if (bottomSummaryEl) bottomSummaryEl.innerHTML = '<span class="text-red-500">Lỗi tính toán</span>';
+        if (bottomSummaryEl) bottomSummaryEl.innerHTML = '<span class="text-red-500 text-[8px] md:text-xs">Lỗi tính toán</span>';
     }
 }
 
@@ -363,7 +381,14 @@ function renderChiTietTable(data) {
 
     if (data && data.length > 0) {
         tableBody.innerHTML = data.map(ct => {
-            const maNxClass = ct.ma_nx ? (ct.ma_nx.endsWith('-') ? 'text-yellow-600 font-semibold' : 'text-green-600 font-semibold') : 'text-gray-900';
+            const maNxRaw = ct.ma_nx || '';
+            const maNxClass = maNxRaw.endsWith('-') ? 'text-yellow-600 font-semibold' : 'text-green-600 font-semibold';
+            
+            // Tô màu chữ DO và RO
+            const maNxFormatted = maNxRaw
+                .replace(/DO/g, '<span class="text-red-600 font-bold">DO</span>')
+                .replace(/RO/g, '<span class="text-green-600 font-bold">RO</span>');
+
             const displaySLValue = ct.nhap > 0 ? ct.nhap : (ct.xuat > 0 ? ct.xuat : 0);
             const slColorClass = ct.nhap > 0 ? 'text-green-600' : (ct.xuat > 0 ? 'text-red-600' : 'text-gray-400');
             const slPrefix = ct.nhap > 0 ? '+' : (ct.xuat > 0 ? '-' : '');
@@ -374,8 +399,8 @@ function renderChiTietTable(data) {
                 <td class="hidden md:table-cell ct-col-ma-kho px-2 py-2 border-r border-gray-300 text-center whitespace-nowrap" title="${ct.ma_kho}">${ct.ma_kho}</td>
                 <td class="sticky left-0 z-10 bg-white px-3 py-2 border-r border-gray-300 text-center shadow-[2px_0_5px_-2px_rgba(0,0,0,0.2)] whitespace-nowrap min-w-max md:whitespace-normal md:min-w-[180px] w-auto">
                     <div class="flex items-center justify-between gap-1.5 w-full">
-                        <span class="${maNxClass}" title="${ct.ma_nx}">${ct.ma_nx}</span>
-                        <button class="copy-ma-nx-btn p-1 text-gray-300 hover:text-blue-500 transition-colors" data-ma-nx="${ct.ma_nx}" title="Copy Mã NX">
+                        <span class="${maNxClass}" title="${maNxRaw}">${maNxFormatted}</span>
+                        <button class="copy-ma-nx-btn p-1 text-gray-300 hover:text-blue-500 transition-colors" data-ma-nx="${maNxRaw}" title="Copy Mã NX">
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                         </button>
                     </div>
@@ -1036,7 +1061,7 @@ async function openChiTietFilterPopover(button, view) {
                 if (cb.checked) tempSelectedOptions.add(cb.value);
                 else tempSelectedOptions.delete(cb.value);
                 updateSelectionCount();
-                updateToggleAllButtonState();
+                updateToggleAllButtonState(optionsList.querySelectorAll('.filter-option-cb'));
             }
         });
         toggleAllBtn.onclick = () => {
