@@ -1,3 +1,4 @@
+
 import { sb, currentUser, cache, viewStates, showLoading, showToast, showConfirm, debounce, renderPagination, filterButtonDefaultTexts, openAutocomplete, updateTonKhoToggleUI, updateMobileFilterIconStatus } from './app.js';
 import { fetchSanPham } from './sanpham.js';
 import { startVoiceAssistant, stopVoiceAssistant } from './voice-assistant.js';
@@ -140,6 +141,7 @@ async function updateTonKhoHeaderCounts() {
         xuatEl.textContent = `(${xVal})`;
         cuoiEl.textContent = `(${cVal})`;
         
+        // Luôn xanh nếu <= 0, nhưng yêu cầu là màu xanh dương cho C: ở dưới
         cuoiEl.classList.toggle('text-red-600', totalCuoi > 0);
         cuoiEl.classList.toggle('text-green-600', totalCuoi <= 0);
 
@@ -147,17 +149,17 @@ async function updateTonKhoHeaderCounts() {
         summaryContainer.innerHTML = `
             <div class="mobile-summary-container">
                 <div class="mobile-summary-content flex items-center gap-1 sm:gap-2 text-[7px] sm:text-[10px] md:text-xs font-bold border-x border-gray-100 px-2">
-                    <span class="text-black whitespace-nowrap hidden md:inline" title="Số lượng mã vật tư duy nhất">Mã: ${vtCount}</span>
+                    <span class="text-blue-600 whitespace-nowrap hidden md:inline" title="Số lượng mã vật tư duy nhất">Mã VT: ${vtCount}</span>
                     <span class="text-gray-200 hidden md:inline">|</span>
-                    <span class="text-blue-600 whitespace-nowrap">Đ:${dVal}</span>
+                    <span class="text-black whitespace-nowrap">Đ:${dVal}</span>
                     <span class="text-gray-200">|</span>
                     <span class="text-green-600 whitespace-nowrap">N:${nVal}</span>
                     <span class="text-gray-200">|</span>
                     <span class="text-red-500 whitespace-nowrap">X:${xVal}</span>
                     <span class="text-gray-200">|</span>
                     <div class="flex items-center gap-0.5">
-                        <span class="${totalCuoi > 0 ? 'text-red-600' : 'text-green-600'} whitespace-nowrap">C:${cVal}</span>
-                        <span class="text-black font-bold md:hidden">(${vtCount})</span>
+                        <span class="text-blue-600 whitespace-nowrap">C:${cVal}</span>
+                        <span class="text-blue-600 font-bold md:hidden">(${vtCount})</span>
                     </div>
                 </div>
             </div>
@@ -651,11 +653,7 @@ async function openTonKhoFilterPopoverCustom(button, view) {
                     displayLabel = ui.display;
                 }
                 return `
-                <label class="flex items-center space-x-2 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer">
-                    <input type="checkbox" value="${option}" class="filter-option-cb" ${tempSelectedOptions.has(String(option)) ? 'checked' : ''}>
-                    <span class="text-sm ${colorClasses}">${displayLabel}</span>
-                </label>
-            `}).join('');
+                <label class="flex items-center space-x-2 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer"><input type="checkbox" value="${option}" class="filter-option-cb" ${tempSelectedOptions.has(String(option)) ? 'checked' : ''}><span class="text-sm ${colorClasses}">${displayLabel}</span></label>`}).join('');
         } else {
             optionsList.innerHTML = '<div class="text-center p-4 text-sm text-gray-500">Không có tùy chọn.</div>';
         }

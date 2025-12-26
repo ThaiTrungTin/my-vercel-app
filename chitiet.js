@@ -281,9 +281,9 @@ async function updateChiTietHeaderCounts() {
         if (bottomSummaryEl) {
             bottomSummaryEl.innerHTML = `
                 <div class="flex items-center gap-1 sm:gap-2 text-[7px] sm:text-[10px] md:text-xs font-bold px-2">
-                    <span class="text-green-600 whitespace-nowrap hidden md:inline" title="Số lượng Mã NX duy nhất">NX: ${nxCount}</span>
+                    <span class="text-green-600 whitespace-nowrap hidden md:inline" title="Số lượng Mã NX ">NX: ${nxCount}</span>
                     <span class="text-gray-200 hidden md:inline">|</span>
-                    <span class="text-blue-600 whitespace-nowrap hidden md:inline" title="Số lượng Mã VT duy nhất">VT: ${vtCount}</span>
+                    <span class="text-blue-600 whitespace-nowrap hidden md:inline" title="Số lượng Mã VT ">Mã VT: ${vtCount}</span>
                     <span class="text-gray-200 hidden md:inline">|</span>
                     <span class="text-green-600 whitespace-nowrap">N: ${nVal}</span>
                     <span class="text-gray-200">|</span>

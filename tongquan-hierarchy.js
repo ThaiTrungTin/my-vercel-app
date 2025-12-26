@@ -49,11 +49,10 @@ export async function fetchAndRenderHierarchy(tongQuanState, isFirstLoad) {
     const hState = tongQuanState.hierarchy;
     const allowedBUs = (currentUser.xem_data || '').split(',').map(s => s.trim()).filter(Boolean);
     const isAdmin = currentUser.phan_quyen === 'Admin';
-    const hasGatePermission = allowedBUs.includes('EES') || allowedBUs.includes('ESC');
+    const hasGatePermission = allowedBUs.includes('EES') || allowedBUs.includes('ESC') || isAdmin;
 
-    // Nếu không phải Admin và không có ngành EES hoặc ESC trong danh sách cấp phép, ẩn luôn
-    if (!isAdmin && !hasGatePermission) {
-        container.innerHTML = '';
+    if (!hasGatePermission) {
+        container.innerHTML = '<div class="text-center py-10 text-gray-400 italic">Bạn không có quyền xem phả hệ ngành này.</div>';
         return false;
     }
 
@@ -76,7 +75,6 @@ export async function fetchAndRenderHierarchy(tongQuanState, isFirstLoad) {
 
         if (!isAdmin) {
             if (allowedBUs.length > 0) {
-                // Lọc dữ liệu phả hệ dựa trên các BU được phép (Vẫn hiển thị ngành khác nếu có trong xem_data, miễn là có EES/ESC để "mở cửa")
                 query = query.in('bu', allowedBUs);
             }
         }
@@ -107,78 +105,86 @@ export async function fetchAndRenderHierarchy(tongQuanState, isFirstLoad) {
 
 function buildHierarchy(data, mode, subMode) {
     const root = { total: 0, xuatTotal: 0, shortageTotal: 0, nxSet: new Set(), vtSet: new Set(), children: {} };
-    
     const createNode = () => ({ total: 0, xuatTotal: 0, shortageTotal: 0, nxSet: new Set(), vtSet: new Set(), children: {} });
 
     data.forEach(row => {
-        const bu = row.bu || 'KHÔNG XÁC ĐỊNH';
-        const kv = row.khu_vuc || 'CHƯA PHÂN VÙNG';
-        const fr = row.franchise || 'N/A';
-        const vt = row.ma_vt;
-        const yc = row.yeu_cau || 'Chưa rõ';
-        const nx = row.ma_nx || 'N/A';
-        
+        const bu = row.bu || 'KHÔNG XÁC ĐỊNH', kv = row.khu_vuc || 'CHƯA PHÂN VÙNG', fr = row.franchise || 'N/A', vt = row.ma_vt;
+        const yc = row.yeu_cau || 'Chưa rõ', nx = row.ma_nx || 'N/A';
         const xuat = parseFloat(row.xuat) || 0, nhap = parseFloat(row.nhap) || 0, ycsl = parseFloat(row.yc_sl) || 0;
         const shortage = (mode === 'xuat' && nx.includes('DO')) ? Math.max(0, ycsl - xuat) : 0;
 
-        if (mode === 'xuat') {
-            if (subMode === 'xuat' && xuat <= 0) return;
-            if (subMode === 'shortage' && shortage <= 0) return;
-        }
-
-        const val = mode === 'xuat' ? xuat + shortage : nhap;
-        const update = (node) => {
-            node.total += val; node.xuatTotal += (mode === 'xuat' ? xuat : 0); node.shortageTotal += (mode === 'xuat' ? shortage : 0);
-            if(nx) node.nxSet.add(nx); if(vt) node.vtSet.add(vt);
+        // Hàm helper để thêm dữ liệu vào một node bất kỳ
+        const updateNodeData = (node, val, xuatVal, shortageVal) => {
+            node.total += val;
+            node.xuatTotal += xuatVal;
+            node.shortageTotal += shortageVal;
+            if (nx) node.nxSet.add(nx);
+            if (vt) node.vtSet.add(vt);
         };
 
-        update(root);
-        // BU Level
-        if (!root.children[bu]) root.children[bu] = createNode();
-        update(root.children[bu]);
-        
-        // KHU VỰC Level (NEW)
-        if (!root.children[bu].children[kv]) root.children[bu].children[kv] = createNode();
-        update(root.children[bu].children[kv]);
-        
-        // FRANCHISE Level
-        if (!root.children[bu].children[kv].children[fr]) root.children[bu].children[kv].children[fr] = createNode();
-        update(root.children[bu].children[kv].children[fr]);
-        
-        // MÃ VT Level
-        if (!root.children[bu].children[kv].children[fr].children[vt]) root.children[bu].children[kv].children[fr].children[vt] = createNode();
-        const vtN = root.children[bu].children[kv].children[fr].children[vt];
-        update(vtN);
+        const processRow = (finalVal, isXuatCat, isShortageCat) => {
+            // Chỉ build phả hệ khi có giá trị thực tế
+            if (finalVal <= 0) return;
 
-        const addLeaf = (parent, catName, finalVal, isX, isS) => {
-            if (!parent.children[catName]) parent.children[catName] = { total: 0, xuatTotal: 0, shortageTotal: 0, nxSet: new Set(), children: {} };
-            const cN = parent.children[catName];
-            cN.total += finalVal; if(isX) cN.xuatTotal += finalVal; if(isS) cN.shortageTotal += finalVal;
-            if(nx) cN.nxSet.add(nx);
-            if (!cN.children[yc]) cN.children[yc] = { total: 0, xuatTotal: 0, shortageTotal: 0, nxSet: new Set(), children: {} };
-            const ycN = cN.children[yc];
-            ycN.total += finalVal; if(isX) ycN.xuatTotal += finalVal; if(isS) ycN.shortageTotal += finalVal;
-            if(nx) ycN.nxSet.add(nx);
-            if (!ycN.children[nx]) ycN.children[nx] = { total: 0, xuatTotal: 0, shortageTotal: 0, nxSet: new Set(), id_cts: [], isMaNX: true, children: {} };
-            const nxN = ycN.children[nx];
-            nxN.total += finalVal; if(isX) nxN.xuatTotal += finalVal; if(isS) nxN.shortageTotal += finalVal;
-            nxN.id_cts.push(row.id); if(nx) nxN.nxSet.add(nx);
-        };
+            // Root
+            updateNodeData(root, finalVal, mode === 'xuat' ? xuat : 0, mode === 'xuat' ? shortage : 0);
 
-        if (mode === 'xuat') {
-            if (subMode === 'all') {
-                if (xuat > 0) addLeaf(vtN, 'Đã xuất', xuat, true, false);
-                if (shortage > 0) addLeaf(vtN, 'Thiếu hàng', shortage, false, true);
+            // BU
+            if (!root.children[bu]) root.children[bu] = createNode();
+            updateNodeData(root.children[bu], finalVal, mode === 'xuat' ? xuat : 0, mode === 'xuat' ? shortage : 0);
+
+            // Khu Vực
+            if (!root.children[bu].children[kv]) root.children[bu].children[kv] = createNode();
+            updateNodeData(root.children[bu].children[kv], finalVal, mode === 'xuat' ? xuat : 0, mode === 'xuat' ? shortage : 0);
+
+            // Franchise
+            if (!root.children[bu].children[kv].children[fr]) root.children[bu].children[kv].children[fr] = createNode();
+            updateNodeData(root.children[bu].children[kv].children[fr], finalVal, mode === 'xuat' ? xuat : 0, mode === 'xuat' ? shortage : 0);
+
+            // Mã VT
+            if (!root.children[bu].children[kv].children[fr].children[vt]) root.children[bu].children[kv].children[fr].children[vt] = createNode();
+            const vtN = root.children[bu].children[kv].children[fr].children[vt];
+            updateNodeData(vtN, finalVal, mode === 'xuat' ? xuat : 0, mode === 'xuat' ? shortage : 0);
+
+            if (mode === 'xuat') {
+                const catName = isXuatCat ? 'Đã xuất' : 'Thiếu hàng';
+                if (!vtN.children[catName]) vtN.children[catName] = createNode();
+                const catN = vtN.children[catName];
+                updateNodeData(catN, finalVal, isXuatCat ? finalVal : 0, isShortageCat ? finalVal : 0);
+
+                if (!catN.children[yc]) catN.children[yc] = createNode();
+                const ycN = catN.children[yc];
+                updateNodeData(ycN, finalVal, isXuatCat ? finalVal : 0, isShortageCat ? finalVal : 0);
+
+                if (!ycN.children[nx]) ycN.children[nx] = { total: 0, xuatTotal: 0, shortageTotal: 0, nxSet: new Set(), id_cts: [], isMaNX: true, children: {} };
+                const nxN = ycN.children[nx];
+                nxN.total += finalVal;
+                if (isXuatCat) nxN.xuatTotal += finalVal;
+                if (isShortageCat) nxN.shortageTotal += finalVal;
+                nxN.id_cts.push(row.id);
+                if (nx) nxN.nxSet.add(nx);
             } else {
-                addLeaf(vtN, subMode === 'xuat' ? 'Đã xuất' : 'Thiếu hàng', val, subMode === 'xuat', subMode === 'shortage');
+                // Chế độ nhập (đơn giản hơn)
+                if (!vtN.children[yc]) vtN.children[yc] = createNode();
+                const ycN = vtN.children[yc];
+                updateNodeData(ycN, finalVal, 0, 0);
+
+                if (!ycN.children[nx]) ycN.children[nx] = { total: 0, xuatTotal: 0, shortageTotal: 0, nxSet: new Set(), id_cts: [], isMaNX: true, children: {} };
+                const nxN = ycN.children[nx];
+                nxN.total += finalVal;
+                nxN.id_cts.push(row.id);
+                if (nx) nxN.nxSet.add(nx);
             }
+        };
+
+        if (mode === 'xuat') {
+            if (subMode === 'all' || subMode === 'xuat') processRow(xuat, true, false);
+            if (subMode === 'all' || subMode === 'shortage') processRow(shortage, false, true);
         } else {
-            if (!vtN.children[yc]) vtN.children[yc] = { total: 0, nxSet: new Set(), children: {} };
-            const ycN = vtN.children[yc]; ycN.total += val; if(nx) ycN.nxSet.add(nx);
-            if (!ycN.children[nx]) ycN.children[nx] = { total: 0, nxSet: new Set(), id_cts: [], isMaNX: true, children: {} };
-            const nxN = ycN.children[nx]; nxN.total += val; nxN.id_cts.push(row.id); if(nx) nxN.nxSet.add(nx);
+            processRow(nhap, false, false);
         }
     });
+
     return root;
 }
 
@@ -199,9 +205,9 @@ function renderTree(container, node, level, mode, parentPath, subMode) {
         
         let color = 'text-gray-700';
         if (level === 0) color = 'text-blue-900'; 
-        else if (level === 1) color = 'text-indigo-600'; // Khu vực
-        else if (level === 2) color = 'text-gray-800'; // Franchise
-        else if (level === 3) color = 'text-indigo-700'; // Mã VT
+        else if (level === 1) color = 'text-indigo-600'; 
+        else if (level === 2) color = 'text-gray-800'; 
+        else if (level === 3) color = 'text-indigo-700'; 
 
         if (key === "Thiếu hàng" || (mode === 'xuat' && subMode === 'shortage' && level >= 4)) color = 'text-amber-500';
         else if (key === "Đã xuất" || (mode === 'xuat' && subMode === 'xuat' && level >= 4)) color = 'text-red-600';
@@ -220,7 +226,7 @@ function renderTree(container, node, level, mode, parentPath, subMode) {
 
         contentEl.innerHTML = `
             <div class="flex items-center gap-1 md:gap-2 flex-grow min-w-0 overflow-hidden">
-                ${hasChildren ? `<svg class="tree-toggle-icon w-3 h-3 md:w-4 md:h-4 text-gray-400 group-hover:text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M10 12a1 1 0 01-.707-.293l-4-4a1 1 0 111.414-1.414L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4A1 1 0 0110 12z"></path></svg>` : `<span class="w-3 md:w-4 flex-shrink-0"></span>`}
+                ${hasChildren ? `<svg class="tree-toggle-icon w-3.5 h-3.5 md:w-4 md:h-4 text-gray-400 group-hover:text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M10 12a1 1 0 01-.707-.293l-4-4a1 1 0 111.414-1.414L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4A1 1 0 0110 12z"></path></svg>` : `<span class="w-3.5 md:w-4 flex-shrink-0"></span>`}
                 <div class="flex-grow flex items-center gap-1 md:gap-1.5 overflow-hidden min-w-0">
                     <span class="${weights[level]} ${color} truncate leading-tight text-[10px] md:text-sm">${key}</span>
                     ${nxHtml}${vtHtml}
@@ -265,7 +271,6 @@ function renderTree(container, node, level, mode, parentPath, subMode) {
 }
 
 async function openHierarchyActionPopover(button, type, value, ctId = null) {
-    // Logic Toggle: Nếu đang mở chính menu của nút này thì đóng lại và thoát
     if (activeHierarchyPopover) {
         const isSameButton = activeHierarchyPopover._trigger === button;
         activeHierarchyPopover.remove();
@@ -278,7 +283,7 @@ async function openHierarchyActionPopover(button, type, value, ctId = null) {
     if (!template) return;
 
     const popover = template.content.cloneNode(true).querySelector('.action-popover');
-    popover._trigger = button; // Lưu lại nút kích hoạt
+    popover._trigger = button; 
     document.body.appendChild(popover);
     const rect = button.getBoundingClientRect();
     popover.style.position = 'fixed'; popover.style.top = `${rect.bottom + 5}px`; popover.style.left = `${rect.left - (type==='vt'?80:120)}px`; popover.style.zIndex = '1000';
@@ -307,7 +312,6 @@ async function openHierarchyActionPopover(button, type, value, ctId = null) {
 
     activeHierarchyPopover = popover;
 
-    // Lắng nghe click toàn cục để đóng popover khi nhấn ra ngoài
     setTimeout(() => {
         const closeHandler = (e) => {
             if (!popover.contains(e.target) && e.target !== button) {
