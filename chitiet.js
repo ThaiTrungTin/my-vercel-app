@@ -970,7 +970,13 @@ async function handleExcelExport() {
                 return;
             }
 
-            const worksheet = XLSX.utils.json_to_sheet(data);
+            // --- NÂNG CẤP: Định dạng cột Thời Gian trước khi tạo file Excel ---
+            const formattedData = data.map(item => ({
+                ...item,
+                thoi_gian: formatDateToDDMMYYYY(item.thoi_gian)
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(formattedData);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "ChiTiet");
             XLSX.writeFile(workbook, `ChiTietGiaoDich_${new Date().toISOString().slice(0,10)}.xlsx`);
