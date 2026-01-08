@@ -1077,6 +1077,7 @@ function renderMobileOnlineList() {
 
 document.addEventListener('DOMContentLoaded', () => {
     const toggleBtn = document.getElementById('mobile-online-toggle');
+    const headerBtn = document.getElementById('header-online-toggle');
     const drawer = document.getElementById('mobile-online-drawer');
     const overlay = document.getElementById('mobile-online-overlay');
     const closeBtn = document.getElementById('mobile-online-close');
@@ -1094,6 +1095,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     if (toggleBtn) toggleBtn.addEventListener('click', openDrawer);
+    if (headerBtn) headerBtn.addEventListener('click', openDrawer);
     if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
     if (overlay) overlay.addEventListener('click', closeDrawer);
 });
