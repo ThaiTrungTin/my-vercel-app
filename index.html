@@ -83,6 +83,26 @@
                 font-size: 10px !important;
                 padding-right: 6px !important;
             }
+            /* Zoom tip (desktop only) */
+            .zoom-tip {
+                display: none;
+                align-items: center;
+                gap: 0.5rem;
+                margin-left: 0.75rem;
+                font-size: 12px;
+            }
+            .zoom-kbd {
+                font-weight: 800;
+                color: #fff;
+                background: #2563eb;
+                padding: 2px 6px;
+                border-radius: 6px;
+                box-shadow: 0 1px 0 rgba(0,0,0,0.05);
+            }
+            @media (min-width: 768px) {
+                .zoom-tip { display: inline-flex !important; }
+                #notification-bar { display: flex; align-items: center; }
+            }
 
             .mobile-summary-container {
                 display: flex;
@@ -188,6 +208,22 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             padding: 8px;
             min-width: 250px;
+        }
+        /* Marquee animation utilities */
+        .marquee-wrapper {
+            overflow: hidden;
+            position: relative;
+            width: 100%;
+        }
+        .marquee-track {
+            display: inline-block;
+            white-space: nowrap;
+            will-change: transform;
+            transform: translateX(100%);
+        }
+        @keyframes marquee-scroll {
+            from { transform: translateX(100%); }
+            to   { transform: translateX(-100%); }
         }
             /* (compact table/header/styles removed - restored to previous defaults) */
         .filter-options-list {
@@ -396,9 +432,16 @@
                         </div>
                     </div>
                 <div id="notification-bar" class="text-[8px] md:text-[10px] text-gray-800 text-right whitespace-nowrap overflow-hidden flex-grow flex items-center justify-end">
+                    <div class="zoom-tip" aria-hidden="false">
+                        <span>Mẹo:</span>
+                        <span class="zoom-kbd">Ctrl + Cuộn chuột</span>
+                        <span>hoặc</span>
+                        <span class="zoom-kbd">Ctrl +/-</span>
+                        <span>để tăng giảm kích thước theo ý muốn</span>
                     </div>
                 </div>
-                <main class="flex-1 flex flex-col min-h-0 bg-gray-100 p-1 md:p-3 pb-6 md:pb-4 overflow-hidden">
+                </div>
+                <main class="flex-1 flex flex-col min-h-0 bg-gray-100 p-1 md:p-3 pb-20 md:pb-6 overflow-hidden">
                     <div id="view-phat-trien" class="app-view h-full overflow-y-auto no-scrollbar">
                         <div class="space-y-4 md:space-y-6">
                             <div class="grid grid-cols-3 gap-2 md:gap-6">

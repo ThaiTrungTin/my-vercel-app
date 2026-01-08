@@ -669,13 +669,57 @@ function updateNotificationBar() {
             roleMessage = 'Chào mừng bạn.';
     }
 
+    // Build two messages: main and tip (tip only for desktop)
+    const mainMessage = `<span class="font-bold text-blue-800">${ho_ten}</span> (${phan_quyen}) - <span>${dateString}</span> - <span class="italic text-gray-600">${roleMessage}</span>`;
+    const tipMessage = `<strong style="background:#2563eb;color:#fff;padding:2px 6px;border-radius:6px;margin-right:6px">Mẹo:</strong><span style="font-weight:800;background:#2563eb;color:#fff;padding:2px 6px;border-radius:6px">Ctrl + Cuộn chuột</span> <span style="margin:0 6px">hoặc</span> <span style="font-weight:800;background:#2563eb;color:#fff;padding:2px 6px;border-radius:6px">Ctrl +/-</span> để tăng giảm kích thước theo ý muốn`;
+
+    // Create wrapper with two marquee-like tracks that will run sequentially
     notificationBar.innerHTML = `
-        <marquee behavior="scroll" direction="left" scrollamount="4" class="w-full">
-            <span class="font-bold text-blue-800">${ho_ten}</span> (${phan_quyen}) - 
-            <span>${dateString}</span> - 
-            <span class="italic text-gray-600">${roleMessage}</span>
-        </marquee>
+        <div class="marquee-wrapper" id="notif-main-wrapper"><div class="marquee-track" id="notif-main-track">${mainMessage}</div></div>
+        <div class="marquee-wrapper" id="notif-tip-wrapper" style="display:none"><div class="marquee-track" id="notif-tip-track">${tipMessage}</div></div>
     `;
+
+    // Helper to run marquee animation and return promise on finish
+    const runMarqueeOnce = (wrapperEl, trackEl, speedPxPerSec = 80) => {
+        return new Promise(resolve => {
+            // reset
+            trackEl.style.animation = 'none';
+            trackEl.style.transform = 'translateX(100%)';
+            // measure widths
+            const wrapperW = wrapperEl.clientWidth || wrapperEl.getBoundingClientRect().width;
+            // ensure element in DOM to measure
+            requestAnimationFrame(() => {
+                const trackW = trackEl.scrollWidth || trackEl.getBoundingClientRect().width;
+                const distance = wrapperW + trackW;
+                const duration = Math.max(2, distance / speedPxPerSec);
+                trackEl.style.animation = `marquee-scroll ${duration}s linear forwards`;
+                const onEnd = () => {
+                    trackEl.removeEventListener('animationend', onEnd);
+                    resolve();
+                };
+                trackEl.addEventListener('animationend', onEnd);
+            });
+        });
+    };
+
+    (async () => {
+        const mainWrapper = document.getElementById('notif-main-wrapper');
+        const mainTrack = document.getElementById('notif-main-track');
+        const tipWrapper = document.getElementById('notif-tip-wrapper');
+        const tipTrack = document.getElementById('notif-tip-track');
+        try {
+            await runMarqueeOnce(mainWrapper, mainTrack, 90);
+            if (window.innerWidth >= 768) {
+                // show tip then run
+                tipWrapper.style.display = 'block';
+                await runMarqueeOnce(tipWrapper, tipTrack, 90);
+                // hide tip after run
+                tipWrapper.style.display = 'none';
+            }
+        } catch (e) {
+            console.error('Marquee sequential error', e);
+        }
+    })();
 }
 
 async function handleLogout() {
