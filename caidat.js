@@ -1,5 +1,5 @@
 
-import { sb, cache, currentUser, showLoading, showToast, showConfirm, DEFAULT_AVATAR_URL, updateSidebarAvatar, sanitizeFileName, onlineUsers, openAutocomplete } from './app.js';
+import { sb, cache, currentUser, showLoading, showToast, showConfirm, DEFAULT_AVATAR_URL, updateSidebarAvatar, sanitizeFileName, onlineUsers, lastSeenMap, openAutocomplete } from './app.js';
 
 let selectedAvatarFile = null;
 
@@ -91,6 +91,24 @@ function openMultiSelectDroplist(button, options, currentSelected, onApply) {
     if (!isMobile) document.addEventListener('mousedown', closeHandler);
 }
 
+// Hiển thị khoảng thời gian kể từ timestamp ISO (ví dụ "2 giờ trước")
+function formatTimeAgo(isoString) {
+    try {
+        const then = new Date(isoString).getTime();
+        const now = Date.now();
+        const diff = Math.max(0, Math.floor((now - then) / 1000)); // seconds
+        if (diff < 60) return `${diff}s trước`;
+        const mins = Math.floor(diff / 60);
+        if (mins < 60) return `${mins} phút trước`;
+        const hours = Math.floor(mins / 60);
+        if (hours < 24) return `${hours} giờ trước`;
+        const days = Math.floor(hours / 24);
+        return `${days} ngày trước`;
+    } catch (e) {
+        return '';
+    }
+}
+
 async function handleProfileUpdate(e) {
     e.preventDefault();
     const ho_ten = document.getElementById('profile-ho-ten').value.trim();
@@ -160,6 +178,16 @@ export async function fetchUsers() {
     (nganhData || []).forEach(item => { if (item.nganh && !industryMap.has(item.nganh)) industryMap.set(item.nganh, item.phu_trach || ''); });
     const enrichedNganh = Array.from(industryMap, ([nganh, pt]) => ({ id: nganh, label: nganh, subInfo: pt })).sort((a,b) => a.label.localeCompare(b.label));
     cache.userList = users;
+    // populate lastSeenMap from persisted DB values so last-online survives reloads
+    try {
+        (users || []).forEach(u => {
+            if (u && u.gmail && u.last_online_at) {
+                lastSeenMap.set(u.gmail, u.last_online_at);
+            }
+        });
+    } catch (e) {
+        console.debug('populate lastSeenMap error', e);
+    }
     renderUserList(users, enrichedNganh);
 }
 
@@ -174,12 +202,14 @@ function renderUserList(users, allNganhEnriched) {
         const dataCnt = (user.xem_data || '').split(',').filter(Boolean).length;
         const isLocked = user.stt === 'Khóa';
         
-        // Kiểm tra trạng thái hiện diện (online/away)
+        // Kiểm tra trạng thái hiện diện (online/away) và thời gian hoạt động gần nhất
         const presence = onlineUsers.get(user.gmail);
         const status = presence ? (presence.status || 'online') : 'offline';
         let statusDotClass = 'bg-gray-300'; // Mặc định offline
         if (status === 'online') statusDotClass = 'bg-green-500';
         else if (status === 'away') statusDotClass = 'bg-yellow-400';
+        const lastSeenIso = (presence && presence.online_at) ? presence.online_at : (lastSeenMap.get(user.gmail) || '');
+        const lastSeenText = lastSeenIso ? formatTimeAgo(lastSeenIso) : '';
 
         const card = document.createElement('div');
         card.className = `bg-white border ${isLocked ? 'border-red-100 bg-red-50/20' : 'border-gray-100'} rounded-xl p-3 shadow-sm transition-all hover:border-indigo-100`;
@@ -223,7 +253,7 @@ function renderUserList(users, allNganhEnriched) {
                 <div class="flex items-center justify-between px-1 bg-gray-50/50 rounded-lg p-1.5">
                     <div class="flex flex-col">
                         <span class="text-[7px] font-black text-gray-400 uppercase tracking-widest">Quyền hạn</span>
-                        <span class="text-[9px] italic text-gray-400">${status === 'offline' ? 'Ngoại tuyến' : (status === 'away' ? 'Vắng mặt' : 'Đang hoạt động')}</span>
+                        <span class="text-[9px] italic text-gray-400">${status === 'offline' ? `Ngoại tuyến${lastSeenText ? ' • ' + lastSeenText : ''}` : (status === 'away' ? `Vắng mặt${lastSeenText ? ' • ' + lastSeenText : ''}` : 'Đang hoạt động')}</span>
                     </div>
                     <select data-gmail="${user.gmail}" class="user-role-select bg-white border border-gray-100 rounded-lg px-2 py-1 text-[11px] font-black text-blue-600 outline-none focus:ring-1 focus:ring-blue-500 shadow-sm" ${isMe ? 'disabled' : ''}>
                         <option value="Admin" ${user.phan_quyen === 'Admin' ? 'selected' : ''}>Admin</option>

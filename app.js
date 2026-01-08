@@ -13,6 +13,24 @@ let adminNotificationChannel = null;
 let presenceChannel = null;
 let dataChannel = null; 
 export const onlineUsers = new Map();
+export const lastSeenMap = new Map();
+// Format ISO timestamp to "x phút/giờ/ngày trước"
+function formatTimeAgo(isoString) {
+    try {
+        const then = new Date(isoString).getTime();
+        const now = Date.now();
+        const diff = Math.max(0, Math.floor((now - then) / 1000)); // seconds
+        if (diff < 60) return `${diff}s trước`;
+        const mins = Math.floor(diff / 60);
+        if (mins < 60) return `${mins} phút trước`;
+        const hours = Math.floor(mins / 60);
+        if (hours < 24) return `${hours} giờ trước`;
+        const days = Math.floor(hours / 24);
+        return `${days} ngày trước`;
+    } catch (e) {
+        return '';
+    }
+}
 export const DEFAULT_AVATAR_URL = 'https://t4.ftcdn.net/jpg/05/49/98/39/360_F_549983970_bRCkYfk0P6PP5fKbMhZMIb07vs1cACai.jpg';
 export const PLACEHOLDER_IMAGE_URL = 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Placeholder_view_vector.svg/681px-Placeholder_view_vector.svg.png';
 export const cache = {
@@ -831,6 +849,81 @@ function updateOnlineStatusUI() {
     } else {
         avatarStatusEl.className = 'absolute -bottom-0.5 -right-0.5 block h-3 w-3 rounded-full bg-gray-400 ring-2 ring-gray-900';
     }
+    // Render small online user avatars in the sidebar (bottom-left)
+    try {
+        const onlineContainer = document.getElementById('sidebar-online-users');
+        if (!onlineContainer) return;
+        onlineContainer.innerHTML = '';
+        // exclude current user from the online avatars list
+        const entries = Array.from(onlineUsers.entries()).filter(([g]) => String(g).trim() !== String(currentUser?.gmail).trim());
+        if (entries.length === 0) {
+            onlineContainer.classList.add('hidden');
+            return;
+        }
+        // Show up to 12 avatars
+        const maxShow = 12;
+        let shown = 0;
+        const sidebarEl = document.getElementById('sidebar');
+        const isSidebarCollapsedNow = sidebarEl ? sidebarEl.classList.contains('w-20') : false;
+        for (const [gmail, presence] of entries) {
+            if (shown >= maxShow) break;
+            // attempt to find user info from cache
+            const userInfo = (cache && cache.userList) ? cache.userList.find(u => u.gmail === gmail) : null;
+            const name = userInfo ? (userInfo.ho_ten || gmail) : gmail;
+            const avatar = userInfo ? (userInfo.anh_dai_dien_url || DEFAULT_AVATAR_URL) : DEFAULT_AVATAR_URL;
+            const status = presence && presence.status ? presence.status : 'offline';
+            // clearer colors: emerald for online, amber for away, gray for offline
+            const dotClass = status === 'away' ? 'bg-amber-500' : (status === 'online' ? 'bg-emerald-500' : 'bg-gray-400');
+            const wrapper = document.createElement('div');
+            wrapper.className = 'relative flex-shrink-0 sidebar-online-avatar flex items-center';
+            const lastSeenIso = (presence && presence.online_at) ? presence.online_at : (lastSeenMap.get(gmail) || '');
+            const lastSeenText = lastSeenIso ? formatTimeAgo(lastSeenIso) : '';
+            const statusLabel = status === 'online' ? 'Đang hoạt động' : (status === 'away' ? 'Vắng mặt' : 'Ngoại tuyến');
+            // do not show inline tooltip; we keep no custom tooltip per user's request
+            // When sidebar expanded show name next to avatar; when collapsed show only avatar (tooltip will appear)
+            if (isSidebarCollapsedNow) {
+                wrapper.innerHTML = `<div class="avatar-wrap relative inline-block"><img src="${avatar}" class="w-7 h-7 rounded-full object-cover border-2 border-white shadow-sm"><span class="absolute -bottom-0.5 -right-0.5 block h-2.5 w-2.5 rounded-full ${dotClass} ring-2 ring-gray-900"></span></div>`;
+            } else {
+                // show name (no status/time inline)
+                wrapper.innerHTML = `<div class="avatar-wrap relative inline-block"><img src="${avatar}" class="w-7 h-7 rounded-full object-cover border-2 border-white shadow-sm"><span class="absolute -bottom-0.5 -right-0.5 block h-2.5 w-2.5 rounded-full ${dotClass} ring-2 ring-gray-900"></span></div><span class="ml-2 text-white text-sm truncate sidebar-online-name">${name}</span>`;
+            }
+            onlineContainer.appendChild(wrapper);
+            shown++;
+            // If user details not found in cache, fetch from DB and update the avatar entry asynchronously
+            if (!userInfo) {
+                (async (g, w, isCollapsed) => {
+                    try {
+                        const { data: userRow, error } = await sb.from('user').select('gmail, ho_ten, anh_dai_dien_url').eq('gmail', g).single();
+                        if (!error && userRow) {
+                            // update cache
+                            cache.userList = cache.userList || [];
+                            const existsIndex = cache.userList.findIndex(u => u.gmail === userRow.gmail);
+                            if (existsIndex === -1) cache.userList.push(userRow);
+                            else cache.userList[existsIndex] = Object.assign({}, cache.userList[existsIndex], userRow);
+                            // update wrapper content (only show ho_ten when expanded)
+                            const avatarImg = w.querySelector('img');
+                            if (userRow.anh_dai_dien_url && avatarImg) avatarImg.src = userRow.anh_dai_dien_url;
+                            if (!isCollapsed) {
+                                const nameSpan = w.querySelector('.sidebar-online-name');
+                                if (nameSpan) nameSpan.textContent = userRow.ho_ten || userRow.gmail;
+                                else {
+                                    const span = document.createElement('span');
+                                    span.className = 'ml-2 text-white text-sm truncate sidebar-online-name';
+                                    span.textContent = userRow.ho_ten || userRow.gmail;
+                                    w.appendChild(span);
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.debug('fetch user for avatar error', e);
+                    }
+                })(gmail, wrapper, isSidebarCollapsedNow);
+            }
+        }
+        onlineContainer.classList.remove('hidden');
+    } catch (e) {
+        console.error('updateOnlineStatusUI sidebar avatars error', e);
+    }
 }
 
 function setupUserPermissionRealtime() {
@@ -843,10 +936,19 @@ function setupUserPermissionRealtime() {
             table: 'user', 
             filter: `gmail=eq.${currentUser.gmail}` 
         }, payload => {
-            const newData = payload.new;
+            const newData = payload.new || {};
+            // Show toast only if role actually changed (avoid showing when reloading or switching tabs)
+            const oldRole = currentUser ? currentUser.phan_quyen : null;
+            const newRole = newData.phan_quyen;
+            const roleChanged = (typeof newRole === 'string' && newRole !== oldRole);
+
+            // Merge incoming changes into currentUser
             Object.assign(currentUser, newData);
             sessionStorage.setItem('loggedInUser', JSON.stringify(currentUser));
-            showToast("Admin đã cập nhật quyền hạn của bạn.", "info");
+
+            if (roleChanged) {
+                showToast("Admin đã cập nhật quyền hạn của bạn.", "info");
+            }
             updateNotificationBar();
             updateSidebarAvatar(currentUser.anh_dai_dien_url);
             applyViewPermissions(); 
@@ -869,6 +971,8 @@ function setupPresence() {
                 if (presenceItems && presenceItems.length > 0) {
                     const p = presenceItems[0];
                     onlineUsers.set(p.gmail, p);
+                    // store last-seen timestamp for offline fallback
+                    if (p.online_at) lastSeenMap.set(p.gmail, p.online_at);
                 }
             }
             updateOnlineStatusUI();
@@ -878,22 +982,44 @@ function setupPresence() {
         })
         .subscribe(async (status) => {
             if (status === 'SUBSCRIBED') {
-                await presenceChannel.track({
-                    gmail: currentUser.gmail,
-                    status: document.visibilityState === 'visible' ? 'online' : 'away',
-                    online_at: new Date().toISOString(),
-                });
+                const nowIso = new Date().toISOString();
+                try {
+                    await presenceChannel.track({
+                        gmail: currentUser.gmail,
+                        status: document.visibilityState === 'visible' ? 'online' : 'away',
+                        online_at: nowIso,
+                    });
+                } catch (err) {
+                    console.warn('presence track error', err);
+                }
+                // persist last-online to DB (best-effort)
+                try {
+                    await sb.from('user').update({ last_online_at: nowIso }).eq('gmail', currentUser.gmail);
+                } catch (err) {
+                    console.debug('persist last_online_at failed (may not exist):', err.message || err);
+                }
             }
         });
 
     document.addEventListener('visibilitychange', async () => {
         if (presenceChannel) {
             const status = document.visibilityState === 'visible' ? 'online' : 'away';
-            await presenceChannel.track({
-                gmail: currentUser.gmail,
-                status: status,
-                online_at: new Date().toISOString(),
-            });
+            const nowIso = new Date().toISOString();
+            try {
+                await presenceChannel.track({
+                    gmail: currentUser.gmail,
+                    status: status,
+                    online_at: nowIso,
+                });
+            } catch (err) {
+                console.warn('presence track error (visibilitychange)', err);
+            }
+            // persist last-online to DB (best-effort)
+            try {
+                await sb.from('user').update({ last_online_at: nowIso }).eq('gmail', currentUser.gmail);
+            } catch (err) {
+                console.debug('persist last_online_at failed (visibilitychange):', err.message || err);
+            }
         }
     });
 }
@@ -968,8 +1094,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             navTexts.forEach(text => text?.classList.add('hidden'));
             if (userInfoText) userInfoText.classList.add('hidden');
             sidebarHeaderContent?.classList.replace('justify-between', 'flex-col');
-            navButtons.forEach(btn => !btn.classList.contains('mobile-nav-btn') && btn.classList.replace('px-6', 'justify-center'));
-            navIcons.forEach(icon => icon?.classList.remove('mr-4'));
+            // collapsed: show only icons stacked vertically
+            navButtons.forEach(btn => {
+                if (btn.classList.contains('mobile-nav-btn')) return;
+                btn.classList.remove('px-6');
+                btn.classList.add('justify-center', 'flex-col', 'items-center', 'py-3');
+            });
+            navIcons.forEach(icon => {
+                if (!icon) return;
+                icon.classList.remove('mr-4');
+                icon.classList.add('mb-0.5');
+            });
         } else {
             sidebar.classList.replace('w-20', 'w-64');
             mainContent.classList.replace('md:ml-20', 'md:ml-64');
@@ -978,8 +1113,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             navTexts.forEach(text => text?.classList.remove('hidden'));
             if (userInfoText) userInfoText.classList.remove('hidden');
             sidebarHeaderContent?.classList.replace('flex-col', 'justify-between');
-            navButtons.forEach(btn => !btn.classList.contains('mobile-nav-btn') && btn.classList.replace('justify-center', 'px-6'));
-            navIcons.forEach(icon => icon?.classList.add('mr-4'));
+            // expanded: stack icon above name (vertical) and show text inline under icon
+            navButtons.forEach(btn => {
+                if (btn.classList.contains('mobile-nav-btn')) return;
+                btn.classList.remove('justify-center', 'flex-col', 'items-center', 'py-3');
+                btn.classList.add('px-6', 'py-3');
+            });
+            navIcons.forEach(icon => {
+                if (!icon) return;
+                icon.classList.remove('mb-0.5');
+                icon.classList.add('mr-4');
+            });
         }
     };
 

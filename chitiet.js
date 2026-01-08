@@ -133,7 +133,7 @@ const VIEW_HTML = `
             </table>
         </div>
     </div>
-    <div class="flex-shrink-0 flex flex-row justify-between items-center mt-1 p-1 md:p-2 bg-white rounded-lg shadow-md flex-nowrap overflow-hidden">
+    <div class="flex-shrink-0 flex flex-row justify-between items-center mt-1 p-1 md:p-2 bg-white rounded-lg shadow-md flex-nowrap overflow-hidden pagination-bar">
         <span id="chi-tiet-pagination-info" class="text-[8px] text-gray-600 mr-1 whitespace-nowrap flex-shrink-0"></span>
         <div id="ct-summary-info" class="flex-grow flex justify-center items-center overflow-hidden no-scrollbar px-1"></div>
         <div class="flex items-center gap-0.5 flex-nowrap flex-shrink-0">
