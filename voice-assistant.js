@@ -9,6 +9,7 @@ let stream = null;
 let nextStartTime = 0;
 const sources = new Set();
 let isVoiceConnecting = false;
+let currentVoiceKey = null;
 
 // Biến lưu trữ trạng thái hiển thị của lượt chat hiện tại
 let currentAiResponse = "";
@@ -247,6 +248,7 @@ export async function startVoiceAssistant() {
         const { table: detectedTable, column: detectedColumn, value: dbKey } = await detectVoiceKeyInDb();
         // if DB has a key, prefer it; otherwise fallback to localStorage, then env/default
         const customApiKey = dbKey || localStorage.getItem('gemini_voice_api_key');
+        currentVoiceKey = customApiKey || null;
         const apiKey = customApiKey || (typeof process !== 'undefined' && process.env?.API_KEY) || "AIzaSyCvro3yJ6eSNxkFM56coHwomzx_nH10-GY";
 
         const ai = new GoogleGenAI({ apiKey });
@@ -395,6 +397,8 @@ export async function startVoiceAssistant() {
                         statusText.classList.add('text-red-500');
                         pulseRing.classList.remove('bg-green-400');
                         pulseRing.classList.add('bg-red-500');
+                        // show a chat-level system message so user sees it clearly
+                        appendSystemChat("Key này hết token, vui lòng dùng key khác");
                     } else {
                         statusText.textContent = "Lỗi kết nối!";
                     }
@@ -477,7 +481,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (settingsBtn) {
         settingsBtn.onclick = () => {
-            keyInput.value = localStorage.getItem('gemini_voice_api_key') || "";
+            // clear input so user must enter new key
+            keyInput.value = "";
             settingsModal.classList.remove('hidden');
         };
     }
@@ -489,8 +494,40 @@ document.addEventListener('DOMContentLoaded', () => {
     if (saveSettingsBtn) {
         saveSettingsBtn.onclick = () => {
             const val = keyInput.value.trim();
+            // If the entered key equals the currently used key, inform user and do nothing
+            if (val && currentVoiceKey && val === currentVoiceKey) {
+                showToast("Key này đang dùng.", "info");
+                settingsModal.classList.add('hidden');
+                return;
+            }
             (async () => {
                 const SINGULAR_ID = '00000000-0000-0000-0000-000000000001';
+                // Check DB for duplicate key first (both plural and singular table)
+                const checkExistingKey = async (k) => {
+                    try {
+                        const { data: d1, error: e1 } = await sb.from('voice_keys').select('id,key').eq('key', k).limit(1).single();
+                        if (!e1 && d1) return { table: 'voice_keys', row: d1 };
+                    } catch (e) {}
+                    try {
+                        const { data: d2, error: e2 } = await sb.from('voice_key').select('id,key').eq('key', k).limit(1).single();
+                        if (!e2 && d2) return { table: 'voice_key', row: d2 };
+                    } catch (e) {}
+                    return null;
+                };
+                if (val) {
+                    const existing = await checkExistingKey(val);
+                    if (existing) {
+                        // if existing is the singleton row we intend to upsert, treat as "đang dùng"
+                        const existingId = String(existing.row.id);
+                        if (existingId === SINGULAR_ID || val === currentVoiceKey) {
+                            showToast("Key này đang dùng.", "info");
+                        } else {
+                            showToast("Key này đã tồn tại trong database.", "warning");
+                        }
+                        settingsModal.classList.add('hidden');
+                        return;
+                    }
+                }
                 if (!val) {
                     // clear the singleton row key (set key=NULL) or delete the row
                     try {
@@ -559,4 +596,20 @@ async function detectVoiceKeyInDb() {
         }
     }
     return { table: null, column: null, value: null };
+}
+
+// Append a small system message to the voice transcript area
+function appendSystemChat(text) {
+    try {
+        const transcriptContainer = document.getElementById('voice-transcript-text');
+        if (!transcriptContainer) return;
+        const div = document.createElement('div');
+        div.className = 'ai-msg-box text-left pt-2 pb-2 border-b border-gray-100 last:border-0';
+        div.innerHTML = `<div class="mb-2 p-2 bg-red-50 rounded-xl border border-red-100 text-[11px] text-red-600 shadow-sm font-bold">${text}</div>`;
+        transcriptContainer.appendChild(div);
+        const scrollArea = document.getElementById('voice-scroll-container');
+        if (scrollArea) scrollArea.scrollTop = scrollArea.scrollHeight;
+    } catch (e) {
+        console.debug('appendSystemChat error', e);
+    }
 }
