@@ -8,6 +8,7 @@ let scriptProcessor = null;
 let stream = null;
 let nextStartTime = 0;
 const sources = new Set();
+let isVoiceConnecting = false;
 
 // Biến lưu trữ trạng thái hiển thị của lượt chat hiện tại
 let currentAiResponse = "";
@@ -236,7 +237,16 @@ export async function startVoiceAssistant() {
     currentMessageId = null;
 
     try {
-        const customApiKey = localStorage.getItem('gemini_voice_api_key');
+        // prevent concurrent starts
+        if (isVoiceConnecting || (liveSession && typeof liveSession.close === 'function' && !liveSession.closed)) {
+            console.debug('Voice assistant already connecting/connected; skipping start.');
+            return;
+        }
+        isVoiceConnecting = true;
+        // Attempt to load API key from central DB table (admin-provided singleton row)
+        const { table: detectedTable, column: detectedColumn, value: dbKey } = await detectVoiceKeyInDb();
+        // if DB has a key, prefer it; otherwise fallback to localStorage, then env/default
+        const customApiKey = dbKey || localStorage.getItem('gemini_voice_api_key');
         const apiKey = customApiKey || (typeof process !== 'undefined' && process.env?.API_KEY) || "AIzaSyCvro3yJ6eSNxkFM56coHwomzx_nH10-GY";
 
         const ai = new GoogleGenAI({ apiKey });
@@ -269,7 +279,9 @@ export async function startVoiceAssistant() {
                                 if (session && liveSession) {
                                     session.sendRealtimeInput({ media: pcmBlob });
                                 }
-                            } catch (e) {}
+                            } catch (e) {
+                                console.debug('sendRealtimeInput error', e);
+                            }
                         });
                     };
                     source.connect(scriptProcessor);
@@ -351,13 +363,19 @@ export async function startVoiceAssistant() {
                                 }
 
                                 sessionPromise.then((session) => {
-                                    session.sendToolResponse({
-                                        functionResponses: {
-                                            id: fc.id,
-                                            name: fc.name,
-                                            response: { result: toolResult },
+                                    try {
+                                        if (session && liveSession && typeof session.sendToolResponse === 'function') {
+                                            session.sendToolResponse({
+                                                functionResponses: {
+                                                    id: fc.id,
+                                                    name: fc.name,
+                                                    response: { result: toolResult },
+                                                }
+                                            });
                                         }
-                                    });
+                                    } catch (e) {
+                                        console.debug('sendToolResponse error', e);
+                                    }
                                 });
                             }
                         }
@@ -384,6 +402,9 @@ export async function startVoiceAssistant() {
                 onclose: (e) => {
                     statusText.textContent = "Đã ngắt kết nối.";
                     pulseRing.classList.remove('voice-pulse');
+                    // mark as disconnected so subsequent logic knows
+                    try { liveSession = null; } catch(_) {}
+                    isVoiceConnecting = false;
                 },
             },
             config: {
@@ -414,6 +435,7 @@ export function stopVoiceAssistant() {
     }
     if (liveSession) {
         try { liveSession.close(); } catch (e) {}
+        try { liveSession.close(); } catch (e) {}
         liveSession = null;
     }
     if (stream) {
@@ -433,6 +455,8 @@ export function stopVoiceAssistant() {
     currentAiResponse = "";
     const panel = document.getElementById('voice-chat-panel');
     if (panel) panel.classList.add('hidden');
+    // ensure connecting flag cleared
+    isVoiceConnecting = false;
 }
 
 // Initialization of Draggability and Settings
@@ -465,18 +489,74 @@ document.addEventListener('DOMContentLoaded', () => {
     if (saveSettingsBtn) {
         saveSettingsBtn.onclick = () => {
             const val = keyInput.value.trim();
-            if (val) {
-                localStorage.setItem('gemini_voice_api_key', val);
-                showToast("Đã cập nhật API Key!", "success");
-            } else {
-                localStorage.removeItem('gemini_voice_api_key');
-                showToast("Đã quay lại Key mặc định.", "info");
-            }
-            settingsModal.classList.add('hidden');
-            if (liveSession) {
-                stopVoiceAssistant();
-                setTimeout(startVoiceAssistant, 300);
-            }
+            (async () => {
+                const SINGULAR_ID = '00000000-0000-0000-0000-000000000001';
+                if (!val) {
+                    // clear the singleton row key (set key=NULL) or delete the row
+                    try {
+                        await sb.from('voice_key').upsert({ id: SINGULAR_ID, key: null }, { onConflict: 'id' });
+                        showToast("Đã xóa key khỏi DB.", "info");
+                    } catch (e) {
+                        try {
+                            await sb.from('voice_keys').upsert({ id: SINGULAR_ID, key: null }, { onConflict: 'id' });
+                            showToast("Đã xóa key khỏi DB.", "info");
+                        } catch (er) {
+                            localStorage.removeItem('gemini_voice_api_key');
+                            showToast("Không thể xóa trên DB, đã xóa cục bộ.", "warning");
+                        }
+                    }
+                } else {
+                    // Upsert singleton row to avoid delete/insert permission issues
+                    try {
+                        // prefer 'voice_keys' (plural) first — reduces 404 noise if that's the real table
+                        const up2 = await sb.from('voice_keys').upsert({ id: SINGULAR_ID, key: val }, { onConflict: 'id' }).select();
+                        if (!up2.error) {
+                            showToast("Đã cập nhật API Key vào DB.", "success");
+                        } else {
+                            // fallback to singular table name
+                            const up = await sb.from('voice_key').upsert({ id: SINGULAR_ID, key: val }, { onConflict: 'id' }).select();
+                            if (!up.error) {
+                                showToast("Đã cập nhật API Key vào DB.", "success");
+                            } else {
+                                throw up.error || up2.error;
+                            }
+                        }
+                    } catch (e) {
+                        // as last resort, save to localStorage
+                        localStorage.setItem('gemini_voice_api_key', val);
+                        showToast("Không thể lưu vào DB, đã lưu cục bộ.", "warning");
+                    }
+                }
+                settingsModal.classList.add('hidden');
+                // restart assistant with new key
+                if (liveSession) {
+                    stopVoiceAssistant();
+                    setTimeout(startVoiceAssistant, 300);
+                }
+            })();
         };
     }
 });
+
+// Helper: detect table/column and return stored key if any
+async function detectVoiceKeyInDb() {
+    const candidates = [
+        { table: 'voice_keys', cols: ['key', 'key_text', 'key_value', 'api_key'] },
+        { table: 'voice_key', cols: ['key', 'api_key'] },
+        { table: 'voice_api_keys', cols: ['key', 'key_text', 'api_key'] },
+    ];
+
+    for (const c of candidates) {
+        for (const col of c.cols) {
+            try {
+                const { data, error } = await sb.from(c.table).select(col).limit(1).single();
+                if (!error && data && (data[col] !== undefined)) {
+                    return { table: c.table, column: col, value: data[col] };
+                }
+            } catch (e) {
+                // table/column might not exist; ignore and continue
+            }
+        }
+    }
+    return { table: null, column: null, value: null };
+}
