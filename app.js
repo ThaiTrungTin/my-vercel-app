@@ -924,6 +924,12 @@ function updateOnlineStatusUI() {
     } catch (e) {
         console.error('updateOnlineStatusUI sidebar avatars error', e);
     }
+    // Also render mobile drawer list (if present)
+    try {
+        renderMobileOnlineList();
+    } catch (e) {
+        // ignore if function not ready
+    }
 }
 
 function setupUserPermissionRealtime() {
@@ -1023,6 +1029,74 @@ function setupPresence() {
         }
     });
 }
+
+// Render mobile online list for the slide-up drawer (Phương án B)
+function renderMobileOnlineList() {
+    const listEl = document.getElementById('mobile-online-list');
+    if (!listEl) return;
+    listEl.innerHTML = '';
+    const entries = Array.from(onlineUsers.entries()).filter(([g]) => String(g).trim() !== String(currentUser?.gmail).trim());
+    if (entries.length === 0) {
+        listEl.innerHTML = '<p class="text-sm text-gray-500">Không có ai đang hoạt động</p>';
+        // update header badge
+        const hdrBadge = document.getElementById('header-online-badge');
+        if (hdrBadge) hdrBadge.classList.add('hidden');
+        return;
+    }
+    // update header badge with total count (online + away)
+    const hdrBadge = document.getElementById('header-online-badge');
+    if (hdrBadge) {
+        hdrBadge.textContent = String(entries.length);
+        hdrBadge.classList.toggle('hidden', entries.length === 0);
+    }
+    entries.slice(0, 50).forEach(([gmail, presence]) => {
+        const userInfo = (cache && cache.userList) ? cache.userList.find(u => u.gmail === gmail) : null;
+        const name = userInfo ? (userInfo.ho_ten || gmail) : gmail;
+        const avatar = userInfo ? (userInfo.anh_dai_dien_url || DEFAULT_AVATAR_URL) : DEFAULT_AVATAR_URL;
+        const status = presence && presence.status ? presence.status : 'offline';
+        const lastSeenIso = (presence && presence.online_at) ? presence.online_at : (lastSeenMap.get(gmail) || '');
+        const lastSeenText = lastSeenIso ? formatTimeAgo(lastSeenIso) : '';
+        const dotColor = status === 'online' ? 'bg-emerald-500' : (status === 'away' ? 'bg-amber-500' : 'bg-gray-400');
+
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-3';
+        row.innerHTML = `
+            <div class="relative flex-shrink-0">
+                <img src="${avatar}" class="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm">
+                <span class="absolute -bottom-0.5 -right-0.5 block h-2.5 w-2.5 rounded-full ${dotColor} ring-2 ring-white"></span>
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="text-sm font-semibold text-gray-800 truncate">${name}</div>
+                <div class="text-xs text-gray-500 truncate">${status === 'online' ? 'Đang hoạt động' : (status === 'away' ? 'Vắng mặt' : (lastSeenText ? lastSeenText : 'Ngoại tuyến'))}</div>
+            </div>
+            <div class="flex-shrink-0"></div>
+        `;
+        listEl.appendChild(row);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const toggleBtn = document.getElementById('mobile-online-toggle');
+    const drawer = document.getElementById('mobile-online-drawer');
+    const overlay = document.getElementById('mobile-online-overlay');
+    const closeBtn = document.getElementById('mobile-online-close');
+
+    const openDrawer = () => {
+        if (!drawer) return;
+        drawer.classList.add('open');
+        if (overlay) overlay.classList.remove('hidden');
+        renderMobileOnlineList();
+    };
+    const closeDrawer = () => {
+        if (!drawer) return;
+        drawer.classList.remove('open');
+        if (overlay) overlay.classList.add('hidden');
+    };
+
+    if (toggleBtn) toggleBtn.addEventListener('click', openDrawer);
+    if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
+    if (overlay) overlay.addEventListener('click', closeDrawer);
+});
 
 function setupDataRealtime() {
     if (dataChannel) sb.removeChannel(dataChannel);

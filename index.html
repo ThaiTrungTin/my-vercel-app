@@ -243,6 +243,11 @@
             from { transform: translateX(100%); }
             to   { transform: translateX(-100%); }
         }
+        /* Mobile online drawer */
+        #mobile-online-toggle { bottom: 16px; left: 12px; }
+        #mobile-online-drawer { will-change: transform; }
+        #mobile-online-drawer.open { transform: translateY(0%) !important; }
+        #mobile-online-drawer .drawer-panel { transform: translateY(0%); border-top-left-radius: 12px; border-top-right-radius: 12px; }
             /* (compact table/header/styles removed - restored to previous defaults) */
         .filter-options-list {
             max-height: 200px;
@@ -458,7 +463,7 @@
                             <span id="network-speed-text" class="text-[9px] md:text-[11px] font-medium whitespace-nowrap uppercase tracking-tighter">-- ms</span>
                         </div>
                     </div>
-                <div id="notification-bar" class="text-[8px] md:text-[10px] text-gray-800 text-right whitespace-nowrap overflow-hidden flex-grow flex items-center justify-end">
+                    <div id="notification-bar" class="text-[8px] md:text-[10px] text-gray-800 text-right whitespace-nowrap overflow-hidden flex-grow flex items-center justify-end">
                     <div class="zoom-tip" aria-hidden="false">
                         <span>Mẹo:</span>
                         <span class="zoom-kbd">Ctrl + Cuộn chuột</span>
@@ -466,7 +471,12 @@
                         <span class="zoom-kbd">Ctrl +/-</span>
                         <span>để tăng giảm kích thước theo ý muốn</span>
                     </div>
-                </div>
+                    </div>
+                    <!-- Mobile header online toggle (shows count badge when >0) -->
+                    <button id="header-online-toggle" class="md:hidden ml-2 p-1.5 rounded-full relative bg-transparent text-gray-700">
+                        <svg class="w-5 h-5 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-4-4h-1"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20H4v-2a4 4 0 014-4h1"></path><circle cx="9" cy="7" r="4"></circle><circle cx="17" cy="7" r="4"></circle></svg>
+                        <span id="header-online-badge" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 hidden">0</span>
+                    </button>
                 </div>
                 <main class="flex-1 flex flex-col min-h-0 bg-gray-100 p-1 md:p-3 pb-20 md:pb-6 overflow-hidden">
                     <div id="view-phat-trien" class="app-view h-full overflow-y-auto no-scrollbar">
@@ -1025,7 +1035,22 @@
                 </main>
             </div>
         </div>
-        
+                <!-- Mobile online users toggle + slide-up drawer (Phương án B) -->
+                <!-- header online toggle will be rendered in header for mobile -->
+
+                <div id="mobile-online-drawer" class="fixed inset-x-0 bottom-0 z-50 transform translate-y-full transition-transform duration-300 md:hidden">
+                    <div id="mobile-online-overlay" class="fixed inset-0 bg-black bg-opacity-40 hidden"></div>
+                    <div class="drawer-panel relative bg-white rounded-t-xl p-3 max-h-[65vh] overflow-y-auto">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="font-bold text-base">Người đang hoạt động</h3>
+                            <button id="mobile-online-close" class="p-2 text-gray-600">
+                                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+                        <div id="mobile-online-list" class="space-y-3"></div>
+                    </div>
+                </div>
+
         <nav id="bottom-nav" class="fixed bottom-0 left-0 right-0 bg-gray-900 text-gray-400 flex justify-around items-center h-16 md:hidden z-40 border-t border-gray-700 shadow-[0_-2px_10px_rgba(0,0,0,0.3)]">
             <button data-view="view-phat-trien" class="nav-button mobile-nav-btn flex flex-col items-center justify-center w-full h-full active">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6z"></path></svg>
