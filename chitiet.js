@@ -66,7 +66,7 @@ const VIEW_HTML = `
             </div>
         </div>
 
-        <div class="hidden md:block bg-white p-2 rounded-lg shadow-md mb-2">
+            <div class="hidden md:block bg-white p-2 rounded-lg shadow-md mb-2">
             <div class="flex gap-2 items-center justify-between">
                 <div class="flex gap-1 items-center">
                     <input type="text" id="chi-tiet-search" placeholder="Tìm kiếm chung..." class="px-2 py-1 border rounded-md w-full md:w-40 text-xs">

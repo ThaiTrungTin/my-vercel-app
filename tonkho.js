@@ -795,3 +795,4 @@ function showColumnDetail(columnName, content) {
     document.getElementById('column-detail-content').textContent = content;
     modal.classList.remove('hidden');
 }
+// (global exposure handled separately in index.html)
