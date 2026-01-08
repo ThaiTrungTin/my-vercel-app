@@ -66,32 +66,33 @@ const VIEW_HTML = `
             </div>
         </div>
 
-        <div class="hidden md:block bg-white p-4 rounded-lg shadow-md mb-4">
-            <div class="flex flex-wrap gap-x-4 gap-y-2 items-center justify-between">
-                <div class="flex flex-wrap gap-2 items-center w-full md:w-auto">
-                    <input type="text" id="chi-tiet-search" placeholder="Tìm kiếm chung..." class="px-3 py-2 border rounded-md w-full md:w-40 text-xs">
-                    <div class="flex items-center gap-2 w-full md:w-auto">
-                        <label for="chi-tiet-filter-from-date" class="text-[10px] md:text-sm whitespace-nowrap">Từ:</label>
-                        <input type="date" id="chi-tiet-filter-from-date" class="px-3 py-1.5 border rounded-md w-full md:w-auto text-[10px] md:text-sm">
-                        <label for="chi-tiet-filter-to-date" class="text-[10px] md:text-sm whitespace-nowrap">Đến:</label>
-                        <input type="date" id="chi-tiet-filter-to-date" class="px-3 py-1.5 border rounded-md w-full md:w-auto text-[10px] md:text-sm">
+        <div class="hidden md:block bg-white p-2 rounded-lg shadow-md mb-2">
+            <div class="flex gap-2 items-center justify-between">
+                <div class="flex gap-1 items-center">
+                    <input type="text" id="chi-tiet-search" placeholder="Tìm kiếm chung..." class="px-2 py-1 border rounded-md w-full md:w-40 text-xs">
+                    <div class="flex items-center gap-1">
+                        <label for="chi-tiet-filter-from-date" class="text-[10px] md:text-xs whitespace-nowrap">Từ:</label>
+                        <input type="date" id="chi-tiet-filter-from-date" class="px-2 py-1 border rounded-md w-full md:w-auto text-xs">
+                        <label for="chi-tiet-filter-to-date" class="text-[10px] md:text-xs whitespace-nowrap">Đến:</label>
+                        <input type="date" id="chi-tiet-filter-to-date" class="px-2 py-1 border rounded-md w-full md:w-auto text-xs">
                     </div>
-                    <div class="relative flex-grow md:flex-grow-0"><button id="chi-tiet-filter-loai-btn" data-filter-key="loai" class="filter-btn text-left px-2 py-1 md:px-3 md:py-2 border rounded-md bg-white w-full md:w-28 text-[10px] md:text-sm">Loại</button></div>
-                    <div class="relative flex-grow md:flex-grow-0"><button id="chi-tiet-filter-ma-kho-btn" data-filter-key="ma_kho" class="filter-btn text-left px-2 py-1 md:px-3 md:py-2 border rounded-md bg-white w-full md:w-32 text-[10px] md:text-sm">Mã Kho</button></div>
-                    <div class="relative flex-grow md:flex-grow-0"><button id="chi-tiet-filter-ma-nx-btn" data-filter-key="ma_nx" class="filter-btn text-left px-2 py-1 md:px-3 md:py-2 border rounded-md bg-white w-full md:w-32 text-[10px] md:text-sm">Mã NX</button></div>
-                    <div class="relative flex-grow md:flex-grow-0"><button id="chi-tiet-filter-ma-vt-btn" data-filter-key="ma_vt" class="filter-btn text-left px-2 py-1 md:px-3 md:py-2 border rounded-md bg-white w-full md:w-32 text-[10px] md:text-sm">Mã VT</button></div>
-                    <div class="relative flex-grow md:flex-grow-0"><button id="chi-tiet-filter-lot-btn" data-filter-key="lot" class="filter-btn text-left px-2 py-1 md:px-3 md:py-2 border rounded-md bg-white w-full md:w-28 text-[10px] md:text-sm">LOT</button></div>
-                    <div class="relative flex-grow md:flex-grow-0"><button id="chi-tiet-filter-nganh-btn" data-filter-key="nganh" class="filter-btn text-left px-2 py-1 md:px-3 md:py-2 border rounded-md bg-white w-full md:w-28 text-[10px] md:text-sm">Ngành</button></div>
-                    <div class="relative flex-grow md:flex-grow-0"><button id="chi-tiet-filter-phu-trach-btn" data-filter-key="phu_trach" class="filter-btn text-left px-2 py-1 md:px-3 md:py-2 border rounded-md bg-white w-full md:w-32 text-[10px] md:text-sm">Phụ Trách</button></div>
-                    <div class="relative flex-grow md:flex-grow-0"><button id="chi-tiet-filter-yeu-cau-btn" data-filter-key="yeu_cau" class="filter-btn text-left px-2 py-1 md:px-3 md:py-2 border rounded-md bg-white w-full md:w-32 text-[10px] md:text-sm">Yêu Cầu</button></div>
+                    <div class="flex items-center gap-1 ml-2">
+                        <button id="chi-tiet-filter-loai-btn" data-filter-key="loai" class="filter-btn p-1 border rounded-md bg-white text-xs" title="Loại">Loại</button>
+                        <button id="chi-tiet-filter-ma-kho-btn" data-filter-key="ma_kho" class="filter-btn p-1 border rounded-md bg-white text-xs" title="Mã Kho">Mã Kho</button>
+                        <button id="chi-tiet-filter-ma-nx-btn" data-filter-key="ma_nx" class="filter-btn p-1 border rounded-md bg-white text-xs" title="Mã NX">Mã NX</button>
+                        <button id="chi-tiet-filter-ma-vt-btn" data-filter-key="ma_vt" class="filter-btn p-1 border rounded-md bg-white text-xs" title="Mã VT">Mã VT</button>
+                        <button id="chi-tiet-filter-lot-btn" data-filter-key="lot" class="filter-btn p-1 border rounded-md bg-white text-xs" title="LOT">LOT</button>
+                        <button id="chi-tiet-filter-nganh-btn" data-filter-key="nganh" class="filter-btn p-1 border rounded-md bg-white text-xs" title="Ngành">Ngành</button>
+                        <button id="chi-tiet-filter-phu-trach-btn" data-filter-key="phu_trach" class="filter-btn p-1 border rounded-md bg-white text-xs" title="Phụ Trách">Phụ Trách</button>
+                        <button id="chi-tiet-filter-yeu-cau-btn" data-filter-key="yeu_cau" class="filter-btn p-1 border rounded-md bg-white text-xs" title="Yêu Cầu">Yêu Cầu</button>
+                    </div>
                 </div>
-                <div class="flex flex-wrap gap-2 items-center w-full md:w-auto justify-end mt-2 md:mt-0">
-                    <button id="chi-tiet-reset-filters" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md text-[10px] md:text-sm">Xóa Lọc</button>
-                    <button id="chi-tiet-btn-settings" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-3 rounded-md text-[10px] md:text-sm flex items-center gap-1" title="Cài đặt cột hiển thị">
+                <div class="flex gap-1 items-center">
+                    <button id="chi-tiet-reset-filters" class="p-1 bg-gray-500 hover:bg-gray-600 text-white rounded-md text-xs" title="Xóa Lọc">✖</button>
+                    <button id="chi-tiet-btn-settings" class="p-1 bg-indigo-500 hover:bg-indigo-600 text-white rounded-md text-xs" title="Cài đặt cột hiển thị">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543-.94-3.31.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 00 1.066-2.573c-.94-1.543-.826-3.31-2.37-2.37.996.608 2.296.07 2.572-1.065z"></path></svg>
-                        <span class="hidden lg:inline">Cài Đặt Cột</span>
                     </button>
-                    <button id="chi-tiet-btn-excel" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md text-[10px] md:text-sm">Excel</button>
+                    <button id="chi-tiet-btn-excel" class="p-1 bg-green-600 hover:bg-green-700 text-white rounded-md text-xs" title="Xuất Excel">📤</button>
                 </div>
             </div>
         </div>
@@ -112,10 +113,10 @@ const VIEW_HTML = `
                     <th class="px-2 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300 w-28">Date</th>
                     <th class="hidden md:table-cell ct-col-yeu-cau px-2 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300 w-20">Yêu Cầu</th>
                     <th class="hidden md:table-cell ct-col-nhap px-2 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300 w-20">
-                        <div>Nhập<span id="chi-tiet-header-nhap-count" class="block font-bold text-green-600 text-[9px] md:text-xs"></span></div>
+                        <div class="text-[10px]">Nhập<span id="chi-tiet-header-nhap-count" class="block font-bold text-green-600 text-[7px] md:text-[9px]"></span></div>
                     </th>
                     <th class="hidden md:table-cell ct-col-xuat px-2 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300 w-20">
-                        <div>Xuất<span id="chi-tiet-header-xuat-count" class="block font-bold text-red-600 text-[9px] md:text-xs"></span></div>
+                        <div class="text-[10px]">Xuất<span id="chi-tiet-header-xuat-count" class="block font-bold text-red-600 text-[7px] md:text-[9px]"></span></div>
                     </th>
                     <th class="md:hidden px-1 py-3 text-center font-bold text-black uppercase tracking-wider border border-gray-300 w-6">
                         SL
@@ -132,25 +133,25 @@ const VIEW_HTML = `
             </table>
         </div>
     </div>
-    <div class="flex-shrink-0 flex flex-row justify-between items-center mt-2 md:mt-4 p-2 md:p-4 bg-white rounded-lg shadow-md flex-nowrap overflow-hidden">
-        <span id="chi-tiet-pagination-info" class="text-[8px] md:text-sm text-gray-600 mr-1 whitespace-nowrap flex-shrink-0"></span>
+    <div class="flex-shrink-0 flex flex-row justify-between items-center mt-1 p-1 md:p-2 bg-white rounded-lg shadow-md flex-nowrap overflow-hidden">
+        <span id="chi-tiet-pagination-info" class="text-[8px] text-gray-600 mr-1 whitespace-nowrap flex-shrink-0"></span>
         <div id="ct-summary-info" class="flex-grow flex justify-center items-center overflow-hidden no-scrollbar px-1"></div>
-        <div class="flex items-center gap-1 flex-nowrap flex-shrink-0">
-            <select id="chi-tiet-items-per-page" class="hidden md:block px-3 py-1 border rounded-md bg-white">
+        <div class="flex items-center gap-0.5 flex-nowrap flex-shrink-0">
+            <select id="chi-tiet-items-per-page" class="hidden md:block px-2 py-0.5 border rounded-md bg-white text-xs">
                 <option value="50">50</option>
                 <option value="100">100</option>
                 <option value="200">200</option>
                 <option value="500">500</option>
             </select>
-            <button id="chi-tiet-prev-page" class="px-1.5 py-1 md:px-3 border rounded-md bg-white text-[10px] md:text-sm">
+            <button id="chi-tiet-prev-page" class="px-1 py-1 border rounded-md bg-white text-xs">
                 <svg class="w-3 h-3 md:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
                 <span class="hidden md:inline"></span>
             </button>
             <div class="flex items-center gap-0.5 mx-0.5">
-                <input type="number" id="chi-tiet-page-input" class="w-7 md:w-16 text-center border rounded-md p-0.5 text-[9px] md:text-sm" value="1" min="1">
-                <span id="chi-tiet-total-pages" class="text-[9px] md:text-sm text-gray-700 whitespace-nowrap">/1</span>
+                <input type="number" id="chi-tiet-page-input" class="w-7 md:w-16 text-center border rounded-md p-0.5 text-xs" value="1" min="1">
+                <span id="chi-tiet-total-pages" class="text-[8px] text-gray-700 whitespace-nowrap">/1</span>
             </div>
-            <button id="chi-tiet-next-page" class="px-1.5 py-1 md:px-3 border rounded-md bg-white text-[10px] md:text-sm">
+            <button id="chi-tiet-next-page" class="px-1 py-1 border rounded-md bg-white text-xs">
                 <svg class="w-3 h-3 fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                 <span class="hidden md:inline"></span>
             </button>
@@ -178,8 +179,10 @@ const SETTINGS_MODAL_HTML = `
 const getColumnSettingsCT = () => {
     const saved = localStorage.getItem('chiTietColumnSettings');
     if (saved) return JSON.parse(saved);
+    // Default visible columns: show the commonly used ones on login
+    const defaultVisible = ['ma-vach', 'ten-vt', 'yeu-cau', 'nhap', 'xuat', 'loai', 'muc-dich'];
     return OPTIONAL_COLUMNS_CT.reduce((acc, col) => {
-        acc[col.key] = true;
+        acc[col.key] = defaultVisible.includes(col.key);
         return acc;
     }, {});
 };
@@ -406,7 +409,14 @@ function renderChiTietTable(data) {
                     </div>
                 </td>
                 <td class="hidden md:table-cell ct-col-ma-vach px-2 py-2 border-r border-gray-300 text-left whitespace-nowrap" title="${ct.ma_vach}">${ct.ma_vach}</td>
-                <td class="px-2 py-2 border-r border-gray-300 text-left cursor-pointer text-blue-600 hover:underline ma-vt-cell whitespace-nowrap" title="${ct.ma_vt}">${ct.ma_vt}</td>
+                <td class="px-2 py-2 border-r border-gray-300 text-left whitespace-nowrap" title="${ct.ma_vt}">
+                    <div class="flex items-center gap-1">
+                        <span class="text-blue-600 font-bold ma-vt-cell">${ct.ma_vt}</span>
+                        <button class="copy-ma-vt-btn p-1 text-gray-300 hover:text-blue-500 transition-colors" data-ma-vt="${ct.ma_vt}" title="Copy Mã VT">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                        </button>
+                    </div>
+                </td>
                 <td class="hidden md:table-cell ct-col-ten-vt px-2 py-2 border-r border-gray-300 text-left min-w-[400px]" title="${ct.ten_vt}">
                     <div class="line-clamp-2 break-words">${ct.ten_vt}</div>
                 </td>

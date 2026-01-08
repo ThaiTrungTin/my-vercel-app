@@ -87,8 +87,11 @@ function getStatusUI(statusLabel, daysLeft = null) {
 const getColumnSettings = () => {
     const saved = localStorage.getItem('tonKhoColumnSettings');
     if (saved) return JSON.parse(saved);
+
+    // Default columns to show: Đầu, Nhập, Xuất, Tình Trạng, Ghi chú
+    const defaultVisibleColumns = ['dau', 'nhap', 'xuat', 'tinh-trang', 'ghi-chu'];
     return OPTIONAL_COLUMNS.reduce((acc, col) => {
-        acc[col.key] = true;
+        acc[col.key] = defaultVisibleColumns.includes(col.key);
         return acc;
     }, {});
 };
@@ -268,37 +271,37 @@ function renderTonKhoTable(data) {
             
             return `
                 <tr data-id="${tk.ma_vach}" class="hover:bg-gray-50">
-                    <td class="tk-col-full-code hidden md:table-cell px-1 py-2 text-sm font-medium text-blue-600 hover:underline border border-gray-300 text-left cursor-pointer">
+                    <td class="tk-col-full-code hidden md:table-cell px-1 py-1 text-xs font-medium text-blue-600 hover:underline border border-gray-300 text-left cursor-pointer">
                         ${tk.ma_vach}
                     </td>
-                    <td class="px-2 md:px-4 py-1 text-[10px] md:text-sm font-medium border border-gray-300 text-left break-all">
-                        <div class="flex items-center gap-1.5">
+                    <td class="px-1 py-0.5 text-[9px] font-medium border border-gray-300 text-left whitespace-nowrap overflow-hidden text-ellipsis cursor-pointer" title="${tk.ma_vt}" ondblclick="showColumnDetail('Mã VT', '${tk.ma_vt.replace(/'/g, '\\\'')}')">
+                        <div class="flex items-center gap-1">
                             <span class="text-blue-600 font-bold">${tk.ma_vt}</span>
-                            <button class="copy-ma-vt-btn p-1 text-gray-400 hover:text-blue-600 transition-colors" title="Copy mã VT">
-                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            <button class="copy-ma-vt-btn p-0.5 text-gray-400 hover:text-blue-600 transition-colors" title="Copy mã VT">
+                                <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                             </button>
                         </div>
-                        <div class="md:hidden text-[8px] text-gray-500 break-words mt-0.5 leading-tight font-normal hover:text-blue-500 hover:underline cursor-pointer mobile-ten-vt-trigger">${tk.ten_vt}</div>
+                        <div class="md:hidden text-[7px] text-gray-500 break-words mt-0.5 leading-tight font-normal hover:text-blue-500 hover:underline cursor-pointer mobile-ten-vt-trigger">${tk.ten_vt}</div>
                     </td>
-                    <td class="tk-col-ten-vt hidden md:table-cell px-1 py-2 text-sm text-gray-600 break-words border border-gray-300 text-left">${tk.ten_vt}</td>
-                    <td class="px-1 md:px-4 py-1 text-[9px] md:text-sm text-gray-600 border border-gray-300 text-center whitespace-nowrap overflow-hidden text-ellipsis">${tk.lot || ''}</td>
-                    <td class="px-1 md:px-4 py-1 text-[9px] md:text-sm text-gray-600 border border-gray-300 text-center whitespace-nowrap">
+                    <td class="tk-col-ten-vt hidden md:table-cell px-1 py-0.5 text-xs text-gray-600 border border-gray-300 text-left whitespace-nowrap overflow-hidden text-ellipsis cursor-pointer" title="${tk.ten_vt}" ondblclick="showColumnDetail('Tên VT', '${tk.ten_vt.replace(/'/g, '\\\'')}')">${tk.ten_vt}</td>
+                    <td class="px-1 py-0.5 text-[8px] text-gray-600 border border-gray-300 text-center whitespace-nowrap overflow-hidden text-ellipsis cursor-pointer" title="${tk.lot || ''}" ondblclick="showColumnDetail('Lot', '${(tk.lot || '').replace(/'/g, '\\\'')}')">${tk.lot || ''}</td>
+                    <td class="px-1 py-0.5 text-[8px] text-gray-600 border border-gray-300 text-center whitespace-nowrap overflow-hidden text-ellipsis cursor-pointer" title="${tk.date || ''}" ondblclick="showColumnDetail('Date', '${(tk.date || '').replace(/'/g, '\\\'')}')">
                         ${tk.date || ''}
-                        <div class="md:hidden text-[7px] mt-0.5 leading-tight ${ui.textCss}">
+                        <div class="md:hidden text-[6px] mt-0.5 leading-tight ${ui.textCss}">
                             ${ui.mobileDayLabel}
                         </div>
                     </td>
-                    <td class="tk-col-dau hidden md:table-cell px-2 py-2 text-sm text-black font-bold border border-gray-300 text-center">${tk.ton_dau}</td>
-                    <td class="tk-col-nhap hidden md:table-cell px-2 py-2 text-sm text-green-600 border border-gray-300 text-center">${tk.nhap}</td>
-                    <td class="tk-col-xuat hidden md:table-cell px-2 py-2 text-sm text-red-600 border border-gray-300 text-center">${tk.xuat}</td>
-                    <td class="px-2 md:px-4 py-1 text-[10px] md:text-sm border border-gray-300 text-center ${tonCuoiClass}">${tk.ton_cuoi}</td>
-                    <td class="tk-col-tinh-trang hidden md:table-cell px-1 py-2 border border-gray-300 text-center whitespace-nowrap">
-                        <span class="text-[10px] ${ui.bgCss}">${ui.display}</span>
+                    <td class="tk-col-dau hidden md:table-cell px-1 py-0.5 text-xs text-black font-bold border border-gray-300 text-center">${tk.ton_dau}</td>
+                    <td class="tk-col-nhap hidden md:table-cell px-1 py-0.5 text-xs text-green-600 border border-gray-300 text-center">${tk.nhap}</td>
+                    <td class="tk-col-xuat hidden md:table-cell px-1 py-0.5 text-xs text-red-600 border border-gray-300 text-center">${tk.xuat}</td>
+                    <td class="px-1 py-0.5 text-[9px] border border-gray-300 text-center ${tonCuoiClass}">${tk.ton_cuoi}</td>
+                    <td class="tk-col-tinh-trang hidden md:table-cell px-1 py-0.5 border border-gray-300 text-center whitespace-nowrap">
+                        <span class="text-[8px] ${ui.bgCss}">${ui.display}</span>
                     </td>
-                    <td class="tk-col-tray hidden md:table-cell px-1 py-2 text-sm text-gray-600 border border-gray-300 text-center">${tk.tray || ''}</td>
-                    <td class="tk-col-nganh hidden md:table-cell px-1 md:px-4 py-2 text-[9px] md:text-sm text-gray-600 border border-gray-300 text-center whitespace-nowrap overflow-hidden text-ellipsis">${tk.nganh || ''}</td>
-                    <td class="tk-col-phu-trach hidden md:table-cell px-1 py-2 text-sm text-gray-600 border border-gray-300 text-center">${tk.phu_trach || ''}</td>
-                    <td class="tk-col-ghi-chu hidden md:table-cell px-1 py-2 border border-gray-300 text-center">${noteHtml}</td>
+                    <td class="tk-col-tray hidden md:table-cell px-1 py-0.5 text-xs text-gray-600 border border-gray-300 text-center">${tk.tray || ''}</td>
+                    <td class="tk-col-nganh hidden md:table-cell px-1 py-0.5 text-[8px] text-gray-600 border border-gray-300 text-center whitespace-nowrap overflow-hidden text-ellipsis cursor-pointer" title="${tk.nganh || ''}" ondblclick="showColumnDetail('Ngành', '${(tk.nganh || '').replace(/'/g, '\\\'')}')">${tk.nganh || ''}</td>
+                    <td class="tk-col-phu-trach hidden md:table-cell px-1 py-0.5 text-xs text-gray-600 border border-gray-300 text-center whitespace-nowrap overflow-hidden text-ellipsis cursor-pointer" title="${tk.phu_trach || ''}" ondblclick="showColumnDetail('Phụ Trách', '${(tk.phu_trach || '').replace(/'/g, '\\\'')}')">${tk.phu_trach || ''}</td>
+                    <td class="tk-col-ghi-chu hidden md:table-cell px-1 py-0.5 border border-gray-300 text-center">${noteHtml}</td>
                 </tr>
             `;
         }).join('');
@@ -755,4 +758,40 @@ async function openTonKhoFilterPopoverCustom(button, view) {
         document.removeEventListener('click', closePopover);
     };
     setTimeout(() => document.addEventListener('click', closePopover), 0);
+}
+
+// Function to show column detail on double-click
+function showColumnDetail(columnName, content) {
+    // Create or update detail modal
+    let modal = document.getElementById('column-detail-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'column-detail-modal';
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+        modal.innerHTML = `
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-hidden">
+                <div class="flex justify-between items-center p-4 border-b">
+                    <h3 class="text-lg font-bold text-gray-800" id="column-detail-title"></h3>
+                    <button onclick="document.getElementById('column-detail-modal').classList.add('hidden')" class="text-gray-500 hover:text-gray-700">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="p-4 overflow-y-auto max-h-96">
+                    <div class="text-sm text-gray-700 break-words whitespace-pre-wrap" id="column-detail-content"></div>
+                </div>
+                <div class="p-4 border-t bg-gray-50">
+                    <button onclick="document.getElementById('column-detail-modal').classList.add('hidden')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md">
+                        Đóng
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    document.getElementById('column-detail-title').textContent = columnName;
+    document.getElementById('column-detail-content').textContent = content;
+    modal.classList.remove('hidden');
 }
