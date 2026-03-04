@@ -21,11 +21,11 @@ function openMultiSelectDroplist(button, options, currentSelected, onApply) {
     const popover = document.createElement('div');
     popover.id = 'settings-droplist-popover';
     const isMobile = window.innerWidth <= 768;
-    
-    popover.className = isMobile 
+
+    popover.className = isMobile
         ? 'fixed inset-x-6 top-24 bottom-24 z-[100] bg-white border border-gray-200 rounded-2xl shadow-2xl p-3 flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-300'
         : 'fixed z-[100] bg-white border border-gray-200 rounded-xl shadow-2xl p-4 flex flex-col w-[380px] animate-in fade-in zoom-in duration-200';
-    
+
     if (!isMobile) {
         const rect = button.getBoundingClientRect();
         let top = rect.bottom + window.scrollY + 8;
@@ -141,7 +141,7 @@ async function handleProfileUpdate(e) {
             if (uploadError) throw uploadError;
             const { data: urlData } = sb.storage.from('anh_dai_dien').getPublicUrl(`public/${fileName}`);
             anh_dai_dien_url = urlData.publicUrl;
-        } 
+        }
 
         const updateData = { ho_ten, anh_dai_dien_url };
         if (new_password) updateData.mat_khau = new_password;
@@ -151,21 +151,21 @@ async function handleProfileUpdate(e) {
 
         Object.assign(currentUser, data);
         sessionStorage.setItem('loggedInUser', JSON.stringify(data));
-        
+
         document.getElementById('user-ho-ten').textContent = data.ho_ten;
         updateSidebarAvatar(data.anh_dai_dien_url);
         initProfileAvatarState();
-        
+
         // Reset trường mật khẩu sau khi lưu thành công
         document.getElementById('profile-old-password').value = '';
         document.getElementById('profile-new-password').value = '';
         document.getElementById('profile-confirm-password').value = '';
-        
+
         showToast("Đã cập nhật thông tin cá nhân!", "success");
-    } catch (err) { 
-        showToast(err.message, 'error'); 
-    } finally { 
-        showLoading(false); 
+    } catch (err) {
+        showToast(err.message, 'error');
+    } finally {
+        showLoading(false);
     }
 }
 
@@ -176,7 +176,7 @@ export async function fetchUsers() {
     ]);
     const industryMap = new Map();
     (nganhData || []).forEach(item => { if (item.nganh && !industryMap.has(item.nganh)) industryMap.set(item.nganh, item.phu_trach || ''); });
-    const enrichedNganh = Array.from(industryMap, ([nganh, pt]) => ({ id: nganh, label: nganh, subInfo: pt })).sort((a,b) => a.label.localeCompare(b.label));
+    const enrichedNganh = Array.from(industryMap, ([nganh, pt]) => ({ id: nganh, label: nganh, subInfo: pt })).sort((a, b) => a.label.localeCompare(b.label));
     cache.userList = users;
     // populate lastSeenMap from persisted DB values so last-online survives reloads
     try {
@@ -196,12 +196,22 @@ function renderUserList(users, allNganhEnriched) {
     if (!container) return;
     container.innerHTML = '';
 
-    users.forEach(user => {
+    // Sắp xếp: online → away → offline
+    const statusPriority = (gmail) => {
+        const presence = onlineUsers.get(gmail);
+        const status = presence ? (presence.status || 'online') : 'offline';
+        if (status === 'online') return 0;
+        if (status === 'away') return 1;
+        return 2;
+    };
+    const sortedUsers = [...users].sort((a, b) => statusPriority(a.gmail) - statusPriority(b.gmail));
+
+    sortedUsers.forEach(user => {
         const isMe = user.gmail === currentUser.gmail;
         const viewCnt = (user.xem_view || '').split(',').filter(Boolean).length;
         const dataCnt = (user.xem_data || '').split(',').filter(Boolean).length;
         const isLocked = user.stt === 'Khóa';
-        
+
         // Kiểm tra trạng thái hiện diện (online/away) và thời gian hoạt động gần nhất
         const presence = onlineUsers.get(user.gmail);
         const status = presence ? (presence.status || 'online') : 'offline';
@@ -212,8 +222,8 @@ function renderUserList(users, allNganhEnriched) {
         const lastSeenText = lastSeenIso ? formatTimeAgo(lastSeenIso) : '';
 
         const card = document.createElement('div');
-        card.className = `bg-white border ${isLocked ? 'border-red-100 bg-red-50/20' : 'border-gray-100'} rounded-xl p-3 shadow-sm transition-all hover:border-indigo-100`;
-        
+        card.className = `bg-white border ${isLocked ? 'border-red-100 bg-red-50/20' : 'border-gray-900'} rounded-xl p-3 shadow-sm transition-all hover:border-blue-500`;
+
         card.innerHTML = `
             <div class="flex flex-col gap-3">
                 <div class="flex items-center gap-2.5">
@@ -222,14 +232,14 @@ function renderUserList(users, allNganhEnriched) {
                         <span class="absolute -bottom-0.5 -right-0.5 block h-2.5 w-2.5 rounded-full ${statusDotClass} ring-2 ring-white"></span>
                     </div>
                     <div class="flex-grow min-w-0">
-                        <h4 class="font-bold text-gray-900 text-xs truncate flex items-center gap-1">
+                        <h4 class="font-bold text-gray-900 text-sm truncate flex items-center gap-1">
                             ${user.ho_ten}
                             ${isLocked ? '<span class="text-[7px] bg-red-500 text-white px-1 py-0.5 rounded font-black">KHÓA</span>' : ''}
                         </h4>
-                        <p class="text-[9px] text-gray-400 truncate">${user.gmail}</p>
+                        <p class="text-[9px] text-gray-900 truncate">${user.gmail}</p>
                     </div>
                     <div class="relative">
-                        <button data-gmail="${user.gmail}" class="user-options-btn p-1.5 text-gray-300 hover:bg-gray-50 rounded-lg">
+                        <button data-gmail="${user.gmail}" class="user-options-btn p-1.5 text-gray-900 hover:bg-gray-50 rounded-lg">
                             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path></svg>
                         </button>
                         <div id="popover-${user.gmail.replace(/[@.]/g, '')}" class="hidden absolute right-0 top-8 w-40 bg-white rounded-xl shadow-2xl border border-gray-100 py-1.5 z-50 overflow-hidden">
@@ -252,8 +262,8 @@ function renderUserList(users, allNganhEnriched) {
 
                 <div class="flex items-center justify-between px-1 bg-gray-50/50 rounded-lg p-1.5">
                     <div class="flex flex-col">
-                        <span class="text-[7px] font-black text-gray-400 uppercase tracking-widest">Quyền hạn</span>
-                        <span class="text-[9px] italic text-gray-400">${status === 'offline' ? `Ngoại tuyến${lastSeenText ? ' • ' + lastSeenText : ''}` : (status === 'away' ? `Vắng mặt${lastSeenText ? ' • ' + lastSeenText : ''}` : 'Đang hoạt động')}</span>
+                        <span class="text-[7px] font-black text-gray-900 uppercase tracking-widest">Quyền hạn</span>
+                        <span class="text-[9px] font-bold ${status === 'offline' ? 'text-gray-900' : (status === 'away' ? 'text-yellow-500' : 'text-green-500')}">${status === 'offline' ? `Ngoại tuyến${lastSeenText ? ' • ' + lastSeenText : ''}` : (status === 'away' ? `Vắng mặt${lastSeenText ? ' • ' + lastSeenText : ''}` : 'Đang hoạt động')}</span>
                     </div>
                     <select data-gmail="${user.gmail}" class="user-role-select bg-white border border-gray-100 rounded-lg px-2 py-1 text-[11px] font-black text-blue-600 outline-none focus:ring-1 focus:ring-blue-500 shadow-sm" ${isMe ? 'disabled' : ''}>
                         <option value="Admin" ${user.phan_quyen === 'Admin' ? 'selected' : ''}>Admin</option>
@@ -263,15 +273,15 @@ function renderUserList(users, allNganhEnriched) {
                 </div>
 
                 <div class="grid grid-cols-2 gap-2">
-                    <button class="trigger-view-list flex flex-col items-center gap-0.5 p-2 bg-gray-50 hover:bg-blue-50 border border-gray-100 rounded-xl transition-all active:scale-95" data-gmail="${user.gmail}">
-                        <span class="text-[7px] font-black text-gray-400 uppercase">Menu View</span>
+                    <button class="trigger-view-list flex flex-col items-center gap-0.5 p-2 bg-gray-200 hover:bg-blue-50 border border-gray-100 rounded-xl transition-all active:scale-95" data-gmail="${user.gmail}">
+                        <span class="text-[7px] font-black text-gray-900 uppercase">Menu View</span>
                         <div class="flex items-center justify-center gap-1 w-full">
                             <span class="text-[11px] font-black text-gray-700">${viewCnt}</span>
                             <svg class="w-2.5 h-2.5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-width="2" stroke-linecap="round"></path></svg>
                         </div>
                     </button>
-                    <button class="trigger-data-list flex flex-col items-center gap-0.5 p-2 bg-gray-50 hover:bg-blue-50 border border-gray-100 rounded-xl transition-all active:scale-95" data-gmail="${user.gmail}">
-                        <span class="text-[7px] font-black text-gray-400 uppercase">Dữ liệu ngành</span>
+                    <button class="trigger-data-list flex flex-col items-center gap-0.5 p-2 bg-gray-200 hover:bg-blue-50 border border-gray-100 rounded-xl transition-all active:scale-95" data-gmail="${user.gmail}">
+                        <span class="text-[7px] font-black text-gray-900 uppercase">Dữ liệu ngành</span>
                         <div class="flex items-center justify-center gap-1 w-full">
                             <span class="text-[11px] font-black text-gray-700">${dataCnt}</span>
                             <svg class="w-2.5 h-2.5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-width="2" stroke-linecap="round"></path></svg>
@@ -362,7 +372,7 @@ async function renderProfileDataTrigger() {
     if (!optionsContainer) return;
     optionsContainer.className = "mt-2";
     const dataCount = (currentUser.xem_data || '').split(',').filter(Boolean).length;
-    
+
     optionsContainer.innerHTML = `
         <button type="button" id="profile-data-droplist-btn" class="w-full flex justify-between items-center bg-white border border-blue-100 p-2.5 rounded-xl active:bg-blue-50 transition-all shadow-sm">
             <div class="flex items-center space-x-2.5">
@@ -385,7 +395,7 @@ async function renderProfileDataTrigger() {
             const { data: nganhData } = await sb.from('san_pham').select('nganh, phu_trach');
             const industryMap = new Map();
             (nganhData || []).forEach(item => { if (item.nganh && !industryMap.has(item.nganh)) industryMap.set(item.nganh, item.phu_trach || ''); });
-            const enrichedNganh = Array.from(industryMap, ([nganh, pt]) => ({ id: nganh, label: nganh, subInfo: pt })).sort((a,b) => a.label.localeCompare(b.label));
+            const enrichedNganh = Array.from(industryMap, ([nganh, pt]) => ({ id: nganh, label: nganh, subInfo: pt })).sort((a, b) => a.label.localeCompare(b.label));
             showLoading(false);
             openMultiSelectDroplist(targetBtn, enrichedNganh, (currentUser.xem_data || '').split(','), async (vals) => {
                 showLoading(true);
