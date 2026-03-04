@@ -17,8 +17,8 @@ const OPTIONAL_COLUMNS_CT = [
 let activeActionPopover = null;
 let currentDistributingItem = null;
 let detailVtItems = [];
-let initialDetailVtItems = []; 
-let nameSuggestionsCache = []; 
+let initialDetailVtItems = [];
+let nameSuggestionsCache = [];
 let isModalListenersInitialized = false;
 
 const VIEW_HTML = `
@@ -88,11 +88,18 @@ const VIEW_HTML = `
                     </div>
                 </div>
                 <div class="flex gap-1 items-center">
-                    <button id="chi-tiet-reset-filters" class="p-1 bg-gray-500 hover:bg-gray-600 text-white rounded-md text-xs" title="Xóa Lọc">✖</button>
-                    <button id="chi-tiet-btn-settings" class="p-1 bg-indigo-500 hover:bg-indigo-600 text-white rounded-md text-xs" title="Cài đặt cột hiển thị">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066-1.543-.94-3.31.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 00 1.066-2.573c-.94-1.543-.826-3.31-2.37-2.37.996.608 2.296.07 2.572-1.065z"></path></svg>
+                    <button id="chi-tiet-reset-filters" class="p-1.5 bg-gray-100 rounded-md text-gray-600 hover:bg-gray-200" title="Xóa Lọc">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                            <line x1="18" y1="6" x2="6" y2="18" stroke="red" stroke-width="2.5" stroke-linecap="round"></line>
+                        </svg>
                     </button>
-                    <button id="chi-tiet-btn-excel" class="p-1 bg-green-600 hover:bg-green-700 text-white rounded-md text-xs" title="Xuất Excel">📤</button>
+                    <button id="chi-tiet-btn-settings" class="p-1.5 bg-indigo-100 rounded-md text-indigo-600 hover:bg-indigo-200" title="Cài đặt cột hiển thị">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543-.94-3.31.826-2.37 2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </button>
+                    <button id="chi-tiet-btn-excel" class="p-1.5 bg-green-100 rounded-md text-green-600 hover:bg-green-200" title="Xuất Excel">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    </button>
                 </div>
             </div>
         </div>
@@ -193,7 +200,7 @@ const saveColumnSettingsCT = (settings) => {
 
 function applyChiTietColumnSettings() {
     const settings = getColumnSettingsCT();
-    
+
     OPTIONAL_COLUMNS_CT.forEach(col => {
         const isVisible = settings[col.key];
         document.querySelectorAll(`.${col.class}`).forEach(el => {
@@ -202,7 +209,7 @@ function applyChiTietColumnSettings() {
                 el.classList.toggle('md:table-cell', isVisible);
             } else {
                 if (el.classList.contains('md:table-cell')) {
-                     el.classList.add('hidden');
+                    el.classList.add('hidden');
                 }
             }
         });
@@ -247,9 +254,9 @@ async function updateChiTietHeaderCounts() {
     const nhapEl = document.getElementById('chi-tiet-header-nhap-count');
     const xuatEl = document.getElementById('chi-tiet-header-xuat-count');
     const bottomSummaryEl = document.getElementById('ct-summary-info');
-    
+
     if (!nhapEl || !xuatEl) return;
-    
+
     [nhapEl, xuatEl].forEach(el => el.textContent = '(...)');
     if (bottomSummaryEl) bottomSummaryEl.innerHTML = '<span class="text-gray-400 font-normal text-[8px] md:text-xs italic">Đang tính toán...</span>';
 
@@ -258,12 +265,12 @@ async function updateChiTietHeaderCounts() {
         // Lấy ma_nx và ma_vt để đếm duy nhất
         const { data, error } = await query.select('ma_nx, ma_vt, nhap, xuat');
         if (error) throw error;
-        
+
         let totalNhap = 0;
         let totalXuat = 0;
         const uniqueMaNx = new Set();
         const uniqueMaVt = new Set();
-        
+
         if (data && data.length > 0) {
             data.forEach(item => {
                 totalNhap += (item.nhap || 0);
@@ -272,15 +279,15 @@ async function updateChiTietHeaderCounts() {
                 if (item.ma_vt) uniqueMaVt.add(item.ma_vt);
             });
         }
-        
+
         const nVal = totalNhap.toLocaleString();
         const xVal = totalXuat.toLocaleString();
         const nxCount = uniqueMaNx.size.toLocaleString();
         const vtCount = uniqueMaVt.size.toLocaleString();
-        
+
         nhapEl.textContent = `(${nVal})`;
         xuatEl.textContent = `(${xVal})`;
-        
+
         if (bottomSummaryEl) {
             bottomSummaryEl.innerHTML = `
                 <div class="flex items-center gap-1 sm:gap-2 text-[7px] sm:text-[10px] md:text-xs font-bold px-2">
@@ -312,7 +319,7 @@ function buildChiTietQuery() {
     if (currentUser.phan_quyen !== 'Admin') {
         const name = currentUser.ho_ten;
         const allowedNganh = (currentUser.xem_data || '').split(',').filter(Boolean);
-        
+
         if (allowedNganh.length > 0) {
             const nganhListStr = allowedNganh.map(n => `"${n}"`).join(',');
             query = query.or(`phu_trach.eq."${name}",nganh.in.(${nganhListStr})`);
@@ -339,7 +346,7 @@ function buildChiTietQuery() {
     if (state.filters.nganh?.length > 0) query = query.in('nganh', state.filters.nganh);
     if (state.filters.phu_trach?.length > 0) query = query.in('phu_trach', state.filters.phu_trach);
     if (state.filters.yeu_cau?.length > 0) query = query.in('yeu_cau', state.filters.yeu_cau);
-    
+
     return query;
 }
 
@@ -348,26 +355,26 @@ export async function fetchChiTiet(page = viewStates['view-chi-tiet'].currentPag
     try {
         viewStates['view-chi-tiet'].currentPage = page;
         const state = viewStates['view-chi-tiet'];
-        
+
         const { itemsPerPage } = state;
         const from = (page - 1) * itemsPerPage;
         const to = from + itemsPerPage - 1;
 
         const query = buildChiTietQuery().order('thoi_gian', { ascending: false }).order('ma_nx', { ascending: true }).order('stt', { ascending: true }).range(from, to);
-        
+
         const [queryResult, _] = await Promise.all([
             query,
             updateChiTietHeaderCounts()
         ]);
 
         const { data, error, count } = queryResult;
-        
+
         if (error) {
             showToast("Không thể tải dữ liệu chi tiết.", 'error');
         } else {
             state.totalFilteredCount = count;
             cache.chiTietList = data;
-            
+
             renderChiTietTable(data);
             applyChiTietColumnSettings();
             renderPagination('chi-tiet', count, from, to);
@@ -386,7 +393,7 @@ function renderChiTietTable(data) {
         tableBody.innerHTML = data.map(ct => {
             const maNxRaw = ct.ma_nx || '';
             const maNxClass = maNxRaw.endsWith('-') ? 'text-yellow-600 font-semibold' : 'text-green-600 font-semibold';
-            
+
             // Tô màu chữ DO và RO
             const maNxFormatted = maNxRaw
                 .replace(/DO/g, '<span class="text-red-600 font-bold">DO</span>')
@@ -456,8 +463,8 @@ function closeActionPopover() {
 }
 
 function openActionMenu(e, button) {
-    e.stopPropagation(); 
-    
+    e.stopPropagation();
+
     // Logic Toggle cho menu chi tiết
     if (activeActionPopover) {
         const isSameButton = activeActionPopover._trigger === button;
@@ -465,7 +472,7 @@ function openActionMenu(e, button) {
         activeActionPopover = null;
         if (isSameButton) return;
     }
-    
+
     const ctId = String(button.dataset.ctId || '').trim();
     if (!ctId) return;
 
@@ -482,7 +489,7 @@ function openActionMenu(e, button) {
 
     const rect = button.getBoundingClientRect();
     const isMobile = window.innerWidth <= 768;
-    
+
     if (isMobile) {
         popover.style.position = 'fixed';
         popover.style.right = '10px';
@@ -511,7 +518,7 @@ function openActionMenu(e, button) {
         if (activeActionPopover === popover) activeActionPopover = null;
         document.removeEventListener('click', closeHandler);
     };
-    
+
     setTimeout(() => document.addEventListener('click', closeHandler), 0);
 }
 
@@ -521,12 +528,12 @@ async function fetchNameSuggestions() {
             sb.from('user').select('ho_ten'),
             sb.from('chi_tiet').select('yeu_cau')
         ]);
-        
+
         const names = new Set();
         (usersRes.data || []).forEach(u => names.add(u.ho_ten));
         (chiTietRes.data || []).forEach(ct => names.add(ct.yeu_cau));
-        
-        nameSuggestionsCache = Array.from(names).filter(Boolean).map(n => ({ name: n })).sort((a,b) => a.name.localeCompare(b.name));
+
+        nameSuggestionsCache = Array.from(names).filter(Boolean).map(n => ({ name: n })).sort((a, b) => a.name.localeCompare(b.name));
     } catch (err) {
         console.error("Error fetching name suggestions:", err);
     }
@@ -537,11 +544,11 @@ async function fetchNameSuggestions() {
  */
 export async function refreshCurrentDetailVtModal() {
     if (!currentDistributingItem) return;
-    
+
     // NÂNG CẤP: Sử dụng String ID an toàn
     const cleanId = String(currentDistributingItem.id).trim();
     const { data, error } = await sb.from('chi_tiet_vt').select('*').eq('id_ct', cleanId).order('created_at', { ascending: true });
-    
+
     if (!error && data) {
         const isFocusing = document.querySelector('#chi-tiet-vt-table-body input:focus, #chi-tiet-vt-table-body textarea:focus');
         if (!isFocusing) {
@@ -566,13 +573,13 @@ function ensureModalListenersAttached() {
         currentDistributingItem = null;
         document.getElementById('chi-tiet-vt-modal').classList.add('hidden');
     };
-    
+
     const cancelBtn = document.getElementById('cancel-ct-vt-btn');
     if (cancelBtn) cancelBtn.onclick = () => {
         currentDistributingItem = null;
         document.getElementById('chi-tiet-vt-modal').classList.add('hidden');
     };
-    
+
     const addBtn = document.getElementById('add-ct-vt-row-btn');
     if (addBtn) addBtn.onclick = () => {
         if (!currentDistributingItem) return;
@@ -583,10 +590,10 @@ function ensureModalListenersAttached() {
             sl: 0,
             dia_diem: '',
             ghi_chu: '',
-            trang_thai: '', 
+            trang_thai: '',
             lich_su: '',
             created_at: new Date().toISOString(),
-            is_new: true 
+            is_new: true
         };
         detailVtItems.push(newItem);
         renderDetailVtRows(false);
@@ -618,7 +625,7 @@ function ensureModalListenersAttached() {
                         const log = `${currentUserLabel} thêm mới người nhận [${item.nguoi_nhan || 'N/A'}]: SL ${item.sl} tại ${item.dia_diem || 'N/A'} lúc ${nowStr}`;
                         logs = logs ? `${logs}\n${log}` : log;
                     }
-                    item.created_at = new Date().toISOString(); 
+                    item.created_at = new Date().toISOString();
                 } else {
                     const hasNameChanged = initialItem.nguoi_nhan !== item.nguoi_nhan;
                     const hasSlChanged = parseFloat(initialItem.sl) !== parseFloat(item.sl);
@@ -632,7 +639,7 @@ function ensureModalListenersAttached() {
                         if (hasSlChanged) changes.push(`SL: ${initialItem.sl} -> ${item.sl}`);
                         if (hasPlaceChanged) changes.push(`Địa điểm: ${initialItem.dia_diem || 'Trống'} -> ${item.dia_diem || 'Trống'}`);
                         if (hasNoteChanged) changes.push(`Ghi chú: ${initialItem.ghi_chu || 'Trống'} -> ${item.ghi_chu || 'Trống'}`);
-                        
+
                         if (!hasStatusChanged && (hasNameChanged || hasSlChanged || hasPlaceChanged || hasNoteChanged)) {
                             const log = `${currentUserLabel} cập nhật dòng [${item.nguoi_nhan || 'N/A'}]: ${changes.join(', ')} lúc ${nowStr}`;
                             logs = logs ? `${logs}\n${log}` : log;
@@ -676,16 +683,16 @@ function ensureModalListenersAttached() {
 }
 
 export async function openDetailVtModal(ct, isReadOnly = false) {
-    if (!ct || !ct.id) return; 
-    
+    if (!ct || !ct.id) return;
+
     ensureModalListenersAttached();
-    
+
     currentDistributingItem = ct;
     const cleanId = String(ct.id).trim(); // Text ID an toàn
     const modal = document.getElementById('chi-tiet-vt-modal');
     const headerEl = document.getElementById('ct-vt-info-header');
     const originalQtyEl = document.getElementById('ct-vt-original-qty');
-    
+
     if (headerEl) {
         headerEl.innerHTML = `
             <div class="flex flex-col gap-1 md:gap-1.5 overflow-hidden">
@@ -706,13 +713,13 @@ export async function openDetailVtModal(ct, isReadOnly = false) {
             </div>
         `;
     }
-    
+
     const qty = ct.nhap || ct.xuat || 0;
     if (originalQtyEl) originalQtyEl.textContent = qty;
 
     const saveBtn = document.getElementById('save-ct-vt-btn');
     const addBtn = document.getElementById('add-ct-vt-row-btn');
-    
+
     if (isReadOnly) {
         if (saveBtn) saveBtn.classList.add('hidden');
         if (addBtn) addBtn.classList.add('hidden');
@@ -729,12 +736,12 @@ export async function openDetailVtModal(ct, isReadOnly = false) {
         // NÂNG CẤP: Ép kiểu Text ID trong query
         const { data, error } = await sb.from('chi_tiet_vt').select('*').eq('id_ct', cleanId).order('created_at', { ascending: true });
         if (error) throw error;
-        
+
         detailVtItems = data || [];
-        initialDetailVtItems = JSON.parse(JSON.stringify(detailVtItems)); 
-        
+        initialDetailVtItems = JSON.parse(JSON.stringify(detailVtItems));
+
         renderDetailVtRows(isReadOnly);
-        renderHistory(); 
+        renderHistory();
         if (modal) modal.classList.remove('hidden');
     } catch (err) {
         showToast(`Lỗi xác thực dữ liệu: ${err.message}`, 'error');
@@ -746,9 +753,9 @@ export async function openDetailVtModal(ct, isReadOnly = false) {
 function renderHistory() {
     const historyList = document.getElementById('ct-vt-history-list');
     if (!historyList) return;
-    
+
     historyList.innerHTML = '';
-    
+
     let allHistory = [];
     detailVtItems.forEach(item => {
         if (item.lich_su) {
@@ -775,15 +782,15 @@ function renderHistory() {
         const isDelete = log.text.includes('đã xóa');
         const isRestore = log.text.includes('đã khôi phục');
         const isAdd = log.text.includes('thêm mới');
-        
+
         let dotColor = 'bg-blue-500';
         if (isDelete) dotColor = 'bg-red-500';
         else if (isAdd) dotColor = 'bg-green-500';
 
         const showRestoreBtn = isDelete && log.trangThaiHienTai === 'Xóa';
-        const restoreBtnHtml = showRestoreBtn ? 
+        const restoreBtnHtml = showRestoreBtn ?
             `<button class="ml-2 text-blue-600 font-bold hover:underline ct-vt-restore-btn" data-id="${log.id}">Khôi phục ngay</button>` : '';
-        
+
         return `
             <div class="flex gap-2 md:gap-3 relative pl-4 border-l-2 border-gray-100 py-1">
                 <div class="absolute -left-[7px] top-2 w-3 h-3 rounded-full ${dotColor} border-2 border-white shadow-sm"></div>
@@ -820,11 +827,11 @@ function handleRestoreItem(id) {
     const nowStr = new Date().toLocaleString('vi-VN');
     const currentUserLabel = currentUser.ho_ten || 'Admin';
     const log = `${currentUserLabel} đã khôi phục: người nhận [${item.nguoi_nhan || 'Trống'}]: SL ${item.sl} lúc ${nowStr}`;
-    
-    item.trang_thai = ''; 
+
+    item.trang_thai = '';
     item.lich_su = item.lich_su ? `${item.lich_su}\n${log}` : log;
-    item.created_at = new Date().toISOString(); 
-    
+    item.created_at = new Date().toISOString();
+
     const isReadOnly = document.getElementById('save-ct-vt-btn').classList.contains('hidden');
     renderDetailVtRows(isReadOnly);
     renderHistory();
@@ -837,7 +844,7 @@ function renderDetailVtRows(isReadOnly = false) {
     const distributedEl = document.getElementById('ct-vt-distributed-qty');
     const originalQtyEl = document.getElementById('ct-vt-original-qty');
     const originalQty = originalQtyEl ? (parseFloat(originalQtyEl.textContent) || 0) : 0;
-    
+
     if (!tbody) return;
     tbody.innerHTML = '';
     let totalDist = 0;
@@ -850,11 +857,11 @@ function renderDetailVtRows(isReadOnly = false) {
         if (emptyState) emptyState.classList.add('hidden');
         visibleItems.forEach((item) => {
             const actualIndex = detailVtItems.findIndex(it => String(it.id).trim() === String(item.id).trim());
-            
+
             totalDist += (parseFloat(item.sl) || 0);
             const row = document.createElement('tr');
             row.className = "hover:bg-gray-50 transition-colors border-b";
-            
+
             row.innerHTML = `
                 <td class="border p-0 relative">
                     <input type="text" class="w-full p-2 border-none bg-transparent text-[11px] md:text-sm font-medium vt-input-nguoi-nhan text-center md:text-left" value="${item.nguoi_nhan || ''}" placeholder="..." ${isReadOnly ? 'readonly' : ''}>
@@ -874,12 +881,12 @@ function renderDetailVtRows(isReadOnly = false) {
                     </button>
                 </td>
             `;
-            
+
             if (!isReadOnly) {
                 const nameInput = row.querySelector('.vt-input-nguoi-nhan');
                 const handleNameSearch = () => {
                     const val = nameInput.value.toLowerCase();
-                    const suggestions = nameSuggestionsCache.filter(item => 
+                    const suggestions = nameSuggestionsCache.filter(item =>
                         item.name.toLowerCase().includes(val)
                     );
                     openAutocomplete(nameInput, suggestions, {
@@ -934,7 +941,7 @@ function renderDetailVtRows(isReadOnly = false) {
             tbody.appendChild(row);
         });
     }
-    
+
     function updateLiveTotal() {
         if (!distributedEl) return;
         const currentSum = detailVtItems.reduce((s, i) => i.trang_thai !== 'Xóa' ? s + (parseFloat(i.sl) || 0) : s, 0);
@@ -955,8 +962,8 @@ function handleDeleteItem(id) {
 
     item.trang_thai = 'Xóa';
     item.lich_su = item.lich_su ? `${item.lich_su}\n${log}` : log;
-    item.created_at = new Date().toISOString(); 
-    
+    item.created_at = new Date().toISOString();
+
     const saveBtn = document.getElementById('save-ct-vt-btn');
     const isReadOnly = saveBtn ? saveBtn.classList.contains('hidden') : true;
     renderDetailVtRows(isReadOnly);
@@ -973,7 +980,7 @@ async function handleExcelExport() {
         try {
             const query = exportAll ? sb.from('chi_tiet').select('*') : buildChiTietQuery().select('*');
             const { data, error } = await query.order('thoi_gian', { ascending: false }).limit(50000);
-            
+
             if (error) throw error;
             if (!data || data.length === 0) {
                 showToast("Không có dữ liệu để xuất.", 'info');
@@ -989,7 +996,7 @@ async function handleExcelExport() {
             const worksheet = XLSX.utils.json_to_sheet(formattedData);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "ChiTiet");
-            XLSX.writeFile(workbook, `ChiTietGiaoDich_${new Date().toISOString().slice(0,10)}.xlsx`);
+            XLSX.writeFile(workbook, `ChiTietGiaoDich_${new Date().toISOString().slice(0, 10)}.xlsx`);
             showToast("Xuất Excel thành công!", 'success');
         } catch (err) {
             showToast(`Lỗi khi xuất Excel: ${err.message}`, 'error');
@@ -997,11 +1004,11 @@ async function handleExcelExport() {
             showLoading(false);
         }
     };
-    
+
     const filterBtn = document.getElementById('excel-export-filtered-btn');
     const allBtn = document.getElementById('excel-export-all-btn');
     const cancelBtn = document.getElementById('excel-export-cancel-btn');
-    
+
     if (filterBtn) filterBtn.onclick = () => exportAndClose(false);
     if (allBtn) allBtn.onclick = () => exportAndClose(true);
     if (cancelBtn) cancelBtn.onclick = () => modal.classList.add('hidden');
@@ -1035,7 +1042,7 @@ async function openChiTietFilterPopover(button, view) {
     const searchInput = popover.querySelector('.filter-search-input');
     const selectionCountEl = popover.querySelector('.filter-selection-count');
     const toggleAllBtn = popover.querySelector('.filter-toggle-all-btn');
-    
+
     const tempSelectedOptions = new Set(state.filters[filterKey] || []);
 
     const updateSelectionCount = () => {
@@ -1057,7 +1064,7 @@ async function openChiTietFilterPopover(button, view) {
 
     const renderOptions = (options) => {
         const searchTerm = searchInput.value.toLowerCase();
-        const filteredOptions = options.filter(option => 
+        const filteredOptions = options.filter(option =>
             option && String(option).toLowerCase().includes(searchTerm)
         );
         optionsList.innerHTML = filteredOptions.length > 0 ? filteredOptions.map(option => `
@@ -1068,7 +1075,7 @@ async function openChiTietFilterPopover(button, view) {
         `).join('') : '<div class="text-center p-4 text-sm text-gray-500">Không có tùy chọn.</div>';
         updateToggleAllButtonState();
     };
-    
+
     const setupEventListeners = (allOptions) => {
         searchInput.addEventListener('input', () => renderOptions(allOptions));
         optionsList.addEventListener('change', e => {
@@ -1094,7 +1101,7 @@ async function openChiTietFilterPopover(button, view) {
     };
 
     updateSelectionCount();
-    
+
     if (filterKey === 'loai') {
         const options = ['Nhập', 'Xuất'];
         renderOptions(options);
@@ -1128,7 +1135,7 @@ async function openChiTietFilterPopover(button, view) {
         button.textContent = newText;
         const mobileBtn = document.getElementById(`${button.id}-mobile`);
         if (mobileBtn) mobileBtn.textContent = newText;
-        if(view === 'view-chi-tiet') fetchChiTiet(1);
+        if (view === 'view-chi-tiet') fetchChiTiet(1);
         popover.remove();
         document.removeEventListener('click', closePopover);
     };
@@ -1137,14 +1144,14 @@ async function openChiTietFilterPopover(button, view) {
 
 export function initChiTietView() {
     const viewContainer = document.getElementById('view-chi-tiet');
-    
+
     if (!document.getElementById('chi-tiet-search')) {
         viewContainer.innerHTML = VIEW_HTML;
         if (!document.getElementById('chi-tiet-settings-modal')) {
             document.body.insertAdjacentHTML('beforeend', SETTINGS_MODAL_HTML);
         }
     }
-    
+
     applyChiTietColumnSettings();
     ensureModalListenersAttached();
 
@@ -1156,42 +1163,42 @@ export function initChiTietView() {
 
     const searchInput = document.getElementById('chi-tiet-search');
     const searchInputMobile = document.getElementById('chi-tiet-search-mobile');
-    if(searchInput) searchInput.addEventListener('input', handleSearch);
-    if(searchInputMobile) searchInputMobile.addEventListener('input', handleSearch);
+    if (searchInput) searchInput.addEventListener('input', handleSearch);
+    if (searchInputMobile) searchInputMobile.addEventListener('input', handleSearch);
 
     viewContainer.addEventListener('click', e => {
         const btn = e.target.closest('.filter-btn');
         if (btn) openChiTietFilterPopover(btn, 'view-chi-tiet');
         const actionBtn = e.target.closest('.ct-open-action-menu');
-        if (actionBtn) openActionMenu(e, actionBtn); 
+        if (actionBtn) openActionMenu(e, actionBtn);
     });
-    
+
     const fromDateInputs = [document.getElementById('chi-tiet-filter-from-date'), document.getElementById('chi-tiet-filter-from-date-mobile')];
     const toDateInputs = [document.getElementById('chi-tiet-filter-to-date'), document.getElementById('chi-tiet-filter-to-date-mobile')];
 
     fromDateInputs.forEach(input => {
-        if(input) input.addEventListener('change', e => {
-            viewStates['view-chi-tiet'].filters.from_date = e.target.value; 
-            fetchChiTiet(1); 
+        if (input) input.addEventListener('change', e => {
+            viewStates['view-chi-tiet'].filters.from_date = e.target.value;
+            fetchChiTiet(1);
         });
     });
     toDateInputs.forEach(input => {
-        if(input) input.addEventListener('change', e => {
-            viewStates['view-chi-tiet'].filters.to_date = e.target.value; 
-            fetchChiTiet(1); 
+        if (input) input.addEventListener('change', e => {
+            viewStates['view-chi-tiet'].filters.to_date = e.target.value;
+            fetchChiTiet(1);
         });
     });
 
     const resetFilters = () => {
-        if(searchInput) searchInput.value = '';
-        if(searchInputMobile) searchInputMobile.value = '';
+        if (searchInput) searchInput.value = '';
+        if (searchInputMobile) searchInputMobile.value = '';
         fromDateInputs.forEach(i => i && (i.value = ''));
         toDateInputs.forEach(i => i && (i.value = ''));
         viewStates['view-chi-tiet'].searchTerm = '';
         viewStates['view-chi-tiet'].filters = { from_date: '', to_date: '', loai: [], ma_kho: [], ma_nx: [], ma_vt: [], lot: [], nganh: [], phu_trach: [], yeu_cau: [] };
         document.querySelectorAll('#view-chi-tiet .filter-btn').forEach(btn => {
             const defaultText = filterButtonDefaultTexts[btn.id.replace('-mobile', '')];
-            if(defaultText) btn.textContent = defaultText;
+            if (defaultText) btn.textContent = defaultText;
         });
         fetchChiTiet(1);
     };
@@ -1214,10 +1221,10 @@ export function initChiTietView() {
         }
     };
 
-    if(toggleBtn) toggleBtn.addEventListener('click', () => toggleDrawer(true));
-    if(closeBtn) closeBtn.addEventListener('click', () => toggleDrawer(false));
-    if(overlay) overlay.addEventListener('click', () => toggleDrawer(false));
-    
+    if (toggleBtn) toggleBtn.addEventListener('click', () => toggleDrawer(true));
+    if (closeBtn) closeBtn.addEventListener('click', () => toggleDrawer(false));
+    if (overlay) overlay.addEventListener('click', () => toggleDrawer(false));
+
     document.getElementById('chi-tiet-btn-excel')?.addEventListener('click', handleExcelExport);
     document.getElementById('chi-tiet-btn-excel-mobile')?.addEventListener('click', handleExcelExport);
 
@@ -1225,7 +1232,7 @@ export function initChiTietView() {
     document.getElementById('chi-tiet-settings-close-btn')?.addEventListener('click', () => document.getElementById('chi-tiet-settings-modal').classList.add('hidden'));
 
     const tableBody = document.getElementById('chi-tiet-table-body');
-    if(tableBody) {
+    if (tableBody) {
         tableBody.addEventListener('click', async (e) => {
             const maVtCell = e.target.closest('.ma-vt-cell');
             const copyNxBtn = e.target.closest('.copy-ma-nx-btn');
@@ -1257,9 +1264,9 @@ export function initChiTietView() {
 
     document.getElementById('chi-tiet-prev-page')?.addEventListener('click', () => fetchChiTiet(viewStates['view-chi-tiet'].currentPage - 1));
     document.getElementById('chi-tiet-next-page')?.addEventListener('click', () => fetchChiTiet(viewStates['view-chi-tiet'].currentPage + 1));
-    
+
     const pageInput = document.getElementById('chi-tiet-page-input');
-    if(pageInput) {
+    if (pageInput) {
         const handlePageJump = () => {
             const state = viewStates['view-chi-tiet'];
             let targetPage = parseInt(pageInput.value, 10);
