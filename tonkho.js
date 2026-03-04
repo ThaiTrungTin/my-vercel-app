@@ -88,8 +88,8 @@ const getColumnSettings = () => {
     const saved = localStorage.getItem('tonKhoColumnSettings');
     if (saved) return JSON.parse(saved);
 
-    // Default columns to show: Đầu, Nhập, Xuất, Tình Trạng, Ghi chú
-    const defaultVisibleColumns = ['dau', 'nhap', 'xuat', 'tinh-trang', 'ghi-chu'];
+    // Default columns to show: Đầu, Nhập, Xuất, Tình Trạng, Ghi chú, Tray
+    const defaultVisibleColumns = ['dau', 'nhap', 'xuat', 'tinh-trang', 'ghi-chu', 'tray'];
     return OPTIONAL_COLUMNS.reduce((acc, col) => {
         acc[col.key] = defaultVisibleColumns.includes(col.key);
         return acc;
@@ -274,17 +274,19 @@ function renderTonKhoTable(data) {
                     <td class="tk-col-full-code hidden md:table-cell px-1 py-1 text-xs font-medium text-blue-600 hover:underline border border-gray-300 text-left cursor-pointer">
                         ${tk.ma_vach}
                     </td>
-                    <td class="px-1 py-0.5 text-[9px] font-medium border border-gray-300 text-left whitespace-nowrap overflow-hidden text-ellipsis cursor-pointer" title="${tk.ma_vt}" ondblclick="showColumnDetail('Mã VT', '${tk.ma_vt.replace(/'/g, '\\\'')}')">
-                        <div class="flex items-center gap-1">
-                            <span class="text-blue-600 font-bold">${tk.ma_vt}</span>
-                            <button class="copy-ma-vt-btn p-0.5 text-gray-400 hover:text-blue-600 transition-colors" title="Copy mã VT">
-                                <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                            </button>
+                    <td class="px-1 py-0.5 text-[9px] font-medium border border-gray-300 text-left max-w-[40vw] sm:max-w-[50vw] md:max-w-none cursor-pointer" title="${tk.ma_vt}" ondblclick="showColumnDetail('Mã VT', '${tk.ma_vt.replace(/'/g, '\\\'')}')">
+                        <div class="flex flex-col min-w-0">
+                            <div class="flex items-center gap-1 w-full">
+                                <span class="text-blue-600 font-bold truncate">${tk.ma_vt}</span>
+                                <button class="copy-ma-vt-btn p-0.5 text-gray-400 hover:text-blue-600 transition-colors flex-shrink-0" title="Copy mã VT">
+                                    <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                </button>
+                            </div>
+                            <div class="md:hidden text-[7px] text-gray-500 truncate mt-0.5 leading-tight font-normal hover:text-blue-500 hover:underline cursor-pointer mobile-ten-vt-trigger" title="${tk.ten_vt}">${tk.ten_vt}</div>
                         </div>
-                        <div class="md:hidden text-[7px] text-gray-500 break-words mt-0.5 leading-tight font-normal hover:text-blue-500 hover:underline cursor-pointer mobile-ten-vt-trigger">${tk.ten_vt}</div>
                     </td>
                     <td class="tk-col-ten-vt hidden md:table-cell px-1 py-0.5 text-xs text-gray-600 border border-gray-300 text-left whitespace-nowrap overflow-hidden text-ellipsis cursor-pointer" title="${tk.ten_vt}" ondblclick="showColumnDetail('Tên VT', '${tk.ten_vt.replace(/'/g, '\\\'')}')">${tk.ten_vt}</td>
-                    <td class="px-1 py-0.5 text-[8px] text-gray-600 border border-gray-300 text-center whitespace-nowrap overflow-hidden text-ellipsis cursor-pointer" title="${tk.lot || ''}" ondblclick="showColumnDetail('Lot', '${(tk.lot || '').replace(/'/g, '\\\'')}')">${tk.lot || ''}</td>
+                    <td class="px-1 py-0.5 text-[8px] text-gray-600 border border-gray-300 text-center whitespace-nowrap overflow-hidden text-ellipsis cursor-pointer max-w-[50px] md:max-w-none" title="${tk.lot || ''}" ondblclick="showColumnDetail('Lot', '${(tk.lot || '').replace(/'/g, '\\\'')}')">${tk.lot || ''}</td>
                     <td class="px-1 py-0.5 text-[8px] text-gray-600 border border-gray-300 text-center whitespace-nowrap overflow-hidden text-ellipsis cursor-pointer" title="${tk.date || ''}" ondblclick="showColumnDetail('Date', '${(tk.date || '').replace(/'/g, '\\\'')}')">
                         ${tk.date || ''}
                         <div class="md:hidden text-[6px] mt-0.5 leading-tight ${ui.textCss}">
@@ -298,7 +300,7 @@ function renderTonKhoTable(data) {
                     <td class="tk-col-tinh-trang hidden md:table-cell px-1 py-0.5 border border-gray-300 text-center whitespace-nowrap">
                         <span class="text-[8px] ${ui.bgCss}">${ui.display}</span>
                     </td>
-                    <td class="tk-col-tray hidden md:table-cell px-1 py-0.5 text-xs text-gray-600 border border-gray-300 text-center">${tk.tray || ''}</td>
+                    <td class="tk-col-tray px-1 py-0.5 text-[7px] md:text-xs text-gray-600 border border-gray-300 text-center max-w-[30px] md:max-w-none break-words" title="${tk.tray || ''}">${tk.tray || ''}</td>
                     <td class="tk-col-nganh hidden md:table-cell px-1 py-0.5 text-[8px] text-gray-600 border border-gray-300 text-center whitespace-nowrap overflow-hidden text-ellipsis cursor-pointer" title="${tk.nganh || ''}" ondblclick="showColumnDetail('Ngành', '${(tk.nganh || '').replace(/'/g, '\\\'')}')">${tk.nganh || ''}</td>
                     <td class="tk-col-phu-trach hidden md:table-cell px-1 py-0.5 text-xs text-gray-600 border border-gray-300 text-center whitespace-nowrap overflow-hidden text-ellipsis cursor-pointer" title="${tk.phu_trach || ''}" ondblclick="showColumnDetail('Phụ Trách', '${(tk.phu_trach || '').replace(/'/g, '\\\'')}')">${tk.phu_trach || ''}</td>
                     <td class="tk-col-ghi-chu hidden md:table-cell px-1 py-0.5 border border-gray-300 text-center">${noteHtml}</td>
@@ -384,8 +386,13 @@ function applyTonKhoColumnSettings() {
                 el.classList.toggle('hidden', !isVisible);
                 el.classList.toggle('md:table-cell', isVisible);
             } else {
-                el.classList.add('hidden');
-                el.classList.remove('md:table-cell');
+                if (col.key === 'tray') {
+                    el.classList.toggle('hidden', !isVisible);
+                    el.classList.remove('md:table-cell');
+                } else {
+                    el.classList.add('hidden');
+                    el.classList.remove('md:table-cell');
+                }
             }
         });
     });
